@@ -519,7 +519,7 @@ legend { padding: 0 6px; font: 500 11px/1 var(--f-mono); letter-spacing: 0.16em;
           <div><dt>W A S D</dt><dd>Move</dd></div>
           <div><dt>Mouse</dt><dd>Look</dd></div>
           <div><dt>Left click</dt><dd>Fire</dd></div>
-          <div><dt>Right click</dt><dd>Aim down sights</dd></div>
+          <div><dt>Right click · Tab</dt><dd>Aim down sights (Tab toggles, for trackpads)</dd></div>
           <div><dt>Shift</dt><dd>Sprint · steady scope</dd></div>
           <div><dt>Space</dt><dd>Jump · mantle ledges</dd></div>
           <div><dt>C</dt><dd>Crouch · slide while sprinting</dd></div>
@@ -3807,7 +3807,7 @@ window.CF = window.CF || {};
     const lo = loadout || { weapons: { carbine: { mag: 30, reserve: 120 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 2 };
     for (const id in lo.weapons) this.inv[id] = { def: DEFS[id], mag: lo.weapons[id].mag, reserve: lo.weapons[id].reserve };
     this.grenades = lo.grenades;
-    this.adsT = 0; this.bloom = 0; this.cycleT = 1; this.fireCd = 0;
+    this.adsT = 0; this.adsToggle = false; this.bloom = 0; this.cycleT = 1; this.fireCd = 0;
     this.equip(lo.current || 'carbine', true);
     CF.HUD.setGrenades(this.grenades, this.maxGrenades);
   };
@@ -4055,7 +4055,10 @@ window.CF = window.CF || {};
       if (inp.hit('KeyG')) this.throwGrenade();
     }
     // ADS
-    const canAds = live && inp.mdown[2] && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
+    // Tab toggles aiming (trackpad-friendly); right mouse still aims while held
+    if (live && inp.hit('Tab')) this.adsToggle = !this.adsToggle;
+    if (!live || P.sprinting || this.state === 'lower' || this.state === 'melee' || this.state === 'throw') this.adsToggle = false;
+    const canAds = live && (inp.mdown[2] || this.adsToggle) && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
     this.adsT = U.clamp(this.adsT + (canAds ? 1 : -1) * dt / d.adsTime, 0, 1);
     this.adsE = U.easeInOut(this.adsT);
     this.steady = d.scope && this.adsE > 0.9 && inp.down('ShiftLeft') && this.breath > 0;
