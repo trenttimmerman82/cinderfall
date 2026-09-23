@@ -69,6 +69,7 @@ window.CF = window.CF || {};
   CF.saveSettings = () => { try { localStorage.setItem(KEY, JSON.stringify(CF.settings)); } catch (e) { /* storage unavailable */ } };
 
   CF.DIFF = {
+    easy: { label: 'Easy', dmg: 0.4, acc: 0.5, regenDelay: 2.5, regenRate: 45, aggro: 0.6, hp: 0.7, score: 0.6, typeHp: { hornet: 0.45, stalker: 0.45 } },
     recruit: { label: 'Recruit', dmg: 0.6, acc: 0.65, regenDelay: 3.0, regenRate: 38, aggro: 0.75, hp: 0.85, score: 0.8 },
     veteran: { label: 'Veteran', dmg: 1.0, acc: 1.0, regenDelay: 4.5, regenRate: 26, aggro: 1.0, hp: 1.0, score: 1.0 },
     elite: { label: 'Elite', dmg: 1.5, acc: 1.3, regenDelay: 6.0, regenRate: 18, aggro: 1.3, hp: 1.15, score: 1.4 }

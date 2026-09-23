@@ -41,7 +41,7 @@
       this.m = CF.EnemyModels[type]();
       this.root = this.m.root; E.scene.add(this.root);
       this.body = { pos: new THREE.Vector3(x, y, z), vel: new THREE.Vector3(), radius: T.radius, height: Math.min(T.height, 1.9), stepHeight: 0.62, grounded: true, stepped: 0, noSnap: false };
-      this.hp = this.maxHp = T.hp * CF.diff().hp * (o.hpMul || 1);
+      this.hp = this.maxHp = T.hp * CF.diff().hp * ((CF.diff().typeHp || {})[this.type] || 1) * (o.hpMul || 1);
       this.yaw = o.yaw != null ? o.yaw : Math.random() * 6.28; this.aimYaw = 0; this.aimPitch = 0;
       this.state = o.aware ? 'hunt' : (o.patrol ? 'patrol' : 'idle');
       this.patrol = o.patrol || null; this.pIdx = 1; this.pWait = 0;

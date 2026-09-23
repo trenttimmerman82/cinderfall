@@ -513,7 +513,7 @@
     CF.HUD.show(false);
     const st = this.stats, acc = st.shots ? st.hits / st.shots : 0, hsr = st.kills ? st.headshots / st.kills : 0;
     const dKey = CF.settings.difficulty;
-    let g = acc * 100 * 0.35 + hsr * 100 * 0.25 + Math.max(0, 30 - st.deaths * 8) + (st.time < 900 ? 20 : st.time < 1500 ? 12 : 5) + (dKey === 'elite' ? 10 : dKey === 'recruit' ? -6 : 0);
+    let g = acc * 100 * 0.35 + hsr * 100 * 0.25 + Math.max(0, 30 - st.deaths * 8) + (st.time < 900 ? 20 : st.time < 1500 ? 12 : 5) + (dKey === 'elite' ? 10 : dKey === 'recruit' ? -6 : dKey === 'easy' ? -10 : 0);
     const rank = g >= 72 ? 'S' : g >= 58 ? 'A' : g >= 44 ? 'B' : g >= 30 ? 'C' : 'D';
     let best = 0;
     try { best = +localStorage.getItem('cinderfall.best.' + dKey) || 0; if (this.score > best) { localStorage.setItem('cinderfall.best.' + dKey, String(this.score)); } } catch (e) { /* storage unavailable */ }

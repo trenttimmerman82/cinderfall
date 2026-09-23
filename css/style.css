@@ -260,7 +260,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .btn-ghost:hover { border-color: var(--sodium); color: var(--sodium); }
 .btn-ghost.danger:hover { border-color: var(--ember); color: var(--ember); }
 
-.diff-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.diff-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .diff { display: grid; align-content: start; gap: 10px; padding: 18px 18px 16px; text-align: left; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.8); transition: border-color 0.15s, transform 0.15s, background 0.15s; }
 .diff:hover, .diff:focus-visible { border-color: var(--sodium); background: rgba(55, 243, 255, 0.08); transform: translateY(-2px); }
 .diff-name { font: 800 30px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; }
