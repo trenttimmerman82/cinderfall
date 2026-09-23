@@ -9,7 +9,7 @@
     ['Easy mode', 'A new difficulty for relaxed play. Drones and Stalker dogs go down in a few hits, and enemies hit softer.'],
     ['New weapons', 'Havoc RPG, Rotor-6 minigun (spins up before it fires), satchel charges (click to throw, right click or Q to detonate) and the Hex-9 SMG are now in the campaign. Keys 1–8 pick them.'],
     ['Attack drone', 'Get 5 kills without dying and press Z to launch a friendly drone that hunts enemies for 35 seconds.'],
-    ['Nuketown', 'A sunny suburban multiplayer map: two houses, a street and a school bus in the middle.'],
+    ['Nuketown', 'The classic 1950s test-site cul-de-sac: the yellow and green houses with full interiors, the school bus, the moving truck, the roadblock and the clock tower.'],
     ['New loadouts', 'Heavy (minigun + armor) and Demolition (RPG + satchels) in multiplayer.'],
     ['Leaderboard', 'Set your callsign and see how far each run got. Beat your furthest phase, then your score.'],
     ['New keys', 'Q aims and scopes, F is melee, X switches to your last weapon. Change them any time in Settings.'],

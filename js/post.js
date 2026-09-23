@@ -84,7 +84,8 @@
     const ftype = canHalf ? THREE.HalfFloatType : THREE.UnsignedByteType;
     this.hdr = canHalf;
     const opts = { type: ftype, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false, stencilBuffer: false };
-    this.rt = new THREE.WebGLRenderTarget(4, 4, Object.assign({}, opts, { depthBuffer: true, samples: this.isGL2 && q !== 'low' ? 4 : 0 }));
+    // stencil forces a 24-bit depth attachment (depth-only targets get 16 bits, which z-fights at range)
+    this.rt = new THREE.WebGLRenderTarget(4, 4, Object.assign({}, opts, { depthBuffer: true, stencilBuffer: true, samples: this.isGL2 && q !== 'low' ? 4 : 0 }));
     this.mips = []; this.ups = [];
     this.levels = 5;
     for (let i = 0; i < this.levels; i++) { this.mips.push(new THREE.WebGLRenderTarget(4, 4, opts)); this.ups.push(new THREE.WebGLRenderTarget(4, 4, opts)); }

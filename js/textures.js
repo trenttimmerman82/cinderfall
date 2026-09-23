@@ -470,6 +470,98 @@
       }
       T.list.planks = pack(rgb, hgt, rough, 1.5);
     }
+    // interiors: two 1950s wallpapers drawn with canvas shapes (small posies, climbing vines)
+    const paper = (bg, draw) => {
+      const c = makeCanvas(S, S), x = c.getContext('2d');
+      x.fillStyle = bg; x.fillRect(0, 0, S, S);
+      const n2 = tileNoise(S, 8, 8, 3, 1551), img = x.getImageData(0, 0, S, S), d = img.data;
+      for (let i = 0; i < S * S; i++) { const k = 0.94 + n2[i] * 0.08; d[i * 4] *= k; d[i * 4 + 1] *= k; d[i * 4 + 2] *= k; }
+      x.putImageData(img, 0, 0);
+      draw(x, S / 512);
+      return { map: toTex(c), roughnessMap: null, normalMap: null };
+    };
+    const posy = (x, cx, cy, k) => {
+      x.fillStyle = '#6f8f4a';
+      for (const a of [0.6, 2.4, 4.2]) { x.beginPath(); x.ellipse(cx + Math.cos(a) * 9 * k, cy + Math.sin(a) * 9 * k, 7 * k, 3.5 * k, a, 0, 6.3); x.fill(); }
+      x.fillStyle = '#b8483c';
+      for (let i = 0; i < 5; i++) { const a = i * 1.2566; x.beginPath(); x.arc(cx + Math.cos(a) * 4 * k, cy + Math.sin(a) * 4 * k, 3.6 * k, 0, 6.3); x.fill(); }
+      x.fillStyle = '#e8c86a'; x.beginPath(); x.arc(cx, cy, 2.4 * k, 0, 6.3); x.fill();
+    };
+    T.list.wallpaper = paper('#e9dcae', (x, k) => {
+      for (let r = 0; r < 8; r++) for (let q = 0; q < 8; q++) posy(x, (q * 64 + (r % 2) * 32 + 16) * k, (r * 64 + 20) * k, k);
+    });
+    T.list.wallpaper2 = paper('#e6dcc0', (x, k) => {
+      x.strokeStyle = '#6d8a4c'; x.lineWidth = 2.5 * k;
+      for (let q = 0; q < 4; q++) {
+        const bx = (q * 128 + 64) * k; x.beginPath();
+        for (let y = 0; y <= S; y += 4) { const xx = bx + Math.sin(y / S * Math.PI * 4) * 22 * k; if (y) x.lineTo(xx, y); else x.moveTo(xx, y); }
+        x.stroke();
+        for (let y = 16; y < S; y += 48) {
+          const xx = bx + Math.sin(y / S * Math.PI * 4) * 22 * k, side = (y / 48 | 0) % 2 ? 1 : -1;
+          x.fillStyle = '#7f9c58'; x.beginPath(); x.ellipse(xx + side * 12 * k, y, 10 * k, 4.5 * k, side * 0.6, 0, 6.3); x.fill();
+          x.fillStyle = '#a8433a'; x.beginPath(); x.arc(xx - side * 10 * k, y + 14 * k, 5 * k, 0, 6.3); x.fill();
+        }
+      }
+    });
+    // blue and cream checkerboard kitchen tile with grout
+    {
+      const n2 = tileNoise(S, 16, 16, 2, 1561), C = S / 8;
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, grout = (x % C) < 2 || (y % C) < 2, blue = (((x / C) | 0) + ((y / C) | 0)) % 2;
+        const v = 0.95 + (n2[i] - 0.5) * 0.08;
+        if (grout) { rgb[i * 3] = 0.55; rgb[i * 3 + 1] = 0.55; rgb[i * 3 + 2] = 0.52; hgt[i] = 0; }
+        else if (blue) { rgb[i * 3] = 0.2 * v; rgb[i * 3 + 1] = 0.3 * v; rgb[i * 3 + 2] = 0.55 * v; hgt[i] = 1; }
+        else { rgb[i * 3] = 0.9 * v; rgb[i * 3 + 1] = 0.88 * v; rgb[i * 3 + 2] = 0.8 * v; hgt[i] = 1; }
+        rough[i] = grout ? 0.9 : 0.35;
+      }
+      T.list.checker = pack(rgb, hgt, rough, 2);
+    }
+    // plush carpet (neutral, tinted by the material)
+    {
+      const n1 = tileNoise(S, 8, 8, 4, 1571), n2 = tileNoise(S, 128, 128, 1, 1572);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const v = 0.78 + (n1[i] - 0.5) * 0.12 + (n2[i] - 0.5) * 0.18; rgb[i * 3] = v; rgb[i * 3 + 1] = v; rgb[i * 3 + 2] = v; hgt[i] = n2[i]; rough[i] = 1; }
+      T.list.carpet = pack(rgb, hgt, rough, 1.2);
+    }
+    // fieldstone: jittered cells with deep mortar joints and per-stone colour
+    {
+      const G = 6, cs = S / G, pts = [];
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) pts.push([(i + 0.15 + rnd() * 0.7) * cs, (j + 0.15 + rnd() * 0.7) * cs, 0.55 + rnd() * 0.4, rnd()]);
+      const n2 = tileNoise(S, 32, 32, 3, 1581);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, gx = (x / cs) | 0, gy = (y / cs) | 0;
+        let d1 = 1e9, d2 = 1e9, best = null;
+        for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+          const cx = (gx + ox + G) % G, cy = (gy + oy + G) % G, p = pts[cy * G + cx];
+          const px = p[0] + (gx + ox - cx) * cs, py = p[1] + (gy + oy - cy) * cs, dd = Math.hypot(x - px, (y - py) * 1.4);
+          if (dd < d1) { d2 = d1; d1 = dd; best = p; } else if (dd < d2) d2 = dd;
+        }
+        const edge = sstep(3, 9, d2 - d1), v = best[2] * (0.8 + n2[i] * 0.35) * (0.45 + edge * 0.55), warm = best[3];
+        rgb[i * 3] = v * (0.92 + warm * 0.12); rgb[i * 3 + 1] = v * (0.88 + warm * 0.04); rgb[i * 3 + 2] = v * 0.8;
+        hgt[i] = edge * (0.7 + n2[i] * 0.3); rough[i] = 0.9;
+      }
+      T.list.stone = pack(rgb, hgt, rough, 3);
+    }
+    // desert dirt: tan with pebbles, dry patches and cracks
+    {
+      const n1 = tileNoise(S, 4, 4, 5, 1591, 0.55), n2 = tileNoise(S, 96, 96, 1, 1592), n3 = tileNoise(S, 16, 16, 3, 1593);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const peb = n2[i] > 0.82 ? (n2[i] - 0.82) * 4 : 0, crack = Math.abs(n3[i] - 0.5) < 0.012 ? 1 : 0;
+        const v = (0.72 + (n1[i] - 0.5) * 0.3 + peb * 0.4) * (1 - crack * 0.3);
+        rgb[i * 3] = v * 0.86; rgb[i * 3 + 1] = v * 0.72; rgb[i * 3 + 2] = v * 0.54;
+        hgt[i] = n1[i] * 0.3 + peb - crack; rough[i] = 0.97;
+      }
+      T.list.dirt = pack(rgb, hgt, rough, 2);
+    }
+    // white porch lattice (alpha-tested diagonal slats)
+    T.list.lattice = rgbaTex(256, 256, (u, v) => {
+      const a = ((u + v) * 4) % 1, b = ((u - v + 2) * 4) % 1;
+      const on = a < 0.22 || b < 0.22;
+      return [0.93, 0.93, 0.9, on ? 1 : 0];
+    }, { repeat: true });
   }
 
   T.build = async function (renderer, progress) {

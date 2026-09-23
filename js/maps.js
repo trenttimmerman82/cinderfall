@@ -59,23 +59,23 @@
       menuCam: (t, cam) => { const a = t * 0.035; cam.position.set(Math.sin(a) * 38, 9 + Math.sin(a * 1.3) * 2, Math.cos(a) * 38); cam.lookAt(0, 0, 0); }
     },
     nuketown: {
-      id: 'nuketown', name: 'Nuketown', mp: true, nav: false, blurb: 'Two houses, one street and a school bus. Sunny, small and frantic.',
-      bounds: { minX: -40, maxX: 40, minZ: -34, maxZ: 34 },
-      // plain daylight: blue sky, warm sun, no neon, no rain
+      id: 'nuketown', name: 'Nuketown', mp: true, nav: false, blurb: 'Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac.',
+      bounds: { minX: -44, maxX: 44, minZ: -48, maxZ: 48 },
+      // hazy Nevada daylight: warm dusty air, blue sky overhead, no neon, no rain
       theme: base({
-        fog: [0.55, 0.66, 0.8], fogDensity: 0.0022,
-        hemi: [0xbcd4ff, 0x4a4a30, 0.55], moon: { color: 0xfff0d8, intensity: 1.5, dir: [0.45, 0.8, 0.35] },
-        sky: { zen: [0.16, 0.34, 0.72], hor: [0.66, 0.76, 0.88], glow: [0.5, 0.42, 0.28], glowDir: [0.45, 0.35], glow2: [0, 0, 0], glow2Dir: [-1, 0],
-          cloudDark: [0.72, 0.75, 0.8], cloudLit: [1.05, 1.02, 0.97], stars: 0, moon: 3 },
-        env: { top: [0.55, 0.7, 0.95], bottom: [0.35, 0.33, 0.26], band: [0.45, 0.45, 0.4], panels: [[1.6, 1.55, 1.45], [1.3, 1.4, 1.6], [1.5, 1.4, 1.2], [1.4, 1.4, 1.4]] },
+        fog: [0.78, 0.73, 0.64], fogDensity: 0.003,
+        hemi: [0xcfdcec, 0x6a5a40, 0.6], moon: { color: 0xfff0d4, intensity: 1.6, dir: [0.55, 0.72, 0.42] },
+        sky: { zen: [0.2, 0.38, 0.68], hor: [0.82, 0.77, 0.68], glow: [0.5, 0.42, 0.28], glowDir: [0.55, 0.42], glow2: [0.12, 0.1, 0.06], glow2Dir: [-1, 0],
+          cloudDark: [0.74, 0.74, 0.76], cloudLit: [1.05, 1.02, 0.96], stars: 0, moon: 3 },
+        env: { top: [0.55, 0.68, 0.9], bottom: [0.42, 0.36, 0.26], band: [0.55, 0.5, 0.42], panels: [[1.6, 1.55, 1.45], [1.3, 1.4, 1.6], [1.5, 1.4, 1.2], [1.4, 1.4, 1.4]] },
         poolMul: 0, rainBright: 0, embers: 0,
         skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
         rain: { count: 0, roofs: [] }, traffic: { count: 0 },
-        post: { bloom: 0.08, exposure: 0.75, sat: 1.2, shadow: [0, 0, 0], high: [0, 0, 0], threshold: 1.6 },
+        post: { bloom: 0.08, exposure: 0.78, sat: 1.12, shadow: [0, 0, 0], high: [0.01, 0.004, -0.008], threshold: 1.6 },
         wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
       }),
       build: () => CF.MapNuketown.build(),
-      menuCam: (t, cam) => { const a = t * 0.04; cam.position.set(Math.sin(a) * 30, 12 + Math.sin(a * 1.3) * 2, Math.cos(a) * 30); cam.lookAt(0, 2, 0); }
+      menuCam: (t, cam) => { const a = t * 0.04; cam.position.set(Math.sin(a) * 34, 14 + Math.sin(a * 1.3) * 2, Math.cos(a) * 34); cam.lookAt(0, 2, 0); }
     }
   };
   CF.mpMaps = ['market', 'rooftops', 'nuketown'];
