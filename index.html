@@ -1652,9 +1652,9 @@ window.CF = window.CF || {};
       v *= 1 - wet * 0.4; v *= 1 - crack[i] * 0.6;
       rgb[i * 3] = v * 0.97; rgb[i * 3 + 1] = v * 0.98; rgb[i * 3 + 2] = v * 1.02;
       hgt[i] = n3[i] * 0.5 + n1[i] * 0.3 - crack[i] - wet * 0.3;
-      rough[i] = 0.92 - wet * 0.38;
+      rough[i] = 0.93 - wet * 0.7;
     }
-    T.list.asphalt = { map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, 1.6), roughnessMap: grayTex(S, S, rough) };
+    T.list.asphalt = { map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, 1.1), roughnessMap: grayTex(S, S, rough) };
   }
 
   function makeDiamond() {
@@ -2372,9 +2372,10 @@ window.CF = window.CF || {};
   // HDR colours for unlit (MeshBasic) neon, and matching light colours
   N.C = {
     cyan: [0.35, 3.1, 4.2], magenta: [4.4, 0.45, 3.3], violet: [2.1, 0.8, 5.2], yellow: [4.6, 3.8, 0.45],
-    red: [5.6, 0.4, 0.8], green: [0.6, 4.4, 1.9], white: [3.3, 3.5, 4.0], orange: [5.0, 1.9, 0.35], pink: [5.0, 1.2, 2.6]
+    red: [5.6, 0.4, 0.8], green: [0.6, 4.4, 1.9], white: [3.3, 3.5, 4.0], orange: [5.0, 1.9, 0.35], pink: [5.0, 1.2, 2.6],
+    sodium: [4.8, 2.7, 1.1], led: [3.4, 3.6, 3.9]
   };
-  N.HEX = { cyan: 0x36e7ff, magenta: 0xff3cc8, violet: 0x9d5cff, yellow: 0xffe14d, red: 0xff3355, green: 0x4dff9a, white: 0xdfe8ff, orange: 0xff8a2a, pink: 0xff6fb8 };
+  N.HEX = { cyan: 0x36e7ff, magenta: 0xff3cc8, violet: 0x9d5cff, yellow: 0xffe14d, red: 0xff3355, green: 0x4dff9a, white: 0xdfe8ff, orange: 0xff8a2a, pink: 0xff6fb8, sodium: 0xffac5c, led: 0xe4ecff };
   N.names = Object.keys(N.C);
 
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -2450,7 +2451,7 @@ window.CF = window.CF || {};
     x.fillStyle = '#15161d'; x.fillRect(0, 0, S, S);
     y.fillStyle = '#000'; y.fillRect(0, 0, S, S);
     const cols = 8, rows = 4, cw = S / cols, rh = S / rows;
-    const lit = ['#ffd9a0', '#ffd9a0', '#ffe8c8', '#36e7ff', '#ff3cc8', '#9d5cff', '#8fb8ff'];
+    const lit = ['#ffc98a', '#ffd9a0', '#ffe2bd', '#ffb870', '#e4ecff', '#cfdcf5', '#ffd9a0', '#36e7ff'];
     for (let r = 0; r < rows; r++) {
       x.fillStyle = '#0c0d12'; x.fillRect(0, r * rh, S, 7);
       for (let c = 0; c < cols; c++) {
@@ -2460,6 +2461,8 @@ window.CF = window.CF || {};
           const col = lit[Math.floor(rnd() * lit.length)], k = 0.25 + rnd() * 0.55;
           y.globalAlpha = k; y.fillStyle = col; y.fillRect(wx, wy, ww, wh);
           if (rnd() < 0.3) { y.globalAlpha = k * 0.6; y.fillStyle = '#000'; y.fillRect(wx, wy + wh * (0.3 + rnd() * 0.4), ww, 3); }
+          if (rnd() < 0.35) { y.globalAlpha = 0.55; y.fillStyle = '#000'; for (let b = wy + 3; b < wy + wh; b += 6) y.fillRect(wx, b, ww, 2); } // blinds
+          if (rnd() < 0.3) { y.globalAlpha = 0.7; y.fillStyle = '#000'; y.fillRect(wx + ww * (0.25 + rnd() * 0.5), wy, ww, wh); } // curtain
           y.globalAlpha = 1;
           x.fillStyle = col; x.globalAlpha = 0.25; x.fillRect(wx, wy, ww, wh); x.globalAlpha = 1;
         }
@@ -2704,18 +2707,21 @@ window.CF = window.CF || {};
     // neon city
     for (const n in CF.Neon.C) { const c = CF.Neon.C[n]; M['neon_' + n] = basic(c[0], c[1], c[2]); }
     const fa = CF.Neon.facade();
-    M.facade = std({ map: fa.map, emissiveMap: fa.emissiveMap, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.5, roughness: 0.32, metalness: 0.55, envMapIntensity: 1.0 });
+    M.facade = std({ map: fa.map, emissiveMap: fa.emissiveMap, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.2, roughness: 0.62, metalness: 0.3, envMapIntensity: 0.45 });
     M.glass = std({ color: 0x0b1220, roughness: 0.08, metalness: 0.9, envMapIntensity: 1.4 });
     M.tile = std(Object.assign(tri(T.metalFloor), { color: 0x6c6f7a, metalness: 0.4 }));
   };
   /** Wet-night tuning: glossier ground and stronger reflections. */
   L.applyTheme = function (th) {
     const M = this.mats;
+    this.poolMul = th.poolMul != null ? th.poolMul : 1;
     if (th.wet) {
-      M.asphalt.roughness = 0.5; M.asphalt.envMapIntensity = 1.3; M.asphalt.color.setRGB(0.8, 0.8, 0.86);
-      M.concrete.roughness = 0.78; M.concrete.envMapIntensity = 0.9;
-      M.metalFloor.roughness = 0.7; M.metalFloor.envMapIntensity = 1.1;
-      for (const k of ['wall', 'wallRust', 'paintGrey', 'paintDark', 'steel']) M[k].envMapIntensity = 0.9;
+      // the roughness map carries the puddles; only they read as mirror-wet
+      M.asphalt.roughness = 1; M.asphalt.envMapIntensity = 0.7; M.asphalt.color.setRGB(0.74, 0.74, 0.76); M.asphalt.normalScale.set(0.55, 0.55);
+      M.concrete.roughness = 0.9; M.concrete.envMapIntensity = 0.5;
+      M.metalFloor.roughness = 0.85; M.metalFloor.envMapIntensity = 0.65;
+      for (const k of ['wall', 'wallRust', 'paintGrey', 'paintDark', 'steel']) M[k].envMapIntensity = 0.6;
+      M.facade.envMapIntensity = 0.45; M.glass.envMapIntensity = 0.85;
     }
   };
 
@@ -2844,7 +2850,7 @@ window.CF = window.CF || {};
     const gy = o.groundY != null ? o.groundY : W.groundHeight(lamp.pos.x, lamp.pos.y - 0.3, lamp.pos.z);
     lamp.groundY = gy;
     if (o.pool !== false) {
-      const size = o.poolSize || lamp.distance * 0.75, k = o.poolStrength || 0.32, c = lamp.color;
+      const size = o.poolSize || lamp.distance * 0.75, k = (o.poolStrength || 0.32) * (this.poolMul || 1), c = lamp.color;
       this.groundQuad(this.poolGeo, lamp.pos.x, gy + 0.02, lamp.pos.z, size, size, 0, [c.r * k, c.g * k, c.b * k]);
     }
     if (o.cone) this.addCone(lamp, o.cone);
@@ -2854,7 +2860,7 @@ window.CF = window.CF || {};
     const geo = new THREE.ConeGeometry(radius, h, 24, 1, true);
     geo.translate(0, -h / 2, 0);
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: lamp.color.clone().multiplyScalar(0.09) }, uOn: { value: 1 } },
+      uniforms: { uColor: { value: lamp.color.clone().multiplyScalar(0.07) }, uOn: { value: 1 } },
       vertexShader: 'varying float vY; varying float vF; uniform float uH; void main(){ vY = uv.y; vec4 mv = modelViewMatrix*vec4(position,1.0); vec3 n = normalize(normalMatrix*normal); vF = abs(dot(n, normalize(-mv.xyz))); gl_Position = projectionMatrix*mv; }',
       fragmentShader: 'uniform vec3 uColor; uniform float uOn; varying float vY; varying float vF; void main(){ float a = pow(clamp(vY, 0.0, 1.0), 1.6) * pow(clamp(vF, 0.0, 1.0), 1.8) * uOn; gl_FragColor = vec4(uColor * a, 1.0); }',
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
@@ -2945,6 +2951,32 @@ window.CF = window.CF || {};
     '}'
   ].join('\n');
   const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+  // Distant towers: window grid computed per pixel (no geometry), with atmospheric haze.
+  const TOWER_VS = 'varying vec3 vW; varying vec3 vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normal; gl_Position = projectionMatrix * viewMatrix * w; }';
+  const TOWER_FS = [
+    'uniform vec3 uSil; uniform vec3 uHaze; uniform float uBase; uniform float uLit; uniform float uHazeD;',
+    'varying vec3 vW; varying vec3 vN;',
+    'float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }',
+    'void main(){',
+    ' vec3 col = uSil; vec3 n = abs(normalize(vN));',
+    ' if (n.y < 0.5) {',
+    '  float u = n.x > n.z ? vW.z : vW.x;',
+    '  vec2 c = vec2(u / 2.6, (vW.y - uBase) / 3.3); vec2 id = floor(c); vec2 f = fract(c);',
+    '  float frame = step(0.16, f.x) * step(f.x, 0.84) * step(0.24, f.y) * step(f.y, 0.78);',
+    '  float blk = h21(floor(vW.xz / 34.0) + 7.0);',
+    '  float h = h21(id + blk * 97.0);',
+    '  float lit = step(1.0 - uLit * (0.35 + blk * 1.2), h) * step(2.0, id.y);',
+    '  float t = fract(h * 17.31);',
+    '  vec3 wc = t < 0.55 ? vec3(1.0, 0.7, 0.4) : t < 0.92 ? vec3(0.6, 0.76, 1.0) : vec3(0.3, 1.0, 1.1);',
+    '  col += frame * lit * wc * (0.3 + 0.7 * fract(h * 7.7)) * 0.85;',
+    '  col += frame * (1.0 - lit) * vec3(0.004, 0.005, 0.007);',
+    '  col *= 0.75 + 0.25 * step(0.08, fract(c.y));',
+    ' }',
+    ' float d = length(vW - cameraPosition);',
+    ' col = mix(col, uHaze, 1.0 - exp(-d * uHazeD));',
+    ' gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n');
   L.buildSky = function (moonDir, th) {
     const k = th.sky;
     const mat = new THREE.ShaderMaterial({
@@ -3001,7 +3033,7 @@ window.CF = window.CF || {};
       const top = base + (tower ? h * 1.8 : h);
       if (rnd() < 0.55) beacons.push([x, top + 1, z]);
       if (!tower) {
-        const nw = Math.floor(rnd() * (k.windows || 14));
+        const nw = Math.floor(rnd() * (k.windows != null ? k.windows : 14));
         for (let n = 0; n < nw; n++) {
           const side = Math.floor(rnd() * 4), wy = base + 2 + rnd() * h * 0.92;
           const wx = side < 2 ? x + (rnd() - 0.5) * w * 0.85 : x + (side === 2 ? -1 : 1) * (w / 2 + 0.05);
@@ -3020,8 +3052,12 @@ window.CF = window.CF || {};
       for (const s of stacks) { push(sil, cyl, this.mat4(s[0], 26, s[1], 0, 0, 0, 1.6, 52, 1.6)); beacons.push([s[0], 45, s[1]]); }
       this.flareStacks = stacks.map((s) => new THREE.Vector3(s[0], 53, s[1]));
     } else this.flareStacks = null;
-    const mk = (t, mat) => { if (!t.idx.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(t.pos, 3)); g.setIndex(t.idx); const m = new THREE.Mesh(g, mat); m.frustumCulled = false; this.scene.add(m); return m; };
-    mk(sil, new THREE.MeshBasicMaterial({ color: new THREE.Color(k.sil[0], k.sil[1], k.sil[2]), fog: false }));
+    const mk = (t, mat, nrm) => { if (!t.idx.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(t.pos, 3)); if (nrm) g.setAttribute('normal', new THREE.Float32BufferAttribute(t.nrm, 3)); g.setIndex(t.idx); const m = new THREE.Mesh(g, mat); m.frustumCulled = false; this.scene.add(m); return m; };
+    const haze = th.fog || [0.02, 0.02, 0.025];
+    mk(sil, new THREE.ShaderMaterial({
+      uniforms: { uSil: { value: v3(k.sil) }, uHaze: { value: new THREE.Vector3(haze[0] * 1.3, haze[1] * 1.3, haze[2] * 1.3) }, uBase: { value: base }, uLit: { value: k.lit != null ? k.lit : 0.3 }, uHazeD: { value: k.haze != null ? k.haze : 0.0032 } },
+      vertexShader: TOWER_VS, fragmentShader: TOWER_FS, fog: false
+    }), true);
     wins.forEach((t, i) => { const c = k.win[i]; mk(t, new THREE.MeshBasicMaterial({ color: new THREE.Color(c[0], c[1], c[2]), fog: false })); });
     const bg = B();
     for (const b of beacons) push(bg, this.geo('sphere'), this.mat4(b[0], b[1], b[2], 0, 0, 0, 0.9, 0.9, 0.9));
@@ -3206,7 +3242,8 @@ window.CF = window.CF || {};
     L.blob(x, z, lx + 0.8, lz + 0.8);
   }
   let flickerN = 0, lampN = 0;
-  const LAMP_PAL = ['cyan', 'magenta', 'violet', 'cyan', 'yellow', 'magenta'];
+  const LAMP_PAL = ['cyan', 'magenta', 'violet', 'cyan', 'yellow', 'magenta'];  // neon collar on the pole
+  const HEAD_PAL = ['sodium', 'led', 'sodium', 'sodium', 'led'];              // the lamp itself: real street lighting
   function lampPost(x, z, dx, dz, o) {
     o = o || {};
     L.box(x - 0.35, 0, z - 0.35, x + 0.35, 0.5, z + 0.35, 'concrete');
@@ -3214,12 +3251,13 @@ window.CF = window.CF || {};
     const ax = x + dx * 1.4, az = z + dz * 1.4;
     L.box(Math.min(x, ax) - 0.07, 7.35, Math.min(z, az) - 0.07, Math.max(x, ax) + 0.07, 7.5, Math.max(z, az) + 0.07, 'paintGrey', { noCol: true });
     L.box(ax - 0.36, 7.1, az - 0.22, ax + 0.36, 7.38, az + 0.22, 'paintDark', { noCol: true });
-    const cn = o.color || LAMP_PAL[lampN++ % LAMP_PAL.length];
-    let key = 'neon_' + cn, mat = null;
-    if (o.flicker) { key = 'lampFlicker' + (flickerN++); mat = L.mats[key] = L.mats['neon_' + cn].clone(); }
+    const cn = o.color || LAMP_PAL[lampN % LAMP_PAL.length], hn = o.head || HEAD_PAL[lampN % HEAD_PAL.length];
+    lampN++;
+    let key = 'neon_' + hn, mat = null;
+    if (o.flicker) { key = 'lampFlicker' + (flickerN++); mat = L.mats[key] = L.mats['neon_' + hn].clone(); }
     L.box(ax - 0.29, 7.05, az - 0.16, ax + 0.29, 7.1, az + 0.16, key, { noCol: true, ao: false });
     L.box(x - 0.14, 2.2, z - 0.14, x + 0.14, 2.35, z + 0.14, 'neon_' + cn, { noCol: true, ao: false });
-    return L.lamp(ax, 6.9, az, { color: CF.Neon.HEX[cn], intensity: 2.6, distance: 21, cone: 3.8, flicker: o.flicker, mat, poolStrength: 0.42 });
+    return L.lamp(ax, 6.9, az, { color: CF.Neon.HEX[hn], intensity: 2.6, distance: 21, cone: 3.8, flicker: o.flicker, mat, poolStrength: 0.42 });
   }
   function barrel(x, z, y) { L.addBarrel(x, y || 0, z); L.blob(x, z, 1.1, 1.1, y || 0); }
   function stairs(x0, z0, x1, z1, yBase, yTop, dir, m) {
@@ -3522,7 +3560,7 @@ window.CF = window.CF || {};
 
     // ---------------------------------------------------------------- points, spawns, placements
     // neon dressing: signs, holo adverts, vending machines, edge strips
-    CF.Neon.strip(-18, 6.35, 44.9, 18, 6.45, 45.0, 'magenta');
+    CF.Neon.strip(-18, 6.37, 44.92, 18, 6.43, 45.0, 'led');
     CF.Neon.sign('POWER', 'yellow', 41.9, 3.7, 17.5, 'x-', 0.8, { distance: 9 });
     CF.Neon.sign('PUMP 02', 'cyan', -41.9, 3.7, 6.2, 'x+', 0.8, { distance: 9 });
     CF.Neon.sign('UPLINK', 'green', 50, 3.6, -33.8, 'z+', 0.9, { distance: 10 });
@@ -3578,19 +3616,21 @@ window.CF = window.CF || {};
 (function (CF) {
   const base = (over) => {
     const t = {
-      fog: [0.03, 0.019, 0.048], fogDensity: 0.016,
-      hemi: [0x3d3068, 0x170d1c, 0.62], moon: { color: 0x8f86ff, intensity: 0.42, dir: [0.4, 0.55, -0.73] },
+      // realistic wet night: neutral blue-grey air, sodium-lit low clouds, neon only where the signs are
+      fog: [0.021, 0.023, 0.028], fogDensity: 0.017,
+      hemi: [0x3b4350, 0x17140f, 0.5], moon: { color: 0xaab8d6, intensity: 0.34, dir: [0.4, 0.55, -0.73] },
       sky: {
-        zen: [0.004, 0.003, 0.012], hor: [0.052, 0.022, 0.078], glow: [0.34, 0.04, 0.25], glowDir: [0, -1],
-        glow2: [0.02, 0.14, 0.24], glow2Dir: [1, 0.3], cloudDark: [0.012, 0.008, 0.022], cloudLit: [0.24, 0.045, 0.21], stars: 0.22, moon: 0.45
+        zen: [0.003, 0.004, 0.007], hor: [0.034, 0.032, 0.036], glow: [0.15, 0.075, 0.04], glowDir: [0, -1],
+        glow2: [0.05, 0.035, 0.07], glow2Dir: [1, 0.3], cloudDark: [0.009, 0.01, 0.013], cloudLit: [0.13, 0.085, 0.06], stars: 0.04, moon: 0.3
       },
-      env: { top: [0.014, 0.009, 0.032], bottom: [0.04, 0.022, 0.05], band: [0.3, 0.05, 0.24], panels: [[0.5, 4, 6], [6, 0.6, 4.5], [6, 3.4, 1.5], [3, 1, 6]] },
+      env: { top: [0.011, 0.012, 0.016], bottom: [0.028, 0.026, 0.026], band: [0.11, 0.07, 0.05], panels: [[0.3, 1.5, 2.1], [2.0, 0.35, 1.5], [2.3, 1.7, 0.8], [1.5, 1.5, 1.7]] },
+      poolMul: 0.5, rainBright: 0.3,
       skyline: {
-        r0: 140, r1: 300, clearX: 110, clearZ: 100, hMin: 16, hMax: 120, count: 95, windows: 22, base: 0,
-        win: [[0.4, 2.2, 3.0], [3.0, 0.4, 2.3], [2.2, 1.3, 0.5], [1.5, 0.6, 3.0]], sil: [0.007, 0.005, 0.013], neon: true, holo: 10, flares: false, seed: 77
+        r0: 140, r1: 300, clearX: 110, clearZ: 100, hMin: 16, hMax: 120, count: 95, windows: 0, lit: 0.3, haze: 0.0032, base: 0,
+        win: [[1.5, 1.12, 0.66], [0.85, 1.05, 1.35], [1.25, 0.95, 0.55], [0.35, 1.7, 2.3]], sil: [0.006, 0.006, 0.008], neon: true, holo: 7, flares: false, seed: 77
       },
       rain: { count: 2600, roofs: [] }, traffic: { count: 40, minAlt: 28, maxAlt: 95 },
-      post: { bloom: 0.92, exposure: 1.32, sat: 1.12, shadow: [-0.012, 0.004, 0.026], high: [0.03, -0.008, 0.022], threshold: 0.92 },
+      post: { bloom: 0.6, exposure: 1.42, sat: 0.97, shadow: [-0.004, 0.001, 0.007], high: [0.012, 0.004, -0.006], threshold: 1.12 },
       wet: true
     };
     return Object.assign(t, over || {});
@@ -8245,7 +8285,7 @@ window.CF = window.CF || {};
     CF.Enemies.init(scene);
     CF.Weapons.scene = scene;
     const rc = th.rain && th.rain.count ? Math.round(th.rain.count * (q === 'low' ? 0.5 : 1)) : 0;
-    this.rain = rc ? new CF.Neon.Rain(scene, rc, { roofs: th.rain.roofs }) : null;
+    this.rain = rc ? new CF.Neon.Rain(scene, rc, { roofs: th.rain.roofs, bright: th.rainBright, len: 0.6 }) : null;
     this.traffic = th.traffic && th.traffic.count ? new CF.Neon.Traffic(scene, th.traffic.count, th.traffic) : null;
     CF.Post.setState(th.post);
     for (const p of L.pickups) this.makePickupMesh(p);
@@ -8829,8 +8869,9 @@ window.CF = window.CF || {};
     A.update(raw, cam);
   };
   G.menuCamera = function () {
-    const cam = this.camera;
-    this.mapDef.menuCam(this.menuT, cam);
+    const cam = this.camera, h = this.camHold;
+    if (h) { cam.position.set(h[0], h[1], h[2]); cam.rotation.set(h[4] || 0, h[3] || 0, 0, 'YXZ'); }
+    else this.mapDef.menuCam(this.menuT, cam);
     if (cam.fov !== 62) { cam.fov = 62; cam.updateProjectionMatrix(); }
     cam.updateMatrixWorld();
   };
@@ -9116,6 +9157,7 @@ window.CF = window.CF || {};
     join: (code) => { $('mpCode').value = code; G.mpStart(false); },
     deploy: () => { CF.Input.freeLook = true; G.mpResume(); return G.state; },
     map: (id) => G.loadMap(id),
+    view: async (id, x, y, z, yaw, pitch) => { await G.loadMap(id); G.showScreen(null); G.camHold = x == null ? null : [x, y, z, yaw || 0, pitch || 0]; return G.mapId; },
     info: () => ({ state: G.state, mode: G.mode, map: G.mapId, phase: CF.Mission.phase && CF.Mission.phase.id, pos: CF.Player.body.pos.toArray().map((v) => +v.toFixed(2)), hp: Math.round(CF.Player.health), armor: Math.round(CF.Player.armor), enemies: CF.Enemies.alive(), score: G.score, weapon: CF.Weapons.curId, scale: CF.Post.effScale })
   };
 
