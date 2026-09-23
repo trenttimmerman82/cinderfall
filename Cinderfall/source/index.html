@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cinderfall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="view" tabindex="-1"></canvas>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" hidden>
+    <div class="hud-top">
+      <div class="compass" id="compass">
+        <div class="compass-strip" id="compassStrip"></div>
+        <div class="compass-obj" id="compassObj"></div>
+        <div class="compass-caret"></div>
+        <div class="compass-heading" id="compassHeading">000</div>
+      </div>
+    </div>
+
+    <div class="objective" id="objPanel">
+      <div class="obj-phase" id="objPhase">Phase 01 · The Yard</div>
+      <div class="obj-text" id="objText">Eliminate hostiles</div>
+      <div class="obj-meter" id="objMeter"><div class="obj-fill" id="objFill"></div></div>
+      <div class="obj-count" id="objCount"></div>
+    </div>
+
+    <div class="score" id="scoreBox"><span class="score-label">Score</span><span id="scoreNum">0</span></div>
+
+    <div class="world-marker" id="worldMarker" hidden>
+      <div class="wm-icon"></div>
+      <div class="wm-label" id="wmLabel">Objective</div>
+      <div class="wm-dist" id="wmDist">0 m</div>
+    </div>
+
+    <div class="crosshair" id="crosshair">
+      <i class="ch ch-t"></i><i class="ch ch-b"></i><i class="ch ch-l"></i><i class="ch ch-r"></i><i class="ch-dot"></i>
+    </div>
+    <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+    <div class="dmg-ring" id="dmgRing"></div>
+    <div class="popups" id="popups"></div>
+    <div class="dmg-numbers" id="dmgNumbers"></div>
+    <div class="killfeed" id="killfeed"></div>
+
+    <div class="vitals">
+      <div class="vital-row armor-row">
+        <span class="vital-tag">Armor</span>
+        <div class="vital-bar armor"><div class="vital-fill" id="armorFill"></div></div>
+        <span class="vital-num" id="armorNum">0</span>
+      </div>
+      <div class="vital-row health-row">
+        <span class="vital-tag">Health</span>
+        <div class="vital-bar health"><div class="vital-ghost" id="healthGhost"></div><div class="vital-fill" id="healthFill"></div></div>
+        <span class="vital-num" id="healthNum">100</span>
+      </div>
+    </div>
+
+    <div class="weapon-panel">
+      <div class="ammo">
+        <span class="ammo-mag" id="ammoMag">30</span>
+        <span class="ammo-res" id="ammoRes">/ 180</span>
+      </div>
+      <div class="weapon-name" id="weaponName">M7 Vanguard</div>
+      <div class="weapon-slots" id="weaponSlots"></div>
+      <div class="grenades" id="grenades"></div>
+    </div>
+
+    <div class="interact" id="interact" hidden>
+      <svg class="interact-ring" viewBox="0 0 44 44" aria-hidden="true">
+        <circle class="ir-track" cx="22" cy="22" r="18"></circle>
+        <circle class="ir-fill" id="interactFill" cx="22" cy="22" r="18"></circle>
+      </svg>
+      <span class="interact-key">E</span>
+      <span class="interact-text" id="interactText">Hold to restore power</span>
+    </div>
+
+    <div class="hint" id="hint" hidden></div>
+
+    <div class="radio" id="radio" hidden>
+      <div class="radio-who" id="radioWho">Overwatch</div>
+      <div class="radio-line" id="radioLine"></div>
+    </div>
+
+    <div class="boss" id="bossBar" hidden>
+      <div class="boss-head"><span class="boss-name">The Warden</span><span class="boss-stage" id="bossStage">Shoulder cores</span></div>
+      <div class="boss-track"><div class="boss-fill" id="bossFill"></div></div>
+    </div>
+
+    <div class="scope" id="scope" hidden>
+      <div class="scope-glass"></div>
+      <div class="scope-reticle"><i class="sr-h"></i><i class="sr-v"></i><i class="sr-c"></i></div>
+      <div class="scope-read" id="scopeRead">3.5x · 0 m</div>
+    </div>
+
+    <div class="phase-card" id="phaseCard" hidden>
+      <div class="pc-num" id="pcNum">Phase 01</div>
+      <div class="pc-title" id="pcTitle">The Yard</div>
+      <div class="pc-sub" id="pcSub"></div>
+    </div>
+
+    <div class="fps" id="fps" hidden>0 fps</div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <!-- ===================== SCREENS ===================== -->
+  <section class="screen loading" id="screen-loading">
+    <div class="load-wrap">
+      <div class="logo logo-sm">CINDER<b>FALL</b></div>
+      <div class="load-track"><div class="load-fill" id="loadFill"></div></div>
+      <div class="load-status" id="loadStatus">Initializing renderer</div>
+    </div>
+  </section>
+
+  <section class="screen main" id="screen-main" hidden>
+    <div class="main-col">
+      <div class="eyebrow">Cinder Station · Foundry Sector 7 · 03:10 local</div>
+      <h1 class="logo">CINDER<b>FALL</b></h1>
+      <p class="tagline">The station's security AI has turned its machines on the night shift. You are the only operative on the ground.</p>
+      <nav class="menu" aria-label="Main menu">
+        <button class="menu-item" data-act="deploy"><span class="mi-label">Deploy</span><span class="mi-note">Start the mission</span></button>
+        <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Controls, video, audio</span></button>
+        <button class="menu-item" data-act="manual"><span class="mi-label">Field manual</span><span class="mi-note">Keys and tactics</span></button>
+      </nav>
+    </div>
+    <div class="main-foot">
+      <span>Mouse and keyboard required</span>
+      <span>Build 1.0 · three.js r147</span>
+    </div>
+    <div class="touch-note" id="touchNote" hidden>Cinderfall needs a mouse and keyboard. Open it on a desktop browser to play.</div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-difficulty" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Deploy</span><h2>Choose your threat level</h2></header>
+      <div class="diff-grid">
+        <button class="diff" data-diff="recruit">
+          <span class="diff-name">Recruit</span>
+          <span class="diff-desc">Machines hit softly and miss often. Health recovers quickly.</span>
+          <span class="diff-stat">Enemy damage 60%</span>
+        </button>
+        <button class="diff" data-diff="veteran">
+          <span class="diff-name">Veteran</span>
+          <span class="diff-desc">The intended fight. Use cover, keep moving, and manage your ammo.</span>
+          <span class="diff-stat">Enemy damage 100%</span>
+        </button>
+        <button class="diff" data-diff="elite">
+          <span class="diff-name">Elite</span>
+          <span class="diff-desc">Accurate, aggressive machines. Every mistake costs you.</span>
+          <span class="diff-stat">Enemy damage 150%</span>
+        </button>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-settings" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Settings</span><h2>Tune your rig</h2></header>
+      <div class="settings-grid">
+        <fieldset>
+          <legend>Controls</legend>
+          <label class="set-row"><span>Mouse sensitivity</span><input type="range" id="setSens" min="0.1" max="3" step="0.05"><output id="outSens"></output></label>
+          <label class="set-row"><span>Aim-down-sights sensitivity</span><input type="range" id="setAds" min="0.3" max="1.5" step="0.05"><output id="outAds"></output></label>
+          <label class="set-row toggle"><span>Invert vertical look</span><input type="checkbox" id="setInvert"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Video</legend>
+          <label class="set-row"><span>Field of view</span><input type="range" id="setFov" min="70" max="110" step="1"><output id="outFov"></output></label>
+          <label class="set-row"><span>Graphics quality</span>
+            <select id="setQuality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+          </label>
+          <label class="set-row"><span>Camera shake</span><input type="range" id="setShake" min="0" max="1" step="0.05"><output id="outShake"></output></label>
+          <label class="set-row toggle"><span>Show frame rate</span><input type="checkbox" id="setFps"></label>
+          <label class="set-row toggle"><span>Show damage numbers</span><input type="checkbox" id="setDmgNum"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Audio</legend>
+          <label class="set-row"><span>Master volume</span><input type="range" id="setMaster" min="0" max="1" step="0.05"><output id="outMaster"></output></label>
+          <label class="set-row"><span>Music</span><input type="range" id="setMusic" min="0" max="1" step="0.05"><output id="outMusic"></output></label>
+          <label class="set-row"><span>Effects</span><input type="range" id="setSfx" min="0" max="1" step="0.05"><output id="outSfx"></output></label>
+        </fieldset>
+      </div>
+      <p class="set-note" id="qualityNote" hidden>Graphics quality changes apply the next time the page loads.</p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-manual" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Field manual</span><h2>Keys and tactics</h2></header>
+      <div class="manual-grid">
+        <dl class="keys">
+          <div><dt>W A S D</dt><dd>Move</dd></div>
+          <div><dt>Mouse</dt><dd>Look</dd></div>
+          <div><dt>Left click</dt><dd>Fire</dd></div>
+          <div><dt>Right click</dt><dd>Aim down sights</dd></div>
+          <div><dt>Shift</dt><dd>Sprint · steady scope</dd></div>
+          <div><dt>Space</dt><dd>Jump · mantle ledges</dd></div>
+          <div><dt>C</dt><dd>Crouch · slide while sprinting</dd></div>
+          <div><dt>R</dt><dd>Reload</dd></div>
+          <div><dt>E</dt><dd>Interact (hold)</dd></div>
+          <div><dt>G</dt><dd>Throw grenade</dd></div>
+          <div><dt>V</dt><dd>Melee</dd></div>
+          <div><dt>1 – 4 · Wheel</dt><dd>Switch weapon</dd></div>
+          <div><dt>Q</dt><dd>Last weapon</dd></div>
+          <div><dt>Esc</dt><dd>Pause</dd></div>
+        </dl>
+        <div class="tactics">
+          <h3>Know the machines</h3>
+          <p><b>Sentry</b> — rifle-armed biped. The head is a weak point for double damage.</p>
+          <p><b>Stalker</b> — fast quadruped that pounces. Back-pedal and shoot, or slide past it.</p>
+          <p><b>Hornet</b> — flying drone. Fragile, but it strafes. Short bursts work best.</p>
+          <p><b>Juggernaut</b> — heavy with a rocket pod. Its red laser marks the target. Flank it and hit the glowing back vent.</p>
+          <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
+        </div>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-pause" hidden>
+    <div class="panel narrow">
+      <header class="panel-head"><span class="eyebrow" id="pauseWhere">Phase 01</span><h2>Paused</h2></header>
+      <nav class="stack">
+        <button class="btn" data-act="resume">Resume</button>
+        <button class="btn-ghost" data-act="restart">Restart from checkpoint</button>
+        <button class="btn-ghost" data-act="settings">Settings</button>
+        <button class="btn-ghost" data-act="manual">Field manual</button>
+        <button class="btn-ghost danger" data-act="quit">Abandon mission</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim red" id="screen-dead" hidden>
+    <div class="panel narrow">
+      <header class="panel-head"><span class="eyebrow" id="deadCause">Killed by a Sentry</span><h2>Killed in action</h2></header>
+      <p class="panel-copy">Your last checkpoint keeps your weapons and completed objectives.</p>
+      <nav class="stack">
+        <button class="btn" data-act="restart">Retry from checkpoint</button>
+        <button class="btn-ghost danger" data-act="quit">Abandon mission</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-win" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Cinder Station secured</span><h2>Mission complete</h2></header>
+      <div class="result">
+        <div class="grade"><span class="grade-label">Rank</span><span class="grade-val" id="gradeVal">A</span></div>
+        <dl class="stats" id="statsList"></dl>
+      </div>
+      <footer class="panel-foot">
+        <button class="btn" data-act="replay">Deploy again</button>
+        <button class="btn-ghost" data-act="quit">Main menu</button>
+      </footer>
+    </div>
+  </section>
+
+  <div class="relock" id="relock" hidden><span>Click to re-engage</span></div>
+  <div class="fatal" id="fatal" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/music.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/world.js"></script>
+<script src="js/level.js"></script>
+<script src="js/map.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/viewmodels.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemy-models.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/boss.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/post.js"></script>
+<script src="js/mission.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
