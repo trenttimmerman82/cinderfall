@@ -87,19 +87,24 @@ window.CF = window.CF || {};
     { id: 'jump', label: 'Jump · mantle', canon: 'Space', def: ['Space', null] },
     { id: 'crouch', label: 'Crouch · slide', canon: 'KeyC', def: ['KeyC', 'ControlLeft'] },
     { id: 'sprint', label: 'Sprint · steady scope', canon: 'ShiftLeft', def: ['ShiftLeft', null] },
-    { id: 'aim', label: 'Aim toggle (keyboard)', canon: 'KeyF', def: ['KeyF', 'Tab'] },
+    { id: 'aim', label: 'Aim · scope toggle (keyboard)', canon: 'KeyF', def: ['KeyQ', 'Tab'] },
     { id: 'reload', label: 'Reload', canon: 'KeyR', def: ['KeyR', null] },
     { id: 'interact', label: 'Interact', canon: 'KeyE', def: ['KeyE', null] },
     { id: 'grenade', label: 'Throw grenade', canon: 'KeyG', def: ['KeyG', null] },
-    { id: 'melee', label: 'Melee', canon: 'KeyV', def: ['KeyV', 'Mouse3'] },
-    { id: 'last', label: 'Last weapon', canon: 'KeyQ', def: ['KeyQ', null] },
+    { id: 'melee', label: 'Melee', canon: 'KeyV', def: ['KeyF', 'Mouse3'] },
+    { id: 'last', label: 'Last weapon', canon: 'KeyQ', def: ['KeyX', null] },
+    { id: 'streak', label: 'Deploy drone (5-kill streak)', canon: 'KeyB', def: ['KeyZ', null] },
     { id: 'slot1', label: 'Weapon 1 · loadout 1', canon: 'Digit1', def: ['Digit1', null] },
     { id: 'slot2', label: 'Weapon 2 · loadout 2', canon: 'Digit2', def: ['Digit2', null] },
     { id: 'slot3', label: 'Weapon 3 · loadout 3', canon: 'Digit3', def: ['Digit3', null] },
-    { id: 'slot4', label: 'Weapon 4 · loadout 4', canon: 'Digit4', def: ['Digit4', null] }
+    { id: 'slot4', label: 'Weapon 4 · loadout 4', canon: 'Digit4', def: ['Digit4', null] },
+    { id: 'slot5', label: 'Weapon 5 · loadout 5', canon: 'Digit5', def: ['Digit5', null] },
+    { id: 'slot6', label: 'Weapon 6 · loadout 6', canon: 'Digit6', def: ['Digit6', null] },
+    { id: 'slot7', label: 'Weapon 7', canon: 'Digit7', def: ['Digit7', null] },
+    { id: 'slot8', label: 'Weapon 8', canon: 'Digit8', def: ['Digit8', null] }
   ];
   const RESERVED = new Set(['Escape', 'KeyP', 'Mouse0', 'Mouse2', 'MetaLeft', 'MetaRight']);
-  const BIND_KEY = 'cinderfall.binds.v1';
+  const BIND_KEY = 'cinderfall.binds.v2'; // v2: Q aims, F melees, X last weapon
   const Keys = CF.Keys = { actions: ACTIONS, reserved: RESERVED, binds: {}, map: {} };
   Keys.load = function () {
     let saved = {};

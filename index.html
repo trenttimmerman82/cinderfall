@@ -83,6 +83,7 @@
       <div class="weapon-name" id="weaponName">M7 Vanguard</div>
       <div class="weapon-slots" id="weaponSlots"></div>
       <div class="grenades" id="grenades"></div>
+      <div class="streak" id="streak"></div>
     </div>
 
     <div class="interact" id="interact" hidden>
@@ -139,13 +140,15 @@
       <nav class="menu" aria-label="Main menu">
         <button class="menu-item" data-act="deploy"><span class="mi-label">Campaign</span><span class="mi-note">Take back Cinder Foundry</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
+        <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
+        <button class="menu-item" data-act="news"><span class="mi-label">What's new</span><span class="mi-note">Weapons, maps and features in this update</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
         <button class="menu-item" data-act="manual"><span class="mi-label">Field manual</span><span class="mi-note">Keys and tactics</span></button>
       </nav>
     </div>
     <div class="main-foot">
       <span>Mouse and keyboard required</span>
-      <span>Build 2.0 · three.js r147</span>
+      <span>Build 2.1 · three.js r147</span>
     </div>
     <div class="touch-note" id="touchNote" hidden>Cinderfall needs a mouse and keyboard. Open it on a desktop browser to play.</div>
   </section>
@@ -153,6 +156,7 @@
   <section class="screen panel-screen" id="screen-difficulty" hidden>
     <div class="panel">
       <header class="panel-head"><span class="eyebrow">Deploy</span><h2>Choose your threat level</h2></header>
+      <label class="field callsign"><span>Playing as · your leaderboard name</span><input id="diffName" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <div class="diff-grid">
         <button class="diff" data-diff="easy">
           <span class="diff-name">Easy</span>
@@ -247,16 +251,18 @@
           <div><dt>W A S D</dt><dd>Move</dd></div>
           <div><dt>Mouse</dt><dd>Look</dd></div>
           <div><dt>Left click</dt><dd>Fire</dd></div>
-          <div><dt>Right click · Tab · F</dt><dd>Aim down sights (Tab or F toggles, for trackpads)</dd></div>
+          <div><dt>Right click · Q · Tab</dt><dd>Aim down sights / scope (Q or Tab toggles, for trackpads)</dd></div>
           <div><dt>Shift</dt><dd>Sprint · steady scope</dd></div>
           <div><dt>Space</dt><dd>Jump · mantle ledges</dd></div>
           <div><dt>C</dt><dd>Crouch · slide while sprinting</dd></div>
           <div><dt>R</dt><dd>Reload</dd></div>
           <div><dt>E</dt><dd>Interact (hold)</dd></div>
           <div><dt>G</dt><dd>Throw grenade</dd></div>
-          <div><dt>V</dt><dd>Melee</dd></div>
-          <div><dt>1 – 4 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–4 picks a loadout while you wait to respawn)</dd></div>
-          <div><dt>Q</dt><dd>Last weapon</dd></div>
+          <div><dt>F</dt><dd>Melee</dd></div>
+          <div><dt>1 – 8 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–6 picks a loadout while you wait to respawn)</dd></div>
+          <div><dt>X</dt><dd>Last weapon</dd></div>
+          <div><dt>Z</dt><dd>Deploy attack drone (earned with 5 kills in a row)</dd></div>
+          <div><dt>Satchel</dt><dd>Click throws a charge · right click or Q detonates</dd></div>
           <div><dt>Esc</dt><dd>Pause · multiplayer menu</dd></div>
         </dl>
         <div class="tactics">
@@ -267,7 +273,7 @@
           <p><b>Juggernaut</b> — heavy with a rocket pod. Its red laser marks the target. Flank it and hit the glowing back vent.</p>
           <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
           <h3>Multiplayer loadouts</h3>
-          <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — Hex-9 SMG and 8% more speed. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
+          <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — Hex-9 SMG and 8% more speed. <b>Heavy</b> — Rotor-6 minigun (spins up before firing) and 50 armor. <b>Demolition</b> — Havoc RPG and satchel charges. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
         </div>
       </div>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
@@ -298,6 +304,24 @@
     </div>
   </section>
 
+  <section class="screen panel-screen" id="screen-news" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow" id="newsVersion">Update</span><h2>What's new</h2></header>
+      <ul class="news-list" id="newsList"></ul>
+      <footer class="panel-foot"><button class="btn" data-act="newsok">Let's go</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-leaderboard" hidden>
+    <div class="panel wide">
+      <header class="panel-head"><span class="eyebrow">Campaign · furthest phase first, then score</span><h2>Leaderboard</h2></header>
+      <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+      <div class="lb-table" id="lbTable"></div>
+      <p class="lb-note">Runs are saved in this browser. Your best run per callsign is kept.</p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
   <section class="screen panel-screen dim" id="screen-win" hidden>
     <div class="panel">
       <header class="panel-head"><span class="eyebrow">Cinder Station secured</span><h2>Mission complete</h2></header>
@@ -322,6 +346,7 @@
           <div class="card-row">
             <button class="card" data-map="market"><b>Neon Market</b><span>Tight streets, alleys and balconies around a holographic plaza.</span></button>
             <button class="card" data-map="rooftops"><b>Skyline</b><span>Five rooftops, stairways and catwalks, 60 metres above the street.</span></button>
+            <button class="card" data-map="nuketown"><b>Nuketown</b><span>Two houses, one street and a school bus. Sunny, small and frantic.</span></button>
           </div>
           <div class="card-row">
             <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
@@ -391,6 +416,7 @@
 <script src="js/maps.js"></script>
 <script src="js/map-market.js"></script>
 <script src="js/map-rooftops.js"></script>
+<script src="js/map-nuketown.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/viewmodels.js"></script>
 <script src="js/weapons.js"></script>
@@ -403,6 +429,8 @@
 <script src="js/mission.js"></script>
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
+<script src="js/streak.js"></script>
+<script src="js/meta.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

@@ -400,6 +400,78 @@
     });
   }
 
+  // ------------------------------------------------------------ daylight suburb (Nuketown)
+  function makeSuburb() {
+    const n = S * S, rnd = U.mulberry32(1955);
+    const pack = (rgb, hgt, rough, ns) => ({ map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, ns), roughnessMap: grayTex(S, S, rough) });
+    // lawn: patchy greens with blade speckle and a few dry spots
+    {
+      const n1 = tileNoise(S, 4, 4, 5, 1501, 0.55), n2 = tileNoise(S, 64, 64, 2, 1502), n3 = tileNoise(S, 2, 2, 3, 1503);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const blade = n2[i] + (rnd() - 0.5) * 0.5, dry = sstep(0.62, 0.8, n3[i]) * 0.6;
+        const v = 0.55 + (n1[i] - 0.5) * 0.35 + (blade - 0.5) * 0.35;
+        rgb[i * 3] = v * (0.32 + dry * 0.35); rgb[i * 3 + 1] = v * (0.62 + dry * 0.05); rgb[i * 3 + 2] = v * (0.2 + dry * 0.05);
+        hgt[i] = blade * 0.8 + n1[i] * 0.2; rough[i] = 0.92;
+      }
+      T.list.grass = pack(rgb, hgt, rough, 2.5);
+    }
+    // lap siding: 16 overlapping boards per tile, each shadowed under the one above (white, tinted by the material)
+    {
+      const n1 = tileNoise(S, 2, 32, 3, 1511), B = S / 16;
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const y = (i / S) | 0, t = (y % B) / B, lip = t < 0.08 ? 0.55 + t * 5 : 1;
+        const v = (0.86 + (n1[i] - 0.5) * 0.12) * lip * (0.93 + t * 0.07);
+        rgb[i * 3] = v; rgb[i * 3 + 1] = v; rgb[i * 3 + 2] = v * 0.98;
+        hgt[i] = t; rough[i] = 0.7;
+      }
+      T.list.siding = pack(rgb, hgt, rough, 1.6);
+    }
+    // asphalt shingles: staggered tabs with per-tab tone and granule noise (grey, tinted by the material)
+    {
+      const n2 = tileNoise(S, 128, 128, 1, 1521), R = S / 16, Wt = S / 8;
+      const tone = []; for (let k = 0; k < 16 * 9; k++) tone.push(0.75 + rnd() * 0.3);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, row = (y / R) | 0, t = (y % R) / R;
+        const xs = (x + (row % 2) * Wt / 2) % S, col = (xs / Wt) | 0, gap = (xs % Wt) < 2 ? 0.5 : 1;
+        const v = tone[row * 9 + col] * (0.55 + (n2[i] - 0.5) * 0.3) * gap * (t > 0.88 ? 0.6 : 1);
+        rgb[i * 3] = v; rgb[i * 3 + 1] = v; rgb[i * 3 + 2] = v;
+        hgt[i] = t * 0.6 + n2[i] * 0.3; rough[i] = 0.95;
+      }
+      T.list.shingles = pack(rgb, hgt, rough, 2.2);
+    }
+    // red brick with mortar joints
+    {
+      const n1 = tileNoise(S, 8, 8, 4, 1531), n2 = tileNoise(S, 128, 128, 1, 1532), R = S / 8, Wb = S / 4;
+      const tone = []; for (let k = 0; k < 8 * 5; k++) tone.push(0.8 + rnd() * 0.35);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, row = (y / R) | 0, xs = (x + (row % 2) * Wb / 2) % S, col = (xs / Wb) | 0;
+        const mortar = (y % R) < 5 || (xs % Wb) < 5;
+        if (mortar) { const v = 0.7 + (n2[i] - 0.5) * 0.15; rgb[i * 3] = v; rgb[i * 3 + 1] = v * 0.97; rgb[i * 3 + 2] = v * 0.92; hgt[i] = 0; }
+        else { const v = tone[row * 5 + col] * (0.85 + (n1[i] - 0.5) * 0.3 + (n2[i] - 0.5) * 0.15); rgb[i * 3] = v * 0.62; rgb[i * 3 + 1] = v * 0.27; rgb[i * 3 + 2] = v * 0.2; hgt[i] = 0.8 + n2[i] * 0.2; }
+        rough[i] = 0.9;
+      }
+      T.list.brick = pack(rgb, hgt, rough, 2.5);
+    }
+    // wood planks with grain (warm grey, tinted by the material)
+    {
+      const g1 = tileNoise(S, 2, 48, 4, 1541, 0.6), n2 = tileNoise(S, 4, 4, 3, 1542), P = S / 8;
+      const tone = []; for (let k = 0; k < 8; k++) tone.push(0.8 + rnd() * 0.3);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, col = (x / P) | 0, seam = (x % P) < 2 ? 0.45 : 1;
+        const grain = 0.5 + 0.5 * Math.sin(g1[i] * 40 + x * 0.05);
+        const v = tone[col] * (0.72 + grain * 0.18 + (n2[i] - 0.5) * 0.12) * seam;
+        rgb[i * 3] = v; rgb[i * 3 + 1] = v * 0.93; rgb[i * 3 + 2] = v * 0.86;
+        hgt[i] = grain * 0.3 + (seam < 1 ? -1 : 0); rough[i] = 0.75;
+      }
+      T.list.planks = pack(rgb, hgt, rough, 1.5);
+    }
+  }
+
   T.build = async function (renderer, progress) {
     S = CF.bootQuality === 'low' ? 256 : 512;
     T.maxAniso = Math.min(CF.bootQuality === 'high' ? 8 : 4, renderer.capabilities.getMaxAnisotropy());
@@ -411,6 +483,7 @@
       ['Stacking containers', makeContainers],
       ['Stenciling crates', () => { makeCrate(); makeHazard(); }],
       ['Priming machinery', makePaintMetal],
+      ['Mowing the lawns', makeSuburb],
       ['Heating the crucibles', makeMolten],
       ['Booting terminals', makeScreens],
       ['Scattering debris', () => { makeDecals(); makeParticles(); }]

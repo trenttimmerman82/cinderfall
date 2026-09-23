@@ -12,9 +12,11 @@
     assault: { label: 'Assault', desc: 'M7 Vanguard carbine and P-11 sidearm. Reliable at every range.', weapons: { carbine: { mag: 30, reserve: 150 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 2, armor: 0, speed: 1 },
     breacher: { label: 'Breacher', desc: 'KS-12 shotgun and sidearm, plus 50 armor. Owns the alleys.', weapons: { shotgun: { mag: 7, reserve: 28 }, pistol: { mag: 12, reserve: Infinity } }, current: 'shotgun', grenades: 2, armor: 50, speed: 0.97 },
     marksman: { label: 'Marksman', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.', weapons: { rail: { mag: 4, reserve: 16 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rail', grenades: 1, armor: 0, speed: 1 },
+    heavy: { label: 'Heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.', weapons: { minigun: { mag: 150, reserve: 300 }, pistol: { mag: 12, reserve: Infinity } }, current: 'minigun', grenades: 1, armor: 50, speed: 0.9 },
+    demo: { label: 'Demolition', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.', weapons: { rocket: { mag: 1, reserve: 3 }, satchel: { mag: 2, reserve: 2 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rocket', grenades: 1, armor: 0, speed: 1 },
     runner: { label: 'Runner', desc: 'Hex-9 SMG and sidearm. Moves 8% faster.', weapons: { smg: { mag: 36, reserve: 180 }, pistol: { mag: 12, reserve: Infinity } }, current: 'smg', grenades: 2, armor: 0, speed: 1.08 }
   };
-  const LO_KEYS = ['assault', 'breacher', 'marksman', 'runner'];
+  const LO_KEYS = ['assault', 'breacher', 'marksman', 'runner', 'heavy', 'demo'];
   const W_IDX = CF.Weapons.order; // weapon id <-> index for compact state
 
   const MP = CF.MP = {
@@ -125,7 +127,7 @@
       const def = info.weapon ? CF.Weapons.defs[info.weapon] : null;
       if (tag === 'head' && def) mult = def.head * (part.mult / 2);
       const dmg = amount * mult * (def ? def.pvp || 1 : 1);
-      MP.sendHit(this.id, dmg, tag === 'head', info.weapon || (info.explosive ? 'frag' : 'melee'));
+      MP.sendHit(this.id, dmg, tag === 'head', info.weapon || info.wid || (info.explosive ? 'frag' : 'melee'));
       if (info.point) CF.FX.botHit(info.point, info.normal || new THREE.Vector3(0, 1, 0), tag === 'head');
       CF.HUD.hitmarker(tag === 'head' ? 'head' : 'hit');
       if (info.point) CF.HUD.dmgNumber(info.point, dmg, tag === 'head' ? 'head' : '');
@@ -311,11 +313,12 @@
       else killer.kills++;
     }
     const wdef = CF.Weapons.defs[k.w];
-    const how = wdef ? wdef.short : k.w === 'frag' ? 'FRAG' : k.w === 'melee' ? 'MELEE' : '';
+    const how = wdef ? wdef.short : k.w === 'frag' ? 'FRAG' : k.w === 'melee' ? 'MELEE' : k.w === 'drone' ? 'DRONE' : '';
     if (victim) CF.HUD.killfeed(suicide ? victim.name + ' fell' : (killer ? killer.name : '?') + ' ▸ ' + victim.name, how + (k.head ? ' · HEAD' : ''));
     if (MP.remotes[k.victim]) MP.remotes[k.victim].die();
     if (k.killer === MP.myId && !suicide) {
       CF.Game.stats.kills++; if (k.head) CF.Game.stats.headshots++;
+      if (k.w !== 'drone') CF.Streak.onKill();
       CF.Game.addScore(100 + (k.head ? 50 : 0));
       CF.HUD.hitmarker('kill'); A.play('kill', null, { ui: true });
       CF.HUD.popup('Eliminated ' + (victim ? victim.name : ''), 100 + (k.head ? 50 : 0), k.head ? 'head' : '');

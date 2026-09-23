@@ -235,6 +235,105 @@
     return { root, gun, parts: P, sightY: 0.108, sightZ: -0.1 };
   }
 
+  function rocket(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    CZ(gun, M.grenade, 0, 0.06, -0.18, 0.055, 0.9);
+    CZ(gun, M.metal, 0, 0.06, 0.28, 0.062, 0.1, true);
+    CZ(gun, M.metal, 0, 0.06, -0.62, 0.064, 0.06, true);
+    B(gun, M.polymer, 0, -0.03, -0.05, 0.034, 0.1, 0.05, -0.25, 0, 0);
+    B(gun, M.polymer, 0, -0.03, -0.3, 0.03, 0.09, 0.04, 0.1, 0, 0);
+    B(gun, M.metal, -0.07, 0.1, -0.2, 0.02, 0.06, 0.08);
+    part(gun, new THREE.CircleGeometry(0.02, 12), M.glass, -0.07, 0.11, -0.241);
+    B(gun, M.accent, 0.057, 0.06, -0.1, 0.002, 0.012, 0.3);
+    P.mag = new THREE.Group(); P.mag.position.set(0, 0.06, -0.68); gun.add(P.mag);
+    CZ(P.mag, M.grenade, 0, 0, -0.02, 0.05, 0.08);
+    part(P.mag, sph(), M.shell, 0, 0, -0.1, 0.045, 0.045, 0.1);
+    P.muzzle = node(gun, 0, 0.06, -0.66);
+    P.eject = node(gun, 0, 0.06, 0.34);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.06, -0.02); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
+      forearm(gun, 0.02, -0.09, 0.03, 0.16, -0.32, 0.45);
+      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.01, -0.06, -0.3);
+      const hl = hand(M.glove, -1); hl.rotation.set(0.1, 0, 0.5); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.02, -0.22, -0.3, 0.32);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.11, sightZ: -0.2 };
+  }
+
+  function minigun(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    B(gun, M.metal, 0, 0.02, -0.02, 0.12, 0.12, 0.26);
+    B(gun, M.polymer, 0, 0.1, 0.0, 0.03, 0.05, 0.2);
+    P.barrels = new THREE.Group(); P.barrels.position.set(0, 0.03, -0.15); gun.add(P.barrels);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; CZ(P.barrels, M.steel, Math.cos(a) * 0.032, Math.sin(a) * 0.032, -0.3, 0.011, 0.6); }
+    CZ(P.barrels, M.metal, 0, 0, -0.08, 0.05, 0.03); CZ(P.barrels, M.metal, 0, 0, -0.45, 0.05, 0.025); CZ(P.barrels, M.metal, 0, 0, -0.59, 0.048, 0.02, true);
+    B(gun, M.accent, 0.061, 0.03, -0.02, 0.002, 0.014, 0.2);
+    P.mag = new THREE.Group(); P.mag.position.set(0.02, -0.08, 0.02); gun.add(P.mag);
+    B(P.mag, M.grenade, 0, -0.04, 0, 0.12, 0.1, 0.16);
+    B(P.mag, M.accent, 0.061, -0.04, 0, 0.002, 0.03, 0.1);
+    B(gun, M.polymer, 0, -0.06, 0.14, 0.034, 0.1, 0.05, -0.3, 0, 0);
+    B(gun, M.polymer, 0, 0.14, -0.1, 0.025, 0.02, 0.18);
+    P.muzzle = node(gun, 0, 0.03, -0.77);
+    P.eject = node(gun, 0.07, 0.0, -0.02);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.05, 0.14); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
+      forearm(gun, 0.02, -0.08, 0.2, 0.16, -0.32, 0.55);
+      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.02, 0.15, -0.1);
+      const hl = hand(M.glove, -1); hl.rotation.set(-0.3, 0, 0.2); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.02, -0.22, -0.4, 0.32);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.16, sightZ: -0.1 };
+  }
+
+  function satchel(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    // detonator in the right hand, charge in the left
+    B(gun, M.polymer, 0, 0.0, 0.0, 0.04, 0.09, 0.03);
+    B(gun, M.dot, 0, 0.05, 0.0, 0.016, 0.01, 0.016);
+    B(gun, M.steel, 0.012, 0.075, 0.0, 0.004, 0.05, 0.004);
+    P.charge = new THREE.Group(); P.charge.position.set(-0.16, 0.0, -0.08); gun.add(P.charge);
+    satchelBlock(P.charge, 1);
+    P.mag = P.charge;
+    P.muzzle = node(gun, -0.16, 0.02, -0.15);
+    P.eject = node(gun, 0, 0, 0);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.04, 0.0); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
+      forearm(gun, 0.02, -0.07, 0.05, 0.16, -0.32, 0.46);
+      P.handL = new THREE.Group(); P.charge.add(P.handL); P.handL.position.set(0.0, -0.05, 0.02);
+      const hl = hand(M.glove, -1); hl.rotation.set(0.1, 0, 0.3); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.02, -0.12, -0.3, 0.32);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.08, sightZ: 0 };
+  }
+  function satchelBlock(g, s) {
+    B(g, M.tan, 0, 0, 0, 0.12 * s, 0.07 * s, 0.09 * s);
+    B(g, M.polymer, 0, 0, 0, 0.125 * s, 0.03 * s, 0.095 * s);
+    B(g, M.polymer, 0, 0.04 * s, 0, 0.04 * s, 0.015 * s, 0.03 * s);
+    const led = B(g, M.dot, 0.03 * s, 0.037 * s, 0.02 * s, 0.012 * s, 0.006 * s, 0.012 * s);
+    return led;
+  }
+  VM.satchelWorld = function () {
+    VM.materials();
+    const g = new THREE.Group();
+    g.userData.led = satchelBlock(g, 1.6);
+    g.traverse((o) => { o.castShadow = true; });
+    return g;
+  };
+  VM.rocketWorld = function () {
+    VM.materials();
+    const g = new THREE.Group();
+    CZ(g, M.grenade, 0, 0, 0.1, 0.05, 0.3);
+    part(g, sph(), M.shell, 0, 0, -0.08, 0.05, 0.05, 0.12);
+    for (let i = 0; i < 4; i++) B(g, M.metal, 0, 0, 0.26, 0.004, 0.14, 0.06, 0, 0, i * Math.PI / 4);
+    return g;
+  };
+
   VM.grenadeArm = function () {
     VM.materials();
     const g = new THREE.Group();
@@ -257,7 +356,7 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, smg };
+  const BUILDERS = { carbine, shotgun, pistol, rail, smg, rocket, minigun, satchel };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);

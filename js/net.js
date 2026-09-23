@@ -3,6 +3,16 @@
 (function (CF) {
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const PREFIX = 'cinderfall-v1-';
+  // STUN finds each player's public address; TURN relays traffic when routers block a direct
+  // link (mobile hotspots, school/office Wi-Fi, strict home NATs). Swap in your own TURN
+  // credentials here if the public relay is overloaded.
+  const ICE = { iceServers: [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ] };
+  const OPTS = { debug: 0, config: ICE };
   const Net = CF.Net = { peer: null, conns: {}, host: null, role: null, code: '', myId: '', onMsg: null, onLeave: null, onDrop: null };
 
   Net.available = () => typeof window.Peer === 'function' && typeof window.RTCPeerConnection === 'function';
@@ -27,7 +37,7 @@
     const attempt = (n) => {
       const code = Net.makeCode();
       let opened = false, peer;
-      try { peer = new window.Peer(PREFIX + code, { debug: 0 }); } catch (e) { onError(Net.describe(e)); return; }
+      try { peer = new window.Peer(PREFIX + code, OPTS); } catch (e) { onError(Net.describe(e)); return; }
       peer.on('open', (id) => { opened = true; Net.peer = peer; Net.role = 'host'; Net.code = code; Net.myId = id; onReady(code); });
       peer.on('connection', (conn) => {
         conn.on('open', () => { Net.conns[conn.peer] = conn; });
@@ -53,11 +63,11 @@
     if (code.length !== 5) { onError('Room codes are 5 characters.'); return; }
     let peer, done = false;
     const fail = (msg) => { if (done) return; done = true; try { peer.destroy(); } catch (e) { /* ignore */ } onError(msg); };
-    try { peer = new window.Peer({ debug: 0 }); } catch (e) { onError(Net.describe(e)); return; }
+    try { peer = new window.Peer(OPTS); } catch (e) { onError(Net.describe(e)); return; }
     peer.on('open', (id) => {
       Net.peer = peer; Net.myId = id; Net.role = 'client'; Net.code = code;
       const conn = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
-      const timer = setTimeout(() => fail('No match found with that code. Check it and try again.'), 12000);
+      const timer = setTimeout(() => fail('Found the match but could not connect to the host. Their network may be blocking it; try again, or have someone else host.'), 25000);
       conn.on('open', () => { if (done) return; done = true; clearTimeout(timer); Net.host = conn; onReady(); });
       wire(conn, 'host');
       conn.on('close', () => { if (Net.host === conn && Net.onDrop) Net.onDrop(); });

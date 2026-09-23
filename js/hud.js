@@ -8,7 +8,7 @@
   H.init = function () {
     const ids = ['hud', 'compassStrip', 'compassObj', 'compassHeading', 'objPanel', 'objPhase', 'objText', 'objMeter', 'objFill', 'objCount', 'scoreNum',
       'worldMarker', 'wmLabel', 'wmDist', 'crosshair', 'hitmarker', 'dmgRing', 'popups', 'dmgNumbers', 'killfeed', 'armorFill', 'armorNum', 'healthFill',
-      'healthGhost', 'healthNum', 'ammoMag', 'ammoRes', 'weaponName', 'weaponSlots', 'grenades', 'interact', 'interactFill', 'interactText', 'hint', 'radio',
+      'healthGhost', 'healthNum', 'ammoMag', 'ammoRes', 'weaponName', 'weaponSlots', 'grenades', 'streak', 'interact', 'interactFill', 'interactText', 'hint', 'radio',
       'radioWho', 'radioLine', 'bossBar', 'bossFill', 'bossStage', 'scope', 'scopeRead', 'phaseCard', 'pcNum', 'pcTitle', 'pcSub', 'fps', 'flash'];
     for (const id of ids) this.el[id] = $(id);
     this.vitals = document.querySelector('.vitals');
@@ -191,6 +191,10 @@
   H.setGrenades = function (n, max) {
     let html = ''; for (let i = 0; i < max; i++) html += '<i class="gpip' + (i < n ? '' : ' off') + '"></i>';
     this.el.grenades.innerHTML = html;
+  };
+  H.setStreak = function (n, need, ready) {
+    const t = ready ? 'Drone ready [' + CF.Keys.label('streak') + ']' : 'Streak ' + n + ' / ' + need;
+    if (this.last.stk !== t) { this.el.streak.textContent = t; this.el.streak.classList.toggle('ready', !!ready); this.last.stk = t; }
   };
   H.setScore = function (s) { const t = s.toLocaleString('en-US'); if (this.last.sc !== t) { this.el.scoreNum.textContent = t; this.last.sc = t; } };
 

@@ -23,18 +23,30 @@
     smg: { id: 'smg', name: 'Hex-9 Kite', short: 'HEX-9', auto: true, rpm: 900, dmg: 17, head: 1.8, pellets: 1,
       spreadHip: 2.0, spreadAds: 0.45, spreadMove: 1.3, spreadAir: 3, bloom: 0.26, bloomMax: 2.6, mag: 36, reserve: 180, maxReserve: 288,
       reload: 1.55, reloadEmpty: 1.95, magInAt: 0.6, falloff: [12, 34, 0.55], recoil: [0.5, 0.3, 0.025, 0.035], adsFov: 0.8, adsTime: 0.15,
-      hip: [0.12, -0.13, -0.28], adsZ: -0.24, equip: 0.35, sound: 'smg', tracerEvery: 2, shell: 0.8, moveMul: 1.04, noise: 38 }
+      hip: [0.12, -0.13, -0.28], adsZ: -0.24, equip: 0.35, sound: 'smg', tracerEvery: 2, shell: 0.8, moveMul: 1.04, noise: 38 },
+    rocket: { id: 'rocket', name: 'Havoc RPG', short: 'RPG', auto: false, rpm: 50, dmg: 0, head: 1, pellets: 1, rocket: { speed: 40, radius: 6.5, damage: 210 },
+      spreadHip: 1.2, spreadAds: 0.2, spreadMove: 1.0, spreadAir: 3, bloom: 0, bloomMax: 0, mag: 1, reserve: 4, maxReserve: 8,
+      reload: 2.1, reloadEmpty: 2.1, magInAt: 0.6, falloff: [400, 500, 1], recoil: [5, 0.8, 0.12, 0.3], adsFov: 0.7, adsTime: 0.24,
+      hip: [0.16, -0.16, -0.28], ads: [0.11, -0.15, -0.34], adsZ: -0.3, equip: 0.6, sound: 'rocket', tracerEvery: 99, shell: 0, moveMul: 0.9, noise: 60 },
+    minigun: { id: 'minigun', name: 'Rotor-6 Minigun', short: 'MINIGUN', auto: true, rpm: 1500, dmg: 15, head: 1.6, pellets: 1, spin: 0.55,
+      spreadHip: 2.4, spreadAds: 1.2, spreadMove: 1.2, spreadAir: 3, bloom: 0.04, bloomMax: 1.2, mag: 150, reserve: 300, maxReserve: 600,
+      reload: 3.2, reloadEmpty: 3.4, magInAt: 0.6, falloff: [25, 60, 0.6], recoil: [0.22, 0.28, 0.02, 0.02], adsFov: 0.86, adsTime: 0.3,
+      hip: [0.2, -0.22, -0.42], ads: [0.15, -0.21, -0.44], adsZ: -0.4, equip: 0.8, sound: 'carbine', tracerEvery: 2, shell: 0.9, moveMul: 0.82, noise: 55 },
+    satchel: { id: 'satchel', name: 'Satchel charge', short: 'C4', auto: false, rpm: 90, dmg: 0, head: 1, pellets: 1, satchel: { radius: 7, damage: 230 }, noAds: true,
+      spreadHip: 0, spreadAds: 0, spreadMove: 0, spreadAir: 0, bloom: 0, bloomMax: 0, mag: 2, reserve: 2, maxReserve: 4,
+      reload: 1.0, reloadEmpty: 1.0, magInAt: 0.6, falloff: [400, 500, 1], recoil: [1, 0.2, 0.02, 0.1], adsFov: 1, adsTime: 0.2,
+      hip: [0.16, -0.16, -0.3], adsZ: -0.3, equip: 0.4, sound: 'throw', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 8 }
   };
   // Player-vs-player damage scaling (multiplayer only)
-  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.smg.pvp = 1;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'smg'];
+  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.smg.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'smg', 'rocket', 'minigun', 'satchel']; // append only: index is sent over the network
 
   const S = U.Spring;
   const WP = CF.Weapons = {
     defs: DEFS, order: ORDER, inv: {}, cur: null, curId: null, lastId: null, pendingId: null,
     grenades: 2, maxGrenades: 4, state: 'idle', stateT: 0, fireCd: 0, fireBuffer: 0, bloom: 0, adsT: 0, adsE: 0,
     cycleT: 1, shotCount: 0, reloadAdded: false, shellPhase: '', shellT: 0, interrupt: false, chamberEmpty: false,
-    vm: {}, grenadesLive: [], breath: 4, flashT: 0, t: 0,
+    vm: {}, grenadesLive: [], projLive: [], spin: 0, breath: 4, flashT: 0, t: 0,
     sp: { kz: new S(170, 17), rx: new S(150, 15), ry: new S(110, 13), rz: new S(110, 12), sx: new S(70, 11), sy: new S(70, 11), land: new S(95, 10) }
   };
 
@@ -55,14 +67,19 @@
   WP.reset = function (loadout) {
     this.inv = {}; this.cur = null; this.curId = null; this.lastId = null;
     for (const id of ORDER) this.vm[id].root.visible = false;
-    for (const g of this.grenadesLive) this.scene.remove(g.mesh);
-    this.grenadesLive.length = 0;
+    this.clearLive();
     const lo = loadout || { weapons: { carbine: { mag: 30, reserve: 120 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 2 };
     for (const id in lo.weapons) this.inv[id] = { def: DEFS[id], mag: lo.weapons[id].mag, reserve: lo.weapons[id].reserve };
     this.grenades = lo.grenades;
     this.adsT = 0; this.adsToggle = false; this.bloom = 0; this.cycleT = 1; this.fireCd = 0;
     this.equip(lo.current || 'carbine', true);
     CF.HUD.setGrenades(this.grenades, this.maxGrenades);
+  };
+  /** Remove every grenade, rocket and satchel in the world (map change, respawn, reset). */
+  WP.clearLive = function () {
+    for (const g of this.grenadesLive) this.scene.remove(g.mesh);
+    for (const p of this.projLive) this.scene.remove(p.mesh);
+    this.grenadesLive.length = 0; this.projLive.length = 0;
   };
   WP.snapshot = function () {
     const w = {};
@@ -75,7 +92,7 @@
     if (this.curId && this.curId !== id) this.lastId = this.curId;
     this.curId = id; this.cur = this.inv[id];
     const v = this.vm[id]; v.root.visible = true;
-    this.state = instant ? 'idle' : 'raise'; this.stateT = 0; this.cycleT = 1;
+    this.state = instant ? 'idle' : 'raise'; this.stateT = 0; this.cycleT = 1; this.spin = 0;
     this.chamberEmpty = this.cur.mag === 0;
     if (!instant) A.play('switch');
     CF.HUD.setWeapon(this.cur.def, this.inv, this.slots());
@@ -84,7 +101,7 @@
   /** Weapons bound to number keys: fixed campaign slots, or the owned loadout in multiplayer. */
   WP.slots = function () {
     if (CF.Game && CF.Game.mode === 'mp') return ORDER.filter((id) => this.inv[id]).sort((a, b) => (a === 'pistol') - (b === 'pistol'));
-    return ORDER.filter((id) => id !== 'smg');
+    return ORDER;
   };
   WP.select = function (id) {
     if (!this.inv[id] || id === this.curId || this.state === 'melee' || this.state === 'throw') return;
@@ -245,6 +262,95 @@
     this.hudAmmo(); CF.HUD.ammoBump();
     if (w.mag === 0) this.chamberEmpty = true;
   };
+  /** Rockets and satchel charges: physical projectiles that explode instead of hitscan bullets. */
+  WP.fireSpecial = function (P) {
+    const w = this.cur, d = w.def, cam = this.camera;
+    w.mag--; this.fireCd = 60 / d.rpm; CF.Game.stats.shots++;
+    cam.getWorldDirection(_f); _r.set(1, 0, 0).applyQuaternion(cam.quaternion);
+    if (d.rocket) {
+      const muzzle = this.muzzleWorld(new THREE.Vector3(), 0.9);
+      const spread = this.currentSpread(P) * D2R;
+      _u.set(0, 1, 0).applyQuaternion(cam.quaternion);
+      _d.copy(_f).addScaledVector(_r, (Math.random() - 0.5) * spread).addScaledVector(_u, (Math.random() - 0.5) * spread).normalize();
+      const mesh = CF.VM.rocketWorld(); this.scene.add(mesh);
+      const pos = cam.position.clone().addScaledVector(_d, 0.6);
+      this.projLive.push({ kind: 'rocket', mesh, pos, vel: _d.clone().multiplyScalar(d.rocket.speed), life: 5, def: d });
+      CF.FX.flashLight(muzzle, 0xffa850, 5, 10, 0.1);
+      for (let i = 0; i < 10; i++) CF.FX.smoke.spawn(cam.position.x - _f.x * 0.6, cam.position.y - 0.2, cam.position.z - _f.z * 0.6, U.gauss() * 0.8 - _f.x * 3, U.gauss() * 0.4, U.gauss() * 0.8 - _f.z * 3, 1.2, 0.3, 1.4, 0.35, 0.35, 0.35, 0.6, -0.2, 0.6, 1);
+      if (CF.MP && CF.MP.active) CF.MP.onShot(d.id, muzzle, []);
+      P.shake(0.35);
+    } else {
+      const mesh = CF.VM.satchelWorld(); this.scene.add(mesh);
+      const pos = cam.position.clone().addScaledVector(_f, 0.45).addScaledVector(_r, -0.15); pos.y -= 0.1;
+      const vel = _f.clone().multiplyScalar(11).add(new THREE.Vector3(0, 3, 0)).addScaledVector(P.body.vel, 0.8);
+      this.projLive.push({ kind: 'satchel', mesh, pos, vel, rest: false, def: d, t: 0 });
+      if (w.mag === 0 && w.reserve > 0) CF.HUD.hint('Right click or ' + CF.Keys.label('aim') + ' to detonate', false);
+    }
+    const rc = d.recoil;
+    P.addRecoil(rc[0] * U.rand(0.85, 1.15), (Math.random() - 0.35) * rc[1] * 2);
+    this.sp.kz.kick(rc[2] * 18); this.sp.rx.kick(rc[3] * 22);
+    A.play(d.sound, null, { send: 0.3 + A.room * 0.8 });
+    CF.Enemies.noise(cam.position, d.noise);
+    this.hudAmmo(); CF.HUD.ammoBump();
+    if (w.mag === 0) this.chamberEmpty = true;
+  };
+  WP.detonate = function () {
+    let n = 0;
+    for (let i = this.projLive.length - 1; i >= 0; i--) {
+      const p = this.projLive[i];
+      if (p.kind !== 'satchel') continue;
+      this.projLive.splice(i, 1); this.scene.remove(p.mesh);
+      const pos = p.pos.clone();
+      CF.Game.later(n * 0.08, () => this.boom(pos, p.def.satchel, 'satchel'));
+      n++;
+    }
+    if (n) A.play('switch');
+    return n;
+  };
+  WP.boom = function (pos, spec, wid) {
+    CF.Game.explode(pos, { radius: spec.radius, damage: CF.Game.mode === 'mp' ? spec.damage * 0.75 : spec.damage, source: 'player', shake: 1, weapon: wid, scale: spec.radius / 5 });
+    if (CF.MP && CF.MP.active) CF.MP.onBoom(pos);
+  };
+  WP.updateProjectiles = function (dt) {
+    for (let i = this.projLive.length - 1; i >= 0; i--) {
+      const p = this.projLive[i];
+      if (p.kind === 'rocket') {
+        p.life -= dt;
+        const sp = p.vel.length(), dist = sp * dt;
+        _d.copy(p.vel).divideScalar(sp);
+        const wh = W.raycast(p.pos.x, p.pos.y, p.pos.z, _d.x, _d.y, _d.z, dist + 0.1);
+        const eh = CF.Enemies.raycast(p.pos, _d, wh ? wh.t : dist + 0.1);
+        if (eh || wh || p.life <= 0) {
+          const at = eh ? eh.point : wh ? new THREE.Vector3(wh.x + wh.nx * 0.2, wh.y + wh.ny * 0.2, wh.z + wh.nz * 0.2) : p.pos;
+          if (eh) eh.enemy.damage(60, { dir: _d.clone(), point: eh.point, normal: eh.normal, part: eh.part, weapon: 'rocket', source: 'player', knock: 6 });
+          this.scene.remove(p.mesh); this.projLive.splice(i, 1);
+          this.boom(at, p.def.rocket, 'rocket');
+          continue;
+        }
+        p.pos.addScaledVector(p.vel, dt);
+        p.mesh.position.copy(p.pos); p.mesh.lookAt(_v.copy(p.pos).sub(p.vel));
+        CF.FX.smoke.spawn(p.pos.x, p.pos.y, p.pos.z, U.gauss() * 0.2, 0.3, U.gauss() * 0.2, 1.4, 0.2, 1.1, 0.25, 0.25, 0.25, 0.6, -0.2, 0.6, 1);
+        CF.FX.glow(p.pos.x, p.pos.y, p.pos.z, 0.6, 4, 2, 0.6, 0.03);
+      } else {
+        p.t += dt;
+        if (!p.rest) {
+          p.vel.y -= 18 * dt;
+          const sp = p.vel.length(), dist = sp * dt;
+          if (dist > 1e-5) {
+            _d.copy(p.vel).divideScalar(sp);
+            const h = W.raycast(p.pos.x, p.pos.y, p.pos.z, _d.x, _d.y, _d.z, dist + 0.08);
+            if (h) { // satchels stick to whatever they hit
+              p.pos.set(h.x + h.nx * 0.06, h.y + h.ny * 0.06, h.z + h.nz * 0.06);
+              p.rest = true; p.vel.set(0, 0, 0); A.play('bounce', p.pos, { ref: 4 });
+              p.mesh.quaternion.setFromUnitVectors(_v.set(0, 1, 0), _u.set(h.nx, h.ny, h.nz));
+            } else { p.pos.addScaledVector(p.vel, dt); p.mesh.rotation.x += dt * 6; }
+          }
+        }
+        p.mesh.position.copy(p.pos);
+        p.mesh.userData.led.visible = (p.t % 0.8) < 0.15;
+      }
+    }
+  };
   WP.eject = function (P, size) {
     const v = this.vm[this.curId];
     v.parts.eject.getWorldPosition(_m);
@@ -322,13 +428,15 @@
       if (inp.hit('KeyR')) this.reload();
       if (inp.hit('KeyV')) this.melee();
       if (inp.hit('KeyG')) this.throwGrenade();
+      if (d.satchel && (inp.hit('KeyF') || inp.mpressed[2])) this.detonate();
     }
     // ADS
     // Tab toggles aiming (trackpad-friendly); right mouse still aims while held
     const toggleAim = CF.settings.aimMode === 'toggle';
     if (live && (inp.hit('KeyF') || (toggleAim && inp.mpressed[2]))) this.adsToggle = !this.adsToggle;
     if (!live || P.sprinting || this.state === 'lower' || this.state === 'melee' || this.state === 'throw') this.adsToggle = false;
-    const canAds = live && ((inp.mdown[2] && !toggleAim) || this.adsToggle) && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
+    if (d.noAds) this.adsToggle = false;
+    const canAds = live && !d.noAds && ((inp.mdown[2] && !toggleAim) || this.adsToggle) && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
     this.adsT = U.clamp(this.adsT + (canAds ? 1 : -1) * dt / d.adsTime, 0, 1);
     this.adsE = U.easeInOut(this.adsT);
     this.steady = d.scope && this.adsE > 0.9 && inp.down('ShiftLeft') && this.breath > 0;
@@ -338,13 +446,18 @@
     this.cycleT = Math.min(1, this.cycleT + dt / (60 / d.rpm));
     this.bloom = Math.max(0, this.bloom - dt * (d.auto ? 5.5 : 4));
     if (inp.mpressed[0]) this.fireBuffer = 0.14; else this.fireBuffer -= dt;
+    if (d.spin) { // minigun barrels have to spin up before it fires
+      const spinning = live && inp.mdown[0] && (this.state === 'idle' || this.state === 'raise') && !P.sprinting;
+      this.spin = U.clamp(this.spin + (spinning ? 1 : -0.7) * dt / d.spin, 0, 1);
+    }
     if (live) {
       const want = d.auto ? inp.mdown[0] : this.fireBuffer > 0;
       if (want) {
         if (P.sprinting) P.stopSprint();
         if (this.state === 'reload' && d.shellReload && w.mag > 0) this.interrupt = true;
-        if (this.state === 'idle' && this.fireCd <= 0 && P.sprintOut <= 0 && this.cycleT >= 1) {
-          if (w.mag > 0) { this.fire(P); this.fireBuffer = 0; }
+        if (this.state === 'idle' && this.fireCd <= 0 && P.sprintOut <= 0 && this.cycleT >= 1 && (!d.spin || this.spin >= 1)) {
+          if (w.mag > 0) { if (d.rocket || d.satchel) this.fireSpecial(P); else this.fire(P); this.fireBuffer = 0; }
+          else if (d.satchel && inp.mpressed[0] && this.detonate()) this.fireBuffer = 0;
           else if (inp.mpressed[0]) { A.play('dry'); this.fireBuffer = 0; if (w.reserve > 0) this.reload(); else CF.HUD.hint('Out of ammo · switch weapon', true); }
         }
       }
@@ -353,10 +466,11 @@
     }
     this.updateState(dt, P);
     this.updateGrenades(dt);
+    this.updateProjectiles(dt);
     // crosshair spread
     const spread = this.currentSpread(P) * D2R;
     const px = Math.tan(spread) * (window.innerHeight / 2) / Math.tan((this.camera.fov * D2R) / 2);
-    CF.HUD.setSpread(px + 5, this.adsE > 0.55 || this.state === 'lower' || P.sprinting);
+    CF.HUD.setSpread(px + 5, (this.adsE > 0.55 && !d.ads) || this.state === 'lower' || P.sprinting);
     CF.HUD.showScope(d.scope && this.adsE > 0.92, this.steady, this.breath);
     this.animate(dt, P);
   };
@@ -411,7 +525,9 @@
     const v = this.vm[this.curId], d = this.cur.def, sp = this.sp, root = v.root, parts = v.parts;
     const ads = this.adsE, noAds = 1 - ads;
     // base pose
-    let px = U.lerp(d.hip[0], 0, ads), py = U.lerp(d.hip[1], -v.sightY, ads), pz = U.lerp(d.hip[2], d.adsZ, ads);
+    // bulky launchers aim from the shoulder: they stay low and to the side so the view stays clear
+    const at = d.ads || [0, -v.sightY, d.adsZ];
+    let px = U.lerp(d.hip[0], at[0], ads), py = U.lerp(d.hip[1], at[1], ads), pz = U.lerp(d.hip[2], at[2], ads);
     let rx = 0, ry = 0, rz = 0;
     // sprint / crouch
     const spr = P.sprintT * noAds;
@@ -457,6 +573,9 @@
       if (this.pumpReload) pk = Math.max(pk, this.pumpReload);
       parts.pump.position.z = -0.42 + 0.075 * pk;
     }
+    if (parts.barrels) parts.barrels.rotation.z += this.spin * dt * 45;
+    if (parts.charge && this.state !== 'reload') parts.charge.visible = this.cur.mag > 0;
+    if (d.rocket && parts.mag && this.state !== 'reload') parts.mag.visible = this.cur.mag > 0;
     if (parts.coils) {
       const charge = d.id === 'rail' ? U.smoothstep(0.35, 1, this.cycleT) : 1;
       const lvl = this.cur.mag === 0 ? 0.08 : 0.15 + 0.85 * charge;

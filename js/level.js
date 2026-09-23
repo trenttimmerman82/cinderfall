@@ -5,7 +5,8 @@
   const L = CF.Level = {};
 
   // World-UV scale per material (1 texture repeat per 1/s metres)
-  const UVS = { facade: 1 / 12, concrete: 0.25, concreteDark: 0.25, asphalt: 1 / 6, metalFloor: 0.5, wall: 0.25, wallRust: 0.25, hazard: 1, paintYellow: 0.33, paintGrey: 0.33, paintDark: 0.33, paintRed: 0.5, paintGreen: 0.33, steel: 0.5, rubber: 0.5, crate: 1 / 1.2 };
+  const UVS = { facade: 1 / 12, concrete: 0.25, concreteDark: 0.25, asphalt: 1 / 6, metalFloor: 0.5, wall: 0.25, wallRust: 0.25, hazard: 1, paintYellow: 0.33, paintGrey: 0.33, paintDark: 0.33, paintRed: 0.5, paintGreen: 0.33, steel: 0.5, rubber: 0.5, crate: 1 / 1.2,
+    grass: 1 / 5, sand: 1 / 6, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5 };
   const SURF = { metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal' };
   const FACES = [
     { c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], n: [1, 0, 0], u: (x, y, z) => -z, v: (x, y) => y },
@@ -73,6 +74,21 @@
     M.facade = std({ map: fa.map, emissiveMap: fa.emissiveMap, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.2, roughness: 0.62, metalness: 0.3, envMapIntensity: 0.45 });
     M.glass = std({ color: 0x0b1220, roughness: 0.08, metalness: 0.9, envMapIntensity: 1.4 });
     M.tile = std(Object.assign(tri(T.metalFloor), { color: 0x6c6f7a, metalness: 0.4 }));
+    // daylight suburb (Nuketown)
+    const tint = (t, color, o) => std(Object.assign(tri(t), { color, metalness: 0 }, o || {}));
+    M.grass = std(Object.assign(tri(T.grass), { color: 0xffffff, metalness: 0 })); M.sand = tint(T.concrete, 0xc9a877); M.mesa = tint(T.concrete, 0xa9724a);
+    M.sidingGreen = tint(T.siding, 0x7fbf8e); M.sidingYellow = tint(T.siding, 0xf2cf62);
+    M.trim = tint(T.concrete, 0xf2efe6); M.plaster = tint(T.concrete, 0xe6dccb); M.roofing = tint(T.shingles, 0x8a5040);
+    M.brick = std(Object.assign(tri(T.brick), { color: 0xffffff, metalness: 0 })); M.floorWood = tint(T.planks, 0xc0905c); M.wood = tint(T.planks, 0x9a6a40);
+    M.fence = tint(T.planks, 0xf4f0e6); M.carpet = tint(T.concrete, 0x8a3c3c); M.fabric = tint(T.concrete, 0x3f6f8f);
+    M.counter = tint(T.concrete, 0xd9d4c8); M.cardboard = tint(T.concrete, 0xb58d5a); M.bark = tint(T.concrete, 0x4d3a2a);
+    M.trailer = tint(T.paintMetal, 0xd8d8d0, { metalness: 0.4 });
+    // clean glossy car paint (no grime map)
+    const paint = (c) => std({ color: c, metalness: 0.35, roughness: 0.32, envMapIntensity: 0.9 });
+    M.busYellow = paint(0xf2b21a); M.paintBlue = paint(0x3d6fb0); M.paintMint = paint(0x7cc8b0); M.paintCherry = paint(0xb8242a);
+    M.chrome = std({ color: 0xdfe3e8, metalness: 1, roughness: 0.18, envMapIntensity: 1.2 }); M.shutter = tint(T.planks, 0x2f4a3a); M.garageDoor = tint(T.siding, 0xf0ece0);
+    M.leaves2 = tint(T.grass, 0x9fc07a); M.pine = tint(T.grass, 0x5f8a6a); M.leaves = tint(T.grass, 0xb8d890);
+    M.glassDay = std({ color: 0x223040, roughness: 0.05, metalness: 0.9, envMapIntensity: 1.2 });
   };
   /** Wet-night tuning: glossier ground and stronger reflections. */
   L.applyTheme = function (th) {

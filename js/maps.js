@@ -57,7 +57,26 @@
       }),
       build: () => CF.MapRooftops.build(),
       menuCam: (t, cam) => { const a = t * 0.035; cam.position.set(Math.sin(a) * 38, 9 + Math.sin(a * 1.3) * 2, Math.cos(a) * 38); cam.lookAt(0, 0, 0); }
+    },
+    nuketown: {
+      id: 'nuketown', name: 'Nuketown', mp: true, nav: false, blurb: 'Two houses, one street and a school bus. Sunny, small and frantic.',
+      bounds: { minX: -40, maxX: 40, minZ: -34, maxZ: 34 },
+      // plain daylight: blue sky, warm sun, no neon, no rain
+      theme: base({
+        fog: [0.55, 0.66, 0.8], fogDensity: 0.0022,
+        hemi: [0xbcd4ff, 0x4a4a30, 0.55], moon: { color: 0xfff0d8, intensity: 1.5, dir: [0.45, 0.8, 0.35] },
+        sky: { zen: [0.16, 0.34, 0.72], hor: [0.66, 0.76, 0.88], glow: [0.5, 0.42, 0.28], glowDir: [0.45, 0.35], glow2: [0, 0, 0], glow2Dir: [-1, 0],
+          cloudDark: [0.72, 0.75, 0.8], cloudLit: [1.05, 1.02, 0.97], stars: 0, moon: 3 },
+        env: { top: [0.55, 0.7, 0.95], bottom: [0.35, 0.33, 0.26], band: [0.45, 0.45, 0.4], panels: [[1.6, 1.55, 1.45], [1.3, 1.4, 1.6], [1.5, 1.4, 1.2], [1.4, 1.4, 1.4]] },
+        poolMul: 0, rainBright: 0, embers: 0,
+        skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+        rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+        post: { bloom: 0.08, exposure: 0.75, sat: 1.2, shadow: [0, 0, 0], high: [0, 0, 0], threshold: 1.6 },
+        wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+      }),
+      build: () => CF.MapNuketown.build(),
+      menuCam: (t, cam) => { const a = t * 0.04; cam.position.set(Math.sin(a) * 30, 12 + Math.sin(a * 1.3) * 2, Math.cos(a) * 30); cam.lookAt(0, 2, 0); }
     }
   };
-  CF.mpMaps = ['market', 'rooftops'];
+  CF.mpMaps = ['market', 'rooftops', 'nuketown'];
 })(window.CF);

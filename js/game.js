@@ -41,6 +41,7 @@
       progress(1, 'Ready'); await U.nextFrame();
       this.bindUI();
       this.toMenu();
+      if (CF.News.unseen()) { CF.News.render(); this.backTo = 'main'; this.showScreen('news'); }
       this.last = performance.now();
       this.loopBound = this.loop.bind(this);
       requestAnimationFrame(this.loopBound);
@@ -74,8 +75,7 @@
     prog(0.05, 'Loading ' + def.name); await U.nextFrame(); await U.nextFrame();
     if (this.scene) {
       CF.Enemies.clear(); CF.FX.reset(); CF.FX.clearDecals();
-      for (const g of CF.Weapons.grenadesLive) this.scene.remove(g.mesh);
-      CF.Weapons.grenadesLive.length = 0;
+      CF.Weapons.clearLive(); CF.Streak.clear();
       L.dispose();
     }
     CF.Neon.reset();
@@ -89,7 +89,7 @@
     const ms = q === 'high' ? 2048 : 1024;
     moon.shadow.mapSize.set(ms, ms);
     const sc = moon.shadow.camera; sc.left = -42; sc.right = 42; sc.top = 42; sc.bottom = -42; sc.near = 1; sc.far = 190;
-    moon.shadow.bias = -0.0004; moon.shadow.normalBias = 0.045;
+    moon.shadow.bias = th.shadowBias != null ? th.shadowBias : -0.0004; moon.shadow.normalBias = th.shadowNormalBias || 0.045;
     scene.add(moon); scene.add(moon.target);
     this.moonDir = new THREE.Vector3(th.moon.dir[0], th.moon.dir[1], th.moon.dir[2]).normalize();
     W.reset(def.bounds);
@@ -156,7 +156,9 @@
     if (!this.audioOn) return;
     if (this.lava) { this.lava.stop(); this.lava = null; }
     if (this.mapId === 'foundry') { this.lava = A.loop('lava', { x: 0, y: 0.5, z: -30 }); if (this.lava) this.lava.set(0.6, 1); }
-    if (!this.rainSnd) { this.rainSnd = A.loop('rain'); if (this.rainSnd) this.rainSnd.set(0.16, 2); }
+    const wet = this.mapDef && this.mapDef.theme.rain && this.mapDef.theme.rain.count;
+    if (wet && !this.rainSnd) { this.rainSnd = A.loop('rain'); if (this.rainSnd) this.rainSnd.set(0.16, 2); }
+    else if (!wet && this.rainSnd) { this.rainSnd.stop(); this.rainSnd = null; }
   };
 
   // ------------------------------------------------------------ UI
@@ -202,10 +204,15 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { if (e.code === 'Escape') e.target.blur(); return; }
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
-      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'mp')) this.back();
+      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'mp' || this.screen === 'leaderboard')) this.back();
+      else if (e.code === 'Escape' && this.screen === 'news') this.act('newsok');
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
+    for (const id of ['diffName', 'lbName']) {
+      $(id).addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
+      $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.render(); });
+    }
     $('mpCode').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.initAudio(); this.act('mpjoin'); } });
     $('mpCode').addEventListener('input', (e) => { const v = CF.Net.cleanCode(e.target.value); if (v !== e.target.value) e.target.value = v; });
     window.addEventListener('resize', () => this.onResize());
@@ -219,7 +226,7 @@
   };
   G.act = function (a) {
     switch (a) {
-      case 'deploy': this.backTo = 'main'; this.showScreen('difficulty'); break;
+      case 'deploy': this.backTo = 'main'; $('diffName').value = CF.MP.name; this.showScreen('difficulty'); break;
       case 'multiplayer': this.openMpScreen(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
@@ -228,10 +235,13 @@
       case 'mpagain': CF.MP.hostRestart(); break;
       case 'settings': this.backTo = this.screen; this.syncSettingsUI(); this.settingsTab('controls'); this.showScreen('settings'); break;
       case 'manual': this.backTo = this.screen; this.showScreen('manual'); break;
+      case 'leaderboard': this.backTo = this.screen; CF.Board.render(); this.showScreen('leaderboard'); break;
+      case 'news': this.backTo = this.screen; CF.News.render(); this.showScreen('news'); break;
+      case 'newsok': CF.News.markSeen(); this.back(); break;
       case 'back': this.back(); break;
       case 'resume': this.resume(); break;
       case 'restart': this.restoreCheckpoint(); break;
-      case 'quit': this.toMenu(); break;
+      case 'quit': if (this.mode !== 'mp' && (this.state === 'paused' || this.state === 'dead')) CF.Board.record(CF.Mission.idx); this.toMenu(); break;
       case 'replay': this.startMission(); break;
     }
   };
@@ -388,7 +398,7 @@
     this.pending.length = 0; this.lastKill = -99; this.multi = 0;
     this.godMode = this.debugGod; this.slow = null; this.timeScale = 1;
     CF.time = 0;
-    CF.Weapons.reset(null);
+    CF.Weapons.reset(null); CF.Streak.reset(); CF.HUD.setStreak(0, 5, false);
     const s = L.points.start;
     CF.Player.spawn(s.x, s.y, s.z, s.yaw, { health: 100, armor: 0 });
     this.state = 'playing';
@@ -479,6 +489,7 @@
   };
 
   G.onPlayerDeath = function (source) {
+    CF.Streak.onDeath();
     if (this.mode === 'mp') { this.mpOnDeath(source); return; }
     if (this.state !== 'playing') return;
     this.state = 'dying'; this.deathT = 0; this.stats.deaths++;
@@ -490,6 +501,7 @@
   };
   G.showDead = function () {
     this.state = 'dead';
+    if (CF.Board.record(CF.Mission.idx)) CF.HUD.popup('New personal best on the leaderboard', 0, 'obj');
     const s = this.deathCause || 'Unknown';
     $('deadCause').textContent = /^(a |an |the |your )/.test(s) ? 'Killed by ' + s : s;
     CF.Input.active = false; CF.Input.exitLock(); CF.Input.clearAll();
@@ -530,6 +542,7 @@
       dt.textContent = k; dd.textContent = v; d.append(dt, dd); list.appendChild(d);
     }
     $('gradeVal').textContent = rank;
+    CF.Board.record(5, true);
     this.showScreen('win');
   };
 
@@ -552,6 +565,7 @@
     const how = head ? 'Headshot' : info && info.explosive ? 'Explosive' : info && info.melee ? 'Melee' : '';
     CF.HUD.popup(e.name + (how ? ' · ' + how.toLowerCase() : ''), pts + (head ? 50 : 0), head ? 'head' : '');
     CF.HUD.killfeed(e.name + ' destroyed', how);
+    CF.Streak.onKill();
     A.play('kill', null, { ui: true, delay: 0.04 });
     const now = CF.time;
     this.multi = now - this.lastKill < 2.4 ? this.multi + 1 : 1; this.lastKill = now;
@@ -579,7 +593,7 @@
       if (!W.segmentClear(at.x, at.y + 0.2, at.z, _c.x, _c.y, _c.z)) continue;
       const k = U.clamp(1 - Math.max(0, d - e.T.radius) / R, 0, 1);
       const dir = _c.clone().sub(at); dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
-      e.damage(D * k * (src === 'enemy' ? 0.5 : 1), { dir, point: _c.clone(), normal: dir.clone().negate(), part: null, weapon: null, source: src === 'enemy' ? 'enemy' : 'player', knock: 8 * k, explosive: true });
+      e.damage(D * k * (src === 'enemy' ? 0.5 : 1), { dir, point: _c.clone(), normal: dir.clone().negate(), part: null, weapon: null, wid: o.weapon, source: src === 'enemy' ? 'enemy' : 'player', knock: 8 * k, explosive: true });
     }
     for (const b of L.barrels) if (b.alive && b.pos.distanceTo(at) < R * 0.85) this.later(U.rand(0.1, 0.22), () => this.damageBarrel(b, 999));
     const P = CF.Player;
@@ -792,7 +806,8 @@
     else P.update(dt);
     if (P.alive && playing) CF.Weapons.update(dt, P);
     else if (P.alive) CF.Weapons.animate(dt, P);
-    else CF.Weapons.updateGrenades(dt);
+    else { CF.Weapons.updateGrenades(dt); CF.Weapons.updateProjectiles(dt); }
+    CF.Streak.update(dt, playing && P.alive);
     CF.Enemies.update(dt, P);
     if (playing && !mp) CF.Mission.update(dt);
     if (mp) { CF.MP.update(dt); this.mpUpdate(dt, raw); }
@@ -913,7 +928,7 @@
     this.initAudio(); A.resume(); A.setPaused(false);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
     CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset(); CF.HUD.objTarget = null; CF.HUD.bossBar(false);
-    this.stats = newStats(); this.score = 0; CF.HUD.setScore(0);
+    this.stats = newStats(); this.score = 0; CF.HUD.setScore(0); CF.Streak.reset(); CF.HUD.setStreak(0, 5, false);
     this.pending.length = 0; this.godMode = false; this.slow = null; this.timeScale = 1;
     this.resetPickups(); this.stopHold();
     CF.Player.alive = false; CF.Player.frozen = false;
@@ -998,7 +1013,7 @@
     if (this.state === 'mpdead') {
       this.deathT += raw;
       CF.Post.setState({ fade: Math.max(0.35, 1 - this.deathT * 0.25) });
-      for (let i = 0; i < 4; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(M.LO_KEYS[i]); this.renderLoadouts(); }
+      for (let i = 0; i < M.LO_KEYS.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(M.LO_KEYS[i]); this.renderLoadouts(); }
       const left = Math.max(0, RESPAWN - this.deathT);
       const txt = M.ended ? 'Match over' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
       if (this.ui.md !== txt) { $('mdTimer').textContent = txt; this.ui.md = txt; }
