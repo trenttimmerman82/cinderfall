@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cinderfall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800;900&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="view" tabindex="-1"></canvas>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" hidden>
+    <div class="hud-top">
+      <div class="compass" id="compass">
+        <div class="compass-strip" id="compassStrip"></div>
+        <div class="compass-obj" id="compassObj"></div>
+        <div class="compass-caret"></div>
+        <div class="compass-heading" id="compassHeading">000</div>
+      </div>
+    </div>
+
+    <div class="objective" id="objPanel">
+      <div class="obj-phase" id="objPhase">Phase 01 · The Yard</div>
+      <div class="obj-text" id="objText">Eliminate hostiles</div>
+      <div class="obj-meter" id="objMeter"><div class="obj-fill" id="objFill"></div></div>
+      <div class="obj-count" id="objCount"></div>
+    </div>
+
+    <div class="score" id="scoreBox"><span class="score-label">Score</span><span id="scoreNum">0</span></div>
+
+    <div class="mp-bar" id="mpBar" hidden>
+      <span class="mpb-mode" id="mpbMode">Free for all</span>
+      <b class="mpb-time" id="mpbTime">8:00</b>
+      <span class="mpb-score" id="mpbScore"></span>
+    </div>
+    <div class="aim-name" id="aimName" hidden></div>
+    <div class="mp-dead" id="mpDead" hidden>
+      <div class="md-title">Flatlined</div>
+      <div class="md-by" id="mdBy"></div>
+      <div class="md-timer" id="mdTimer">Respawning in 4</div>
+      <div class="md-lo-label">Next loadout</div>
+      <div class="md-lo" id="mdLo"></div>
+    </div>
+
+    <div class="world-marker" id="worldMarker" hidden>
+      <div class="wm-icon"></div>
+      <div class="wm-label" id="wmLabel">Objective</div>
+      <div class="wm-dist" id="wmDist">0 m</div>
+    </div>
+
+    <div class="crosshair" id="crosshair">
+      <i class="ch ch-t"></i><i class="ch ch-b"></i><i class="ch ch-l"></i><i class="ch ch-r"></i><i class="ch-dot"></i>
+    </div>
+    <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+    <div class="dmg-ring" id="dmgRing"></div>
+    <div class="popups" id="popups"></div>
+    <div class="dmg-numbers" id="dmgNumbers"></div>
+    <div class="killfeed" id="killfeed"></div>
+
+    <div class="vitals">
+      <div class="vital-row armor-row">
+        <span class="vital-tag">Armor</span>
+        <div class="vital-bar armor"><div class="vital-fill" id="armorFill"></div></div>
+        <span class="vital-num" id="armorNum">0</span>
+      </div>
+      <div class="vital-row health-row">
+        <span class="vital-tag">Health</span>
+        <div class="vital-bar health"><div class="vital-ghost" id="healthGhost"></div><div class="vital-fill" id="healthFill"></div></div>
+        <span class="vital-num" id="healthNum">100</span>
+      </div>
+    </div>
+
+    <div class="weapon-panel">
+      <div class="ammo">
+        <span class="ammo-mag" id="ammoMag">30</span>
+        <span class="ammo-res" id="ammoRes">/ 180</span>
+      </div>
+      <div class="weapon-name" id="weaponName">M7 Vanguard</div>
+      <div class="weapon-slots" id="weaponSlots"></div>
+      <div class="grenades" id="grenades"></div>
+    </div>
+
+    <div class="interact" id="interact" hidden>
+      <svg class="interact-ring" viewBox="0 0 44 44" aria-hidden="true">
+        <circle class="ir-track" cx="22" cy="22" r="18"></circle>
+        <circle class="ir-fill" id="interactFill" cx="22" cy="22" r="18"></circle>
+      </svg>
+      <span class="interact-key" id="interactKey">E</span>
+      <span class="interact-text" id="interactText">Hold to restore power</span>
+    </div>
+
+    <div class="hint" id="hint" hidden></div>
+
+    <div class="radio" id="radio" hidden>
+      <div class="radio-who" id="radioWho">Overwatch</div>
+      <div class="radio-line" id="radioLine"></div>
+    </div>
+
+    <div class="boss" id="bossBar" hidden>
+      <div class="boss-head"><span class="boss-name">The Warden</span><span class="boss-stage" id="bossStage">Shoulder cores</span></div>
+      <div class="boss-track"><div class="boss-fill" id="bossFill"></div></div>
+    </div>
+
+    <div class="scope" id="scope" hidden>
+      <div class="scope-glass"></div>
+      <div class="scope-reticle"><i class="sr-h"></i><i class="sr-v"></i><i class="sr-c"></i></div>
+      <div class="scope-read" id="scopeRead">3.5x · 0 m</div>
+    </div>
+
+    <div class="phase-card" id="phaseCard" hidden>
+      <div class="pc-num" id="pcNum">Phase 01</div>
+      <div class="pc-title" id="pcTitle">The Yard</div>
+      <div class="pc-sub" id="pcSub"></div>
+    </div>
+
+    <div class="fps" id="fps" hidden>0 fps</div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <!-- ===================== SCREENS ===================== -->
+  <section class="screen loading" id="screen-loading">
+    <div class="load-wrap">
+      <div class="logo logo-sm">CINDER<b>FALL</b></div>
+      <div class="load-track"><div class="load-fill" id="loadFill"></div></div>
+      <div class="load-status" id="loadStatus">Initializing renderer</div>
+    </div>
+  </section>
+
+  <section class="screen main" id="screen-main" hidden>
+    <div class="main-col">
+      <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
+      <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
+      <p class="tagline">The foundry's security AI has turned its machines on the night shift. Take it back alone, or jack in and fight your friends across the neon districts.</p>
+      <nav class="menu" aria-label="Main menu">
+        <button class="menu-item" data-act="deploy"><span class="mi-label">Campaign</span><span class="mi-note">Take back Cinder Foundry</span></button>
+        <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
+        <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
+        <button class="menu-item" data-act="manual"><span class="mi-label">Field manual</span><span class="mi-note">Keys and tactics</span></button>
+      </nav>
+    </div>
+    <div class="main-foot">
+      <span>Mouse and keyboard required</span>
+      <span>Build 2.0 · three.js r147</span>
+    </div>
+    <div class="touch-note" id="touchNote" hidden>Cinderfall needs a mouse and keyboard. Open it on a desktop browser to play.</div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-difficulty" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Deploy</span><h2>Choose your threat level</h2></header>
+      <div class="diff-grid">
+        <button class="diff" data-diff="recruit">
+          <span class="diff-name">Recruit</span>
+          <span class="diff-desc">Machines hit softly and miss often. Health recovers quickly.</span>
+          <span class="diff-stat">Enemy damage 60%</span>
+        </button>
+        <button class="diff" data-diff="veteran">
+          <span class="diff-name">Veteran</span>
+          <span class="diff-desc">The intended fight. Use cover, keep moving, and manage your ammo.</span>
+          <span class="diff-stat">Enemy damage 100%</span>
+        </button>
+        <button class="diff" data-diff="elite">
+          <span class="diff-name">Elite</span>
+          <span class="diff-desc">Accurate, aggressive machines. Every mistake costs you.</span>
+          <span class="diff-stat">Enemy damage 150%</span>
+        </button>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-settings" hidden>
+    <div class="panel wide">
+      <header class="panel-head"><span class="eyebrow">Settings</span><h2>Tune your rig</h2></header>
+      <div class="set-tabs" role="tablist" aria-label="Settings sections">
+        <button role="tab" data-settab="controls" aria-selected="true">Controls</button>
+        <button role="tab" data-settab="keys" aria-selected="false">Key bindings</button>
+        <button role="tab" data-settab="gameplay" aria-selected="false">Gameplay</button>
+        <button role="tab" data-settab="video" aria-selected="false">Video</button>
+        <button role="tab" data-settab="audio" aria-selected="false">Audio</button>
+      </div>
+      <div class="set-panels">
+        <fieldset data-setpanel="controls">
+          <legend>Controls</legend>
+          <label class="set-row"><span>Mouse sensitivity</span><input type="range" id="setSens" min="0.1" max="3" step="0.05"><output id="outSens"></output></label>
+          <label class="set-row"><span>Aim-down-sights sensitivity</span><input type="range" id="setAds" min="0.3" max="1.5" step="0.05"><output id="outAds"></output></label>
+          <label class="set-row toggle"><span>Invert vertical look</span><input type="checkbox" id="setInvert"></label>
+          <label class="set-row"><span>Right mouse button aims</span>
+            <select id="setAimMode"><option value="hold">While held</option><option value="toggle">Click to toggle</option></select>
+          </label>
+          <label class="set-row toggle"><span>Toggle crouch (press once instead of holding)</span><input type="checkbox" id="setToggleCrouch"></label>
+          <label class="set-row toggle"><span>Toggle sprint (press once instead of holding)</span><input type="checkbox" id="setToggleSprint"></label>
+        </fieldset>
+        <fieldset data-setpanel="keys" hidden>
+          <legend>Key bindings</legend>
+          <p class="bind-help">Click a slot, then press a key or a mouse side/middle button. <kbd>Backspace</kbd> clears the slot, <kbd>Esc</kbd> cancels. Esc and P always pause; left and right mouse always fire and aim.</p>
+          <div class="bind-list" id="bindList"></div>
+          <p class="bind-note" id="bindNote" aria-live="polite"></p>
+          <div><button class="btn-ghost" id="bindReset">Reset key bindings</button></div>
+        </fieldset>
+        <fieldset data-setpanel="gameplay" hidden>
+          <legend>Gameplay</legend>
+          <label class="set-row"><span>Crosshair color</span>
+            <select id="setCrosshair"><option value="white">White</option><option value="green">Green</option><option value="cyan">Cyan</option><option value="yellow">Yellow</option><option value="magenta">Magenta</option></select>
+          </label>
+          <label class="set-row"><span>View bob</span><input type="range" id="setBob" min="0" max="1" step="0.05"><output id="outBob"></output></label>
+          <label class="set-row"><span>Camera shake</span><input type="range" id="setShake" min="0" max="1" step="0.05"><output id="outShake"></output></label>
+          <label class="set-row toggle"><span>Show damage numbers</span><input type="checkbox" id="setDmgNum"></label>
+          <label class="set-row toggle"><span>Show frame rate</span><input type="checkbox" id="setFps"></label>
+        </fieldset>
+        <fieldset data-setpanel="video" hidden>
+          <legend>Video</legend>
+          <label class="set-row"><span>Field of view</span><input type="range" id="setFov" min="70" max="110" step="1"><output id="outFov"></output></label>
+          <label class="set-row"><span>Brightness</span><input type="range" id="setBright" min="0.6" max="1.6" step="0.05"><output id="outBright"></output></label>
+          <label class="set-row"><span>Graphics quality</span>
+            <select id="setQuality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+          </label>
+          <label class="set-row toggle"><span>Film grain</span><input type="checkbox" id="setGrain"></label>
+          <p class="set-note" id="qualityNote" hidden>Graphics quality changes apply the next time the page loads.</p>
+        </fieldset>
+        <fieldset data-setpanel="audio" hidden>
+          <legend>Audio</legend>
+          <label class="set-row"><span>Master volume</span><input type="range" id="setMaster" min="0" max="1" step="0.05"><output id="outMaster"></output></label>
+          <label class="set-row"><span>Music</span><input type="range" id="setMusic" min="0" max="1" step="0.05"><output id="outMusic"></output></label>
+          <label class="set-row"><span>Effects</span><input type="range" id="setSfx" min="0" max="1" step="0.05"><output id="outSfx"></output></label>
+        </fieldset>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button><button class="btn-ghost" id="settingsReset">Restore default settings</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-manual" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Field manual</span><h2>Keys and tactics</h2><p class="panel-copy">Default keys shown. Change any of them in Settings → Key bindings.</p></header>
+      <div class="manual-grid">
+        <dl class="keys">
+          <div><dt>W A S D</dt><dd>Move</dd></div>
+          <div><dt>Mouse</dt><dd>Look</dd></div>
+          <div><dt>Left click</dt><dd>Fire</dd></div>
+          <div><dt>Right click · Tab · F</dt><dd>Aim down sights (Tab or F toggles, for trackpads)</dd></div>
+          <div><dt>Shift</dt><dd>Sprint · steady scope</dd></div>
+          <div><dt>Space</dt><dd>Jump · mantle ledges</dd></div>
+          <div><dt>C</dt><dd>Crouch · slide while sprinting</dd></div>
+          <div><dt>R</dt><dd>Reload</dd></div>
+          <div><dt>E</dt><dd>Interact (hold)</dd></div>
+          <div><dt>G</dt><dd>Throw grenade</dd></div>
+          <div><dt>V</dt><dd>Melee</dd></div>
+          <div><dt>1 – 4 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–4 picks a loadout while you wait to respawn)</dd></div>
+          <div><dt>Q</dt><dd>Last weapon</dd></div>
+          <div><dt>Esc</dt><dd>Pause · multiplayer menu</dd></div>
+        </dl>
+        <div class="tactics">
+          <h3>Know the machines</h3>
+          <p><b>Sentry</b> — rifle-armed biped. The head is a weak point for double damage.</p>
+          <p><b>Stalker</b> — fast quadruped that pounces. Back-pedal and shoot, or slide past it.</p>
+          <p><b>Hornet</b> — flying drone. Fragile, but it strafes. Short bursts work best.</p>
+          <p><b>Juggernaut</b> — heavy with a rocket pod. Its red laser marks the target. Flank it and hit the glowing back vent.</p>
+          <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
+          <h3>Multiplayer loadouts</h3>
+          <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — Hex-9 SMG and 8% more speed. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
+        </div>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-pause" hidden>
+    <div class="panel narrow">
+      <header class="panel-head"><span class="eyebrow" id="pauseWhere">Phase 01</span><h2>Paused</h2></header>
+      <nav class="stack">
+        <button class="btn" data-act="resume">Resume</button>
+        <button class="btn-ghost" data-act="restart">Restart from checkpoint</button>
+        <button class="btn-ghost" data-act="settings">Settings</button>
+        <button class="btn-ghost" data-act="manual">Field manual</button>
+        <button class="btn-ghost danger" data-act="quit">Abandon mission</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim red" id="screen-dead" hidden>
+    <div class="panel narrow">
+      <header class="panel-head"><span class="eyebrow" id="deadCause">Killed by a Sentry</span><h2>Killed in action</h2></header>
+      <p class="panel-copy">Your last checkpoint keeps your weapons and completed objectives.</p>
+      <nav class="stack">
+        <button class="btn" data-act="restart">Retry from checkpoint</button>
+        <button class="btn-ghost danger" data-act="quit">Abandon mission</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-win" hidden>
+    <div class="panel">
+      <header class="panel-head"><span class="eyebrow">Cinder Station secured</span><h2>Mission complete</h2></header>
+      <div class="result">
+        <div class="grade"><span class="grade-label">Rank</span><span class="grade-val" id="gradeVal">A</span></div>
+        <dl class="stats" id="statsList"></dl>
+      </div>
+      <footer class="panel-foot">
+        <button class="btn" data-act="replay">Deploy again</button>
+        <button class="btn-ghost" data-act="quit">Main menu</button>
+      </footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-mp" hidden>
+    <div class="panel wide">
+      <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends</span><h2>Jack in</h2></header>
+      <div class="mp-grid">
+        <div class="mp-col">
+          <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+          <h3 class="mp-h">Host a match</h3>
+          <div class="card-row">
+            <button class="card" data-map="market"><b>Neon Market</b><span>Tight streets, alleys and balconies around a holographic plaza.</span></button>
+            <button class="card" data-map="rooftops"><b>Skyline</b><span>Five rooftops, stairways and catwalks, 60 metres above the street.</span></button>
+          </div>
+          <div class="card-row">
+            <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
+            <button class="card" data-mode="tdm"><b>Team deathmatch</b><span>Voltage vs Ronin. First team to 40 kills, 10 minutes.</span></button>
+          </div>
+          <button class="btn" data-act="mphost">Host match</button>
+        </div>
+        <div class="mp-col">
+          <h3 class="mp-h">Join a friend</h3>
+          <label class="field"><span>Room code</span><input id="mpCode" class="code-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false"></label>
+          <button class="btn" data-act="mpjoin">Join match</button>
+          <h3 class="mp-h">Loadout</h3>
+          <div class="lo-grid" data-lo-grid></div>
+        </div>
+      </div>
+      <p class="mp-status" id="mpStatus" aria-live="polite"></p>
+      <p class="mp-note">The host shares the 5-character room code. Friends open the same game page, pick <b>Multiplayer</b> and enter it. Up to 8 players; the host's connection carries the match.</p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-mpmenu" hidden>
+    <div class="panel wide">
+      <header class="panel-head mp-head">
+        <div><span class="eyebrow" id="mpRoom">Neon Market · Free for all</span><h2 id="mpMenuTitle">Ready to deploy</h2></div>
+        <div class="room-code"><span>Room code</span><b id="mpRoomCode">-----</b></div>
+      </header>
+      <div class="mp-grid">
+        <div class="mp-col"><h3 class="mp-h">Scoreboard</h3><div class="board" id="mpBoard"></div><p class="mp-team" id="mpTeamNote"></p></div>
+        <div class="mp-col"><h3 class="mp-h">Loadout <small>used from your next spawn</small></h3><div class="lo-grid" data-lo-grid></div></div>
+      </div>
+      <footer class="panel-foot">
+        <button class="btn" data-act="mpresume" id="mpResumeBtn">Deploy</button>
+        <button class="btn-ghost" data-act="settings">Settings</button>
+        <button class="btn-ghost" data-act="manual">Field manual</button>
+        <button class="btn-ghost danger" data-act="mpleave">Leave match</button>
+      </footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen dim" id="screen-mpend" hidden>
+    <div class="panel narrow-ish">
+      <header class="panel-head"><span class="eyebrow">Match over</span><h2 id="mpWinner">Match over</h2></header>
+      <div class="board" id="mpEndBoard"></div>
+      <p class="panel-copy" id="mpEndNote"></p>
+      <footer class="panel-foot">
+        <button class="btn" data-act="mpagain" id="mpAgainBtn">Play again</button>
+        <button class="btn-ghost danger" data-act="mpleave">Leave match</button>
+      </footer>
+    </div>
+  </section>
+
+  <div class="relock" id="relock" hidden><span>Click to re-engage</span></div>
+  <div class="fatal" id="fatal" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/music.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/world.js"></script>
+<script src="js/neon.js"></script>
+<script src="js/level.js"></script>
+<script src="js/map.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/map-market.js"></script>
+<script src="js/map-rooftops.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/viewmodels.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/player.js"></script>
+<script src="js/enemy-models.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/boss.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/post.js"></script>
+<script src="js/mission.js"></script>
+<script src="js/net.js"></script>
+<script src="js/mp.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
