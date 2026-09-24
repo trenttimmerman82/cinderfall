@@ -314,6 +314,7 @@
   MS.later = function (t, fn) { this.timers.push({ t, fn }); };
   MS.complete = function () {
     this.spawner = null;
+    CF.Game.phaseDone(this.idx);
     A.play('objective', null, { ui: true }); CF.Music.sting('objective');
     CF.HUD.popup('Objective complete', 1000, 'obj'); CF.Game.addScore(1000);
     const reward = { landfall: 'shotgun', deadair: 'rail', whiteout: 'minigun', bloom: 'rocket' }[this.phase.id];

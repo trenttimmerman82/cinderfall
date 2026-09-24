@@ -222,6 +222,7 @@
   };
   MS.complete = function () {
     this.spawner = null;
+    CF.Game.phaseDone(this.idx);
     A.play('objective', null, { ui: true }); CF.Music.sting('objective');
     CF.HUD.popup('Objective complete', 1000, 'obj'); CF.Game.addScore(1000);
     const reward = { yard: 'shotgun', power: 'rail', uplink: 'rocket' }[this.phase.id];

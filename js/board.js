@@ -5,6 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const KEY = 'cinderfall.leaderboard.v1';
   const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones' };
+  const TOP = 10; // rows shown per board; your own rank is always shown too
   const Board = CF.Board = { tab: 'world', campaign: null, mode: 'all', world: null, loading: false, error: '', req: 0, v2: null };
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
   Board.load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
@@ -61,7 +62,7 @@
 
   // ------------------------------------------------------------ global board
   function request(method, body) {
-    const q = method === 'GET' ? '?player=' + Board.player() + '&name=' + encodeURIComponent(CF.MP.name) + '&campaign=' + Board.campaign + '&mode=' + Board.mode : '';
+    const q = method === 'GET' ? '?player=' + Board.player() + '&name=' + encodeURIComponent(CF.MP.name) + '&campaign=' + Board.campaign + '&mode=' + Board.mode + '&limit=' + TOP : '';
     const ctl = typeof AbortController === 'function' ? new AbortController() : null;
     const timer = ctl && setTimeout(() => ctl.abort(), 10000);
     return fetch(server() + '/scores' + q, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
@@ -84,9 +85,24 @@
   const viewMatches = (d) => d && d.campaign === Board.campaign && d.mode === Board.mode;
   Board.submit = function (run) {
     if (!server() || !canSend(run)) return;
-    request('POST', Object.assign({ player: this.player(), view: this.mode }, run))
-      .then((d) => { if (d.campaign === this.campaign && d.mode === this.mode) { this.world = d; this.error = ''; if (onScreen()) this.render(); } this.markSynced(run); })
+    // the profile token and server-tracked run let the server check a #1 before it awards the Champion skins
+    const G = CF.Game, auth = { token: CF.Profile.token() || undefined, run: (G && CF.Profile.runId(G.runKey)) || undefined, limit: TOP };
+    request('POST', Object.assign({ player: this.player(), view: this.mode }, run, auth))
+      .then((d) => {
+        if (d.campaign === this.campaign && d.mode === this.mode) { this.world = d; this.error = ''; if (onScreen()) this.render(); }
+        this.markSynced(run);
+        if (d.champion) this.championUnlocked(d.champion);
+      })
       .catch(() => { /* offline: the run is still on this computer, and the leaderboard sends it next time */ });
+  };
+  /** The server saw this run take #1: the Champion skins are yours (the first time), and you hold the crown for now. */
+  Board.championUnlocked = function (c) {
+    const [camp, mode] = String(c.board || '').split('|'), C = CF.Campaigns[camp];
+    const where = (C ? C.name : 'the leaderboard') + (mode ? ' · ' + (MODE_LABEL[mode] || mode) : '');
+    if (c.first) CF.Toast('You reached #1! Champion skin unlocked', 'champ', where + ' · equip it in the Locker');
+    else CF.Toast('You hold #1 on ' + where, 'champ', 'Your Champion crown shows in multiplayer while you keep the top spot');
+    if (CF.Audio.ready) CF.Audio.play('champion', null, { ui: true });
+    CF.Profile.refresh();
   };
   Board.markSynced = function (run) {
     let sent = {};
@@ -125,7 +141,13 @@
   Board.setMode = function (m) { if (this.mode === m) return; this.mode = m; if (server()) this.fetch(); this.render(); };
   function row(el, cells, cls, mode) {
     const d = document.createElement('div'); d.className = 'lb-row' + (cls || '');
-    for (const t of cells) { const s = document.createElement('span'); s.textContent = t; d.appendChild(s); }
+    cells.forEach((t, i) => {
+      const s = document.createElement('span');
+      if (i === 0 && t === '1') { const c = document.createElement('i'); c.className = 'lb-crown'; c.title = 'Top of this board'; c.textContent = '♛'; s.append(c, '1'); }
+      else s.textContent = t;
+      if (i === 1 && / me/.test(cls || '')) { const y = document.createElement('em'); y.className = 'lb-you'; y.textContent = 'You'; s.appendChild(y); }
+      d.appendChild(s);
+    });
     const m = document.createElement('span');
     if (mode) { const pill = document.createElement('i'); pill.className = 'lb-mode ' + mode; pill.textContent = MODE_LABEL[mode] || mode; m.appendChild(pill); }
     else m.textContent = 'Mode';
@@ -153,19 +175,22 @@
       note.textContent = 'Everyone who plays Cinderfall. Each callsign keeps its best run per campaign and per drone mode.';
       const d = viewMatches(this.world) ? this.world : null;
       if (!d) { empty(el, 'Loading the leaderboard…'); return; }
-      if (d.mine) rank.textContent = 'You are #' + d.mine.rank.toLocaleString('en-US') + ' of ' + d.total.toLocaleString('en-US') + ' run' + (d.total === 1 ? '' : 's');
+      if (d.mine) rank.textContent = 'Your rank: #' + d.mine.rank.toLocaleString('en-US') + ' of ' + d.total.toLocaleString('en-US') + ' · ' + d.mine.score.toLocaleString('en-US') + ' pts';
       else rank.textContent = d.total ? d.total.toLocaleString('en-US') + ' run' + (d.total === 1 ? '' : 's') + ' ranked · finish a run to join them' : '';
-      if (!d.rows.length) { empty(el, d.legacy && this.campaign !== 'foundry' ? 'The global board for this campaign opens once the game server is updated. Your runs are saved on this computer until then.' : 'No runs here yet. Be the first on the board.'); return; }
-      d.rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.me), r.mode));
-      if (d.mine && !d.rows.some((r) => r.me)) { row(el, ['⋯', '', '', '', ''], ' gap', null); row(el, cells(d.mine, d.mine.rank), cls(d.mine, true), d.mine.mode); }
+      if (!d.rows.length) { empty(el, d.legacy && this.campaign !== 'foundry' ? 'This board opens once the game server is updated (server owner: run npx wrangler deploy in server/). Your runs are saved on this computer and are sent automatically after the update.' : 'No runs here yet. Be the first on the board.'); return; }
+      d.rows.slice(0, TOP).forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.me), r.mode));
+      if (d.mine && !d.rows.slice(0, TOP).some((r) => r.me)) { row(el, ['⋯', '', '', '', ''], ' gap', null); row(el, cells(d.mine, d.mine.rank), cls(d.mine, true), d.mine.mode); }
       return;
     }
 
     note.textContent = this.error || 'Runs are saved in this browser. Your best run per callsign, campaign and drone mode is kept.';
     const me = CF.MP.name.toLowerCase();
-    const rows = this.runs().filter((r) => r.campaign === this.campaign && (this.mode === 'all' || r.mode === this.mode))
-      .sort((a, c) => (c.prog - a.prog) || (c.score - a.score)).slice(0, 25);
-    if (!rows.length) { empty(el, 'No runs yet. Deploy on this campaign and your best run will show up here.'); return; }
-    rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.name.toLowerCase() === me), r.mode));
+    const all = this.runs().filter((r) => r.campaign === this.campaign && (this.mode === 'all' || r.mode === this.mode))
+      .sort((a, c) => (c.prog - a.prog) || (c.score - a.score));
+    if (!all.length) { empty(el, 'No runs yet. Deploy on this campaign and your best run will show up here.'); return; }
+    const mi = all.findIndex((r) => r.name.toLowerCase() === me);
+    if (mi >= 0) rank.textContent = 'Your rank: #' + (mi + 1) + ' of ' + all.length + ' · ' + all[mi].score.toLocaleString('en-US') + ' pts';
+    all.slice(0, TOP).forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.name.toLowerCase() === me), r.mode));
+    if (mi >= TOP) { row(el, ['⋯', '', '', '', ''], ' gap', null); row(el, cells(all[mi], mi + 1), cls(all[mi], true), all[mi].mode); }
   };
 })(window.CF);

@@ -283,6 +283,31 @@
   R.fuseTake = (d, t) => { R.magIn(d, t); [523, 784].forEach((f, i) => A.tone(d, t + 0.08 + i * 0.07, { type: 'triangle', f0: f, dur: 0.2, gain: 0.07 })); };
   R.iceWall = (d, t) => { R.iceCrack(d, t); A.noise(d, t, { type: 'lowpass', f0: 1200, f1: 100, dur: 1.2, gain: 0.8 }); A.tone(d, t, { f0: 60, f1: 30, dur: 0.9, gain: 0.8 }); };
 
+  // ---- rewards, crates, gadgets
+  R.coins = (d, t) => { [1318.5, 1760, 2349.3].forEach((f, i) => { A.tone(d, t + i * 0.07, { type: 'triangle', f0: f, dur: 0.22, gain: 0.07 }); A.tone(d, t + i * 0.07, { f0: f * 2, dur: 0.1, gain: 0.02 }); }); };
+  R.crateTick = (d, t) => { A.tone(d, t, { type: 'square', f0: 1800, f1: 1500, dur: 0.018, gain: 0.05 }); A.noise(d, t, { type: 'bandpass', f0: 3200, dur: 0.012, gain: 0.08, Q: 3 }); };
+  R.crateOpen = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 300, f1: 2400, dur: 0.5, gain: 0.25, Q: 0.8, attack: 0.05 }); A.tone(d, t, { type: 'sawtooth', f0: 90, f1: 360, dur: 0.5, gain: 0.05, lp: 1400 }); R.bolt(d, t + 0.45); };
+  R.reveal = (d, t, o) => {
+    const w = o.rarity || 0, base = [392, 440, 523.25, 587.3, 659.3][w];
+    const notes = [1, 1.25, 1.5, 2, 2.5].slice(0, 3 + Math.min(2, w));
+    notes.forEach((k, i) => A.tone(d, t + i * 0.08, { type: 'triangle', f0: base * k, dur: 0.9 + w * 0.3, gain: 0.08, attack: 0.01 }));
+    A.noise(d, t, { type: 'highpass', f0: 5000, dur: 0.6 + w * 0.3, gain: 0.05 + w * 0.03, attack: 0.02 });
+    if (w >= 3) { for (let i = 0; i < 6; i++) A.tone(d, t + 0.35 + i * 0.09, { f0: base * 4 * [1, 1.25, 1.5, 2, 1.5, 2][i], dur: 0.25, gain: 0.03 }); A.tone(d, t, { f0: 65, f1: 45, dur: 0.8, gain: 0.5 }); }
+  };
+  R.champion = (d, t) => { R.reveal(d, t, { rarity: 4 }); [523.25, 659.3, 783.99, 1046.5].forEach((f, i) => A.tone(d, t + 0.6 + i * 0.14, { type: 'sawtooth', f0: f, dur: 0.5, gain: 0.03, lp: 2600 })); };
+  R.revolver = (d, t) => {
+    A.noise(d, t, { type: 'highpass', f0: 2200, dur: 0.05, gain: 0.9 });
+    A.noise(d, t, { type: 'lowpass', f0: 5200, f1: 420, dur: 0.32, gain: 1.2, Q: 0.7 });
+    A.tone(d, t, { f0: 120, f1: 36, dur: 0.26, gain: 1.2 });
+    A.noise(d, t + 0.02, { type: 'bandpass', f0: 600, f1: 200, dur: 0.9, gain: 0.22, Q: 0.5 });
+  };
+  R.hammer = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 2800, dur: 0.02, gain: 0.25, Q: 3 }); A.tone(d, t, { type: 'square', f0: 1400, dur: 0.012, gain: 0.05 }); };
+  R.cylinder = (d, t) => { for (let i = 0; i < 3; i++) R.hammer(d, t + i * 0.05); };
+  R.chest = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 500, f1: 1200, dur: 0.3, gain: 0.3, Q: 1 }); R.pickup(d, t + 0.2); A.tone(d, t + 0.1, { type: 'triangle', f0: 523, f1: 1046, dur: 0.4, gain: 0.08 }); };
+  R.rcBeep = (d, t) => { A.tone(d, t, { type: 'square', f0: 1900, dur: 0.05, gain: 0.05 }); A.tone(d, t + 0.08, { type: 'square', f0: 2400, dur: 0.05, gain: 0.05 }); };
+  R.rcCrash = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 900, dur: 0.12, gain: 0.35, Q: 1.2 }); A.tone(d, t, { f0: 180, f1: 90, dur: 0.12, gain: 0.25 }); };
+  R.bigBoom = (d, t) => { R.explosion(d, t); A.tone(d, t, { f0: 52, f1: 18, dur: 1.6, gain: 1.2 }); A.noise(d, t + 0.05, { type: 'lowpass', f0: 1800, f1: 70, dur: 2.2, gain: 0.8 }); };
+
   // Throttle: max plays of a given sound within a short window
   const LIMIT = { shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
 
@@ -361,6 +386,10 @@
       const o = osc('triangle', 880); const f = A.filter(out, 'bandpass', 1800, 2); o.connect(f); freq = o.frequency;
       const o2 = osc('sine', 1318); const g2 = ctx.createGain(); g2.gain.value = 0.4; o2.connect(g2); g2.connect(out);
       const n = noiseSrc(); const nf = A.filter(out, 'highpass', 5000, 0.7); const ng = ctx.createGain(); ng.gain.value = 0.5; n.connect(ng); ng.connect(nf);
+    } else if (kind === 'rc') { // a tiny electric motor: whine plus buzzy gearbox, pitch follows speed
+      const o = osc('sawtooth', 220); const f = A.filter(out, 'bandpass', 900, 1.6); o.connect(f); freq = o.frequency;
+      const b = osc('square', 55); const bg = ctx.createGain(); bg.gain.value = 0.25; const bf = A.filter(out, 'lowpass', 500, 1); b.connect(bg); bg.connect(bf);
+      const n = noiseSrc(); const nf = A.filter(out, 'highpass', 4200, 0.7); const ng = ctx.createGain(); ng.gain.value = 0.15; n.connect(ng); ng.connect(nf);
     } else if (kind === 'tinnitus') {
       const a = osc('sine', 3950); a.connect(out);
     }

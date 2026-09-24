@@ -145,6 +145,7 @@
   </section>
 
   <section class="screen main" id="screen-main" hidden>
+    <div class="main-coins"><button class="coin-chip" data-act="locker" title="Coins · open the locker and shop"><span data-coins>0</span></button></div>
     <div class="main-col">
       <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
@@ -168,24 +169,33 @@
     <div class="panel wide">
       <header class="panel-head"><span class="eyebrow">Campaign</span><h2>Choose your operation</h2></header>
       <div class="campaign-cards" id="campaignCards">
-        <button class="cc-card cc-foundry" data-campaign="foundry">
+        <div class="cc-card cc-foundry" data-cc="foundry">
           <span class="cc-art" aria-hidden="true"></span>
           <span class="cc-where">Kowloon Arc · Sector 7 · 03:10</span>
           <span class="cc-name">Cinder Foundry</span>
           <span class="cc-desc">The foundry's security AI has turned its machines on the night shift. Restore power, hold the uplink and take down the Warden.</span>
           <span class="cc-meta">5 phases · Warden security units · Night, acid rain</span>
           <span class="cc-best"></span>
-        </button>
-        <button class="cc-card cc-halden" data-campaign="halden">
+          <span class="cc-actions">
+            <button class="cc-continue" data-continue="foundry" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
+            <button class="btn" data-campaign="foundry">Start operation</button>
+          </span>
+        </div>
+        <div class="cc-card cc-halden" data-cc="halden">
           <span class="cc-art" aria-hidden="true"></span>
           <span class="cc-where">Halden Deep Station · Antarctica · Polar night</span>
           <span class="cc-name">Whiteout</span>
           <span class="cc-desc">A deep drill station went silent nine days ago. Something came up the borehole. Find the survivor, cross the ice in a storm and kill what is growing under it.</span>
           <span class="cc-meta">6 parts · The Rime · Blizzards, crevasses, cold</span>
           <span class="cc-best"></span>
-        </button>
+          <span class="cc-actions">
+            <button class="cc-continue" data-continue="halden" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
+            <button class="btn" data-campaign="halden">Start operation</button>
+          </span>
+        </div>
       </div>
-      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+      <p class="panel-copy cc-save-note">Progress saves at every checkpoint. Clearing a part earns coins; finishing a campaign earns a bonus.</p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button><button class="btn-ghost danger" data-act="resetprogress" id="resetProgress">Reset campaign progress</button></footer>
     </div>
   </section>
 
@@ -444,6 +454,14 @@
     </div>
   </section>
 
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <h3 id="modalTitle">Are you sure?</h3>
+      <p id="modalText"></p>
+      <div class="modal-actions"><button class="btn-ghost" data-modal="cancel">Cancel</button><button class="btn" data-modal="ok" id="modalOk">OK</button></div>
+    </div>
+  </div>
   <div class="relock" id="relock" hidden><span>Click to re-engage</span></div>
   <div class="fatal" id="fatal" hidden></div>
 </div>
@@ -482,6 +500,9 @@
 <script src="js/mp.js"></script>
 <script src="js/streak.js"></script>
 <script src="js/board.js"></script>
+<script src="js/skins.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/progress.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

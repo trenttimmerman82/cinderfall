@@ -40,6 +40,9 @@
       await this.loadMap('foundry', (k, label) => progress(0.58 + k * 0.42, label));
       progress(1, 'Ready'); await U.nextFrame();
       this.bindUI();
+      CF.Progress.load();
+      CF.Profile.init();
+      if (CF.Progress.damaged.length) setTimeout(() => CF.Toast('A damaged campaign save was reset', 'error', 'Your coins and skins are not affected.'), 1200);
       this.toMenu();
       this.last = performance.now();
       this.loopBound = this.loop.bind(this);
@@ -167,18 +170,34 @@
   };
 
   // ------------------------------------------------------------ UI
+  /** Styled confirm dialog. Resolves true/false. */
+  CF.UI = {
+    confirm(title, text, ok, danger) {
+      return new Promise((resolve) => {
+        const m = $('modal'), okBtn = $('modalOk');
+        $('modalTitle').textContent = title; $('modalText').textContent = text; okBtn.textContent = ok || 'OK';
+        okBtn.classList.toggle('danger', !!danger);
+        m.hidden = false; okBtn.focus();
+        const done = (v) => { m.hidden = true; m.removeEventListener('click', onClick); window.removeEventListener('keydown', onKey, true); resolve(v); };
+        const onClick = (e) => { const b = e.target.closest('[data-modal]'); if (b) done(b.dataset.modal === 'ok'); else if (e.target === m) done(false); };
+        const onKey = (e) => { if (e.code === 'Escape') { e.stopPropagation(); done(false); } };
+        m.addEventListener('click', onClick); window.addEventListener('keydown', onKey, true);
+      });
+    }
+  };
   G.showScreen = function (id) {
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== 'screen-' + id;
     this.screen = id;
   };
   G.bindUI = function () {
     document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-map], [data-mode], [data-loadout]');
+      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-continue], [data-map], [data-mode], [data-loadout]');
       if (!b || b.disabled) return;
       this.initAudio();
       A.play('uiClick', null, { ui: true });
       if (b.dataset.diff) { CF.settings.difficulty = b.dataset.diff; CF.saveSettings(); this.startMission(); return; }
-      if (b.dataset.campaign) { CF.settings.campaign = b.dataset.campaign; CF.saveSettings(); CF.Music.setTheme(CF.campaign().music); this.act('deploy'); return; }
+      if (b.dataset.campaign) { this.newOperation(b.dataset.campaign); return; }
+      if (b.dataset.continue) { this.continueMission(b.dataset.continue); return; }
       if (b.dataset.map) { this.mpSel.map = b.dataset.map; this.renderMpPick(); return; }
       if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
@@ -247,17 +266,44 @@
       case 'restart': this.restoreCheckpoint(); break;
       case 'quit': if (this.mode !== 'mp' && (this.state === 'paused' || this.state === 'dead')) CF.Board.record(CF.Mission.idx); this.toMenu(); break;
       case 'campaigns': this.backTo = 'main'; this.renderCampaigns(); this.showScreen('campaign'); break;
+      case 'resetprogress': this.resetProgress(); break;
       case 'replay': this.startMission(); break;
     }
   };
-  /** Campaign picker: one card per campaign with its best local run. */
+  /** Campaign picker: one card per campaign with its best local run and, when there is one, the saved run to continue. */
   G.renderCampaigns = function () {
     const el = $('campaignCards'); if (!el) return;
-    for (const b of el.querySelectorAll('[data-campaign]')) {
-      const id = b.dataset.campaign, best = CF.Board.bestLocal(id);
-      b.classList.toggle('sel', id === CF.settings.campaign);
-      b.querySelector('.cc-best').textContent = best ? 'Your best · ' + best.stage + ' · ' + best.score.toLocaleString('en-US') : 'Not played yet';
+    for (const card of el.querySelectorAll('[data-cc]')) {
+      const id = card.dataset.cc, best = CF.Board.bestLocal(id), save = CF.Progress.get(id);
+      card.classList.toggle('sel', id === CF.settings.campaign);
+      card.querySelector('.cc-best').textContent = best ? 'Your best · ' + best.stage + ' · ' + best.score.toLocaleString('en-US') : save ? 'Run in progress' : 'Not played yet';
+      const cont = card.querySelector('[data-continue]');
+      cont.hidden = !save;
+      if (save) {
+        cont.querySelector('.cc-cont-where').textContent = CF.Progress.label(save);
+        cont.querySelector('.cc-cont-meta').textContent = CF.DIFF[save.diff].label + (save.noDrones ? ' · No drones' : '') + ' · ' + save.cp.score.toLocaleString('en-US') + ' pts';
+      }
+      card.querySelector('[data-campaign]').textContent = save ? 'New operation' : 'Start operation';
     }
+    $('resetProgress').disabled = !Object.keys(CF.Progress.data.saves).length;
+  };
+  /** New operation: a saved run for this campaign is replaced, so ask first. */
+  G.newOperation = async function (id) {
+    const save = CF.Progress.get(id);
+    if (save && !(await CF.UI.confirm('Start a new operation?', 'Your saved ' + CF.Campaigns[id].name + ' run (' + CF.Progress.label(save) + ') will be replaced when you reach your first checkpoint.', 'Start new'))) return;
+    CF.settings.campaign = id; CF.saveSettings(); CF.Music.setTheme(CF.campaign().music);
+    this.act('deploy');
+  };
+  G.continueMission = function (id) {
+    const save = CF.Progress.get(id); if (!save) { this.renderCampaigns(); return; }
+    CF.settings.campaign = id; CF.settings.difficulty = save.diff; CF.settings.noDrones = save.noDrones; CF.saveSettings();
+    this.startMission(false, save);
+  };
+  G.resetProgress = async function () {
+    if (!(await CF.UI.confirm('Reset campaign progress?', 'Saved runs for both campaigns will be deleted' + (CF.Profile.mode === 'server' ? ', on this device and in the cloud' : '') + '. Coins, skins and leaderboard entries are kept.', 'Reset progress', true))) return;
+    CF.Progress.resetAll();
+    CF.Toast('Campaign progress reset', 'info');
+    this.renderCampaigns();
   };
   G.back = function () {
     this.stopCapture();
@@ -395,7 +441,7 @@
     CF.Player.alive = false; CF.Player.speedMul = 1;
     if (this.mapDef) CF.Post.setState(this.mapDef.theme.post);
   };
-  G.startMission = async function (noLock) {
+  G.startMission = async function (noLock, save) {
     this.initAudio(); A.resume();
     const C = CF.campaign();
     CF.Mission = C.mission;
@@ -406,7 +452,14 @@
     }
     CF.Music.setTheme(C.music);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
-    this.newGame();
+    this.newGame(save);
+    if (save) {
+      // back to the saved checkpoint: same loadout, score, stats and mission state
+      this.cp = CF.Progress.checkpoint(save);
+      this.stats = Object.assign(newStats(), save.stats);
+      this.restoreCheckpoint(true);
+      CF.HUD.killfeed('Progress restored · ' + CF.Progress.label(save), '');
+    }
     this.showScreen(null);
     CF.HUD.show(true);
     CF.Input.active = true; CF.Input.clearAll();
@@ -414,7 +467,12 @@
     if (noLock) CF.Input.freeLook = true;
     else if (!CF.Input.freeLook && !CF.Input.locked) CF.Input.requestLock();
   };
-  G.newGame = function () {
+  G.newGame = function (save) {
+    const C = CF.campaign();
+    // every run is tracked (coins per cleared part); a continued run keeps its original run
+    if (save && save.run) { CF.Profile.adoptRun(save.run, { campaign: C.id, diff: save.diff, mode: save.noDrones ? 'nodrones' : 'drones', runId: save.runId, claimed: save.claimed }); this.runKey = save.run; }
+    else { this.runKey = CF.Profile.runStart(C.id, CF.settings.difficulty, CF.settings.noDrones ? 'nodrones' : 'drones'); if (CF.Progress.get(C.id)) CF.Progress.clear(C.id); }
+    this.runCoins = 0; this.runClaimed = save ? save.claimed || 0 : 0;
     this.resetLevel();
     if (CF.Mission.resetWorld) CF.Mission.resetWorld();
     CF.Enemies.clear(); CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset();
@@ -427,7 +485,7 @@
     CF.Player.spawn(s.x, s.y, s.z, s.yaw, { health: 100, armor: 0 });
     this.state = 'playing';
     CF.Mission.start();
-    this.saveCheckpoint(s, true);
+    this.saveCheckpoint(s, true, true);
     CF.Post.setState({ fade: 1, low: 0, hurt: 0 });
     A.setPaused(false);
   };
@@ -458,15 +516,25 @@
     lamp.color.set(C[0]); lamp.baseCol = new THREE.Color(C[1], C[2], C[3]);
   };
 
-  G.saveCheckpoint = function (spawn, silent) {
+  G.saveCheckpoint = function (spawn, silent, noStore) {
     const P = CF.Player;
     this.cp = {
       phase: CF.Mission.idx, spawn: { x: spawn.x, y: spawn.y, z: spawn.z, yaw: spawn.yaw || 0 },
       armor: P.armor, loadout: CF.Weapons.snapshot(), score: this.score, mission: CF.Mission.saveState()
     };
     if (!silent) CF.HUD.killfeed('Checkpoint reached', '');
+    // every checkpoint after the start of a run is saved, so closing the tab loses nothing
+    if (!noStore && this.mode !== 'mp' && CF.campaign()) {
+      CF.Progress.store(CF.campaign().id, this.cp, { run: this.runKey, runId: CF.Profile.runId(this.runKey), stats: this.stats, claimed: this.runClaimed });
+    }
   };
-  G.restoreCheckpoint = function () {
+  /** A campaign part was cleared: claim its coins (the server decides how many). */
+  G.phaseDone = function (idx) {
+    if (this.mode === 'mp' || !this.runKey || idx < this.runClaimed) return;
+    for (let i = this.runClaimed; i <= idx; i++) CF.Profile.claim(this.runKey, i, CF.Mission.phases.length);
+    this.runClaimed = idx + 1;
+  };
+  G.restoreCheckpoint = function (fromSave) {
     const cp = this.cp;
     if (!cp) { this.startMission(); return; }
     this.initAudio();
@@ -485,7 +553,7 @@
     CF.HUD.show(true);
     this.showScreen(null);
     CF.Input.active = true; CF.Input.clearAll();
-    if (!CF.Input.freeLook) CF.Input.requestLock();
+    if (!fromSave && !CF.Input.freeLook) CF.Input.requestLock();
   };
 
   G.pause = function () {
@@ -537,6 +605,8 @@
 
   G.victory = function () {
     if (this.state !== 'playing') return;
+    this.phaseDone(CF.Mission.phases.length - 1);
+    CF.Progress.clear(CF.campaign().id);
     this.state = 'victory'; this.winT = 0; this.winShown = false;
     this.godMode = true; CF.Player.frozen = true;
     CF.Mission.spawner = null;
@@ -562,7 +632,8 @@
       ['Score', this.score.toLocaleString('en-US') + (newBest ? ' · new best' : '')], ['Time', U.fmtTime(st.time)],
       ['Kills', st.kills], ['Headshot kills', st.headshots], ['Accuracy', Math.round(acc * 100) + '%'], ['Deaths', st.deaths],
       ['Damage dealt', Math.round(st.damageDealt).toLocaleString('en-US')], ['Damage taken', Math.round(st.damageTaken).toLocaleString('en-US')],
-      ['Difficulty', CF.diffLabel()], ['Best score', Math.max(best, this.score).toLocaleString('en-US')]
+      ['Difficulty', CF.diffLabel()], ['Best score', Math.max(best, this.score).toLocaleString('en-US')],
+      ['Coins earned', CF.Profile.mode === 'server' && CF.Profile.status !== 'ready' ? 'Saved until you are back online' : (this.runCoins || 0).toLocaleString('en-US') + (CF.Profile.claims && CF.Profile.claims.q.length ? ' · more on the way' : '')]
     ];
     const list = $('statsList'); list.textContent = '';
     for (const [k, v] of rows) {
