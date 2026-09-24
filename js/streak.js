@@ -13,7 +13,6 @@
 
   /** Streak meter: kills in the window and how long until the oldest one expires, or the live drone's ammo and time. */
   S.hud = function () {
-    if (CF.noDrones()) { CF.HUD.setStreak(null); return; }
     const d = this.drones[0];
     if (d) { CF.HUD.setStreak({ drone: true, ammo: d.ammo, max: AMMO, frac: d.life / LIFE }); return; }
     const n = this.kills.length;
@@ -21,7 +20,7 @@
   };
   /** A kill the player earned; drone kills do not feed the streak. */
   S.onKill = function () {
-    if (this.droneKill || CF.noDrones() || this.ready || this.drones.length) return;
+    if (this.droneKill || this.ready || this.drones.length) return;
     this.kills.push(CF.time);
     if (this.kills.length >= NEED) {
       this.ready = true; this.kills.length = 0;
@@ -33,7 +32,7 @@
   S.onDeath = function () { this.kills.length = 0; this.clear(); this.hud(); };
 
   S.deploy = function () {
-    if (!this.ready || CF.noDrones()) return;
+    if (!this.ready) return;
     this.ready = false;
     const m = CF.EnemyModels.hornet();
     // friendly colours: swap the red eye glow for cyan without touching the shared enemy materials

@@ -211,7 +211,7 @@
       $(id).addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
       $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.open(); });
     }
-    for (const id of ['diffNoDrones', 'mpNoDrones']) $(id).addEventListener('change', (e) => { CF.settings.noDrones = e.target.checked; CF.saveSettings(); });
+    $('diffNoDrones').addEventListener('change', (e) => { CF.settings.noDrones = e.target.checked; CF.saveSettings(); });
     $('mpCode').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.initAudio(); this.act('mpjoin'); } });
     $('mpCode').addEventListener('input', (e) => { const v = CF.Net.cleanCode(e.target.value); if (v !== e.target.value) e.target.value = v; });
     window.addEventListener('resize', () => this.onResize());
@@ -880,7 +880,6 @@
   G.openMpScreen = function () {
     this.backTo = 'main';
     $('mpName').value = MPM().name;
-    $('mpNoDrones').checked = CF.settings.noDrones;
     this.renderMpPick(); this.renderLoadouts();
     this.mpBusy(false);
     if (!CF.Net.available()) MPM().status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true);
@@ -920,7 +919,7 @@
     if (!CF.Net.available()) { M.status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true); return; }
     if (!host && CF.Net.cleanCode($('mpCode').value).length !== 5) { M.status('Enter the 5-character room code your friend sees on their screen.', true); $('mpCode').focus(); return; }
     this.mpBusy(true);
-    if (host) M.host(this.mpSel.map, this.mpSel.mode, CF.settings.noDrones); else M.join($('mpCode').value);
+    if (host) M.host(this.mpSel.map, this.mpSel.mode); else M.join($('mpCode').value);
   };
   /** Called once the map is built: show the lobby so the Deploy click can capture the mouse. */
   G.enterMultiplayer = function () {
@@ -956,7 +955,7 @@
   G.renderMpMenu = function () {
     const M = MPM(), def = CF.Maps[M.map];
     $('mpRoomCode').textContent = CF.Net.code || '-----';
-    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + (M.mode === 'tdm' ? 'Team deathmatch' : 'Free for all') + (M.noDrones ? ' · No drones' : '') + (M.isHost() ? ' · you are hosting' : '');
+    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + (M.mode === 'tdm' ? 'Team deathmatch' : 'Free for all') + (M.isHost() ? ' · you are hosting' : '');
     $('mpMenuTitle').textContent = this.mpLobby ? 'Ready to deploy' : 'Match in progress';
     const btn = $('mpResumeBtn');
     btn.textContent = this.mpLobby ? 'Deploy' : CF.Player.alive ? 'Resume' : 'Respawn';

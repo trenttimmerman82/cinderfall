@@ -6,10 +6,10 @@ It is set in a rain-soaked neon city.
 - **Campaign.** The foundry's security AI has turned its machines on the night shift. Clear the yard,
   restore power, hold the uplink, and take down the Warden. You start with a carbine and a pistol; each objective
   unlocks another weapon (shotgun, satchel charges, rail rifle, minigun, RPG). Three threat levels, and a
-  **No drones** option that works with any of them.
+  **No drones** option (no enemy Hornet drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
 - **Multiplayer.** Play online with friends: free-for-all or team deathmatch (Voltage vs Ronin) on
-  **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. The host can turn off kill-streak drones.
+  **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones work here too.
 - **Global leaderboard.** Campaign runs are ranked against everyone who plays (needs the game server below).
 
 **Play:** open this repository's GitHub Pages link in a desktop browser. You need a mouse and keyboard.

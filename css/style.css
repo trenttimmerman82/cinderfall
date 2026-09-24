@@ -271,8 +271,6 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .diff-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .diff-mod { margin-top: 14px; padding: 12px 16px; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.8); cursor: pointer; }
 .diff-mod span { color: var(--bone-dim); }
-.mp-mod { margin: 0; padding: 10px 14px; }
-.mp-mod b { font-size: 18px; }
 .diff-mod b { display: block; margin-bottom: 4px; font: 800 20px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bone); }
 .diff-mod:has(input:checked) { border-color: var(--yellow); }
 .diff-mod:has(input:checked) b { color: var(--yellow); }

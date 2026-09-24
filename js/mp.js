@@ -191,8 +191,8 @@
   };
 
   /** Host a match: build the map, open a room, spawn. */
-  MP.host = async function (mapId, mode, noDrones) {
-    MP.reset(); MP.mode = mode; MP.map = mapId; MP.noDrones = !!noDrones; MP.limit = mode === 'tdm' ? 40 : 20;
+  MP.host = async function (mapId, mode) {
+    MP.reset(); MP.mode = mode; MP.map = mapId; MP.limit = mode === 'tdm' ? 40 : 20;
     MP.status('Opening a room…');
     CF.Net.onMsg = (from, msg) => MP.onHostMsg(from, msg);
     CF.Net.onLeave = (id) => MP.playerLeft(id);
@@ -244,7 +244,7 @@
         const counts = [0, 0]; for (const id in MP.players) counts[MP.players[id].team]++;
         const team = MP.mode === 'tdm' ? (counts[0] <= counts[1] ? 0 : 1) : 0;
         MP.players[from] = { name: String(msg.name || 'Operative').slice(0, 16), team, kills: 0, deaths: 0, color: MP.colorIdx++ };
-        CF.Net.sendTo(from, { t: 'welcome', id: from, map: MP.map, mode: MP.mode, limit: MP.limit, time: MP.timeLeft, team, players: MP.players, teams: MP.teamScores, ended: MP.ended, nd: MP.noDrones ? 1 : 0 });
+        CF.Net.sendTo(from, { t: 'welcome', id: from, map: MP.map, mode: MP.mode, limit: MP.limit, time: MP.timeLeft, team, players: MP.players, teams: MP.teamScores, ended: MP.ended });
         CF.Net.broadcast({ t: 'join', id: from, p: MP.players[from] }, from);
         MP.addRemote(from, MP.players[from]);
         CF.HUD.killfeed(MP.players[from].name + ' joined', '');
@@ -269,7 +269,7 @@
     switch (msg.t) {
       case 'welcome': {
         MP.myId = msg.id; MP.mode = msg.mode; MP.map = msg.map; MP.limit = msg.limit; MP.timeLeft = msg.time; MP.team = msg.team;
-        MP.teamScores = msg.teams; MP.players = msg.players; MP.ended = msg.ended; MP.noDrones = !!msg.nd; MP.active = true;
+        MP.teamScores = msg.teams; MP.players = msg.players; MP.ended = msg.ended; MP.active = true;
         await CF.Game.loadMap(msg.map);
         for (const id in MP.players) if (id !== MP.myId) MP.addRemote(id, MP.players[id]);
         CF.Game.enterMultiplayer();

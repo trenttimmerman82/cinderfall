@@ -75,8 +75,8 @@ window.CF = window.CF || {};
   };
   if (!CF.DIFF[CF.settings.difficulty]) CF.settings.difficulty = CF.settings.difficulty === 'easy' ? 'recruit' : 'veteran'; // Easy was retired
   CF.diff = () => CF.DIFF[CF.settings.difficulty] || CF.DIFF.veteran;
-  /** No drones: no Hornet drones in the campaign and no kill-streak drones anywhere. Multiplayer uses the host's choice. */
-  CF.noDrones = () => (CF.Game && CF.Game.mode === 'mp' ? !!(CF.MP && CF.MP.noDrones) : !!CF.settings.noDrones);
+  /** No drones: no enemy Hornet drones in the campaign. Your kill-streak drone is unaffected. */
+  CF.noDrones = () => !!CF.settings.noDrones && !(CF.Game && CF.Game.mode === 'mp');
   CF.diffLabel = () => CF.diff().label + (CF.settings.noDrones ? ' · No drones' : '');
 
   // ---------------------------------------------------------------- key bindings
