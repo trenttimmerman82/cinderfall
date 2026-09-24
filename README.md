@@ -4,9 +4,13 @@ A first-person shooter that runs in the browser, built with [three.js](https://t
 It is set in a rain-soaked neon city.
 
 - **Campaign.** The foundry's security AI has turned its machines on the night shift. Clear the yard,
-  restore power, hold the uplink, and take down the Warden.
-- **Multiplayer.** Play online with friends: free-for-all or team deathmatch (Voltage vs Ronin) on two maps,
-  **Neon Market** and **Skyline**, with four loadouts.
+  restore power, hold the uplink, and take down the Warden. You start with a carbine and a pistol; each objective
+  unlocks another weapon (shotgun, satchel charges, rail rifle, minigun, RPG). Three threat levels, and a
+  **No drones** option that works with any of them.
+- **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
+- **Multiplayer.** Play online with friends: free-for-all or team deathmatch (Voltage vs Ronin) on
+  **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. The host can turn off kill-streak drones.
+- **Global leaderboard.** Campaign runs are ranked against everyone who plays (needs the game server below).
 
 **Play:** open this repository's GitHub Pages link in a desktop browser. You need a mouse and keyboard.
 
@@ -16,16 +20,31 @@ It is set in a rain-soaked neon city.
 2. Friends open the same page, pick **Multiplayer**, type the code and click **Join match**.
 3. Everyone picks a loadout and clicks **Deploy**.
 
-Up to 8 players. Connections are peer-to-peer (WebRTC through [PeerJS](https://peerjs.com)); the host's browser runs the
-scoreboard and relays everyone's moves, so the host should have the best connection. Online play needs internet access.
-Some strict school or office networks block peer-to-peer connections.
+Up to 8 players. Players first try a direct peer-to-peer link (WebRTC through [PeerJS](https://peerjs.com)). If a router or
+school/office Wi-Fi blocks it, they switch to the relay on the Cinderfall server after a few seconds (see **Game server** below).
+The relay works on any network that can open ordinary websites. The host's browser runs the scoreboard and passes everyone's
+moves along, so the host should have the best connection.
 
 | Loadout | Weapons | Perk |
 | --- | --- | --- |
 | Assault | M7 carbine + P-11 pistol | — |
 | Breacher | KS-12 shotgun + P-11 | Starts with 50 armor |
 | Marksman | VX-3 rail rifle + P-11 | One-shot headshots |
-| Runner | Hex-9 SMG + P-11 | 8% faster |
+| Runner | M7 carbine + P-11 | 8% faster, one grenade |
+| Heavy | Rotor-6 minigun + P-11 | Starts with 50 armor, 10% slower |
+| Demolition | Havoc RPG + satchel charges + P-11 | — |
+
+## Game server (global leaderboard and multiplayer relay)
+
+`server/` is a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) that stores the global campaign leaderboard and relays
+multiplayer traffic when a direct connection is blocked. It fits in Cloudflare's free plan. Without it the game still works:
+the leaderboard stays on each computer and multiplayer is peer-to-peer only.
+
+1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
+2. In this folder run `cd server && npx wrangler login`, then `npx wrangler deploy`.
+3. Copy the `https://cinderfall.<your-subdomain>.workers.dev` address it prints into `js/config.js` (`CF.SERVER = '…'`), then commit and push.
+
+To try it locally, run `npx wrangler dev` in `server/` and set `CF.SERVER = 'http://127.0.0.1:8787'`.
 
 ## Controls
 
@@ -42,7 +61,7 @@ Some strict school or office networks block peer-to-peer connections.
 | E | Interact (hold) |
 | G | Throw grenade |
 | V | Melee |
-| 1–4 · mouse wheel | Switch weapon (multiplayer: pick a loadout while respawning) |
+| 1–7 · mouse wheel | Switch weapon (multiplayer: pick a loadout while respawning) |
 | Esc | Pause · multiplayer menu |
 
 These are the defaults. Every key can be rebound in **Settings → Key bindings** (keyboard keys plus middle and side mouse buttons). The settings page also has toggle crouch/sprint, click-to-toggle aiming, crosshair color, view bob, brightness and film grain.

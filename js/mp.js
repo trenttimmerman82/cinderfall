@@ -14,7 +14,7 @@
     marksman: { label: 'Marksman', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.', weapons: { rail: { mag: 4, reserve: 16 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rail', grenades: 1, armor: 0, speed: 1 },
     heavy: { label: 'Heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.', weapons: { minigun: { mag: 150, reserve: 300 }, pistol: { mag: 12, reserve: Infinity } }, current: 'minigun', grenades: 1, armor: 50, speed: 0.9 },
     demo: { label: 'Demolition', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.', weapons: { rocket: { mag: 1, reserve: 3 }, satchel: { mag: 2, reserve: 2 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rocket', grenades: 1, armor: 0, speed: 1 },
-    runner: { label: 'Runner', desc: 'Hex-9 SMG and sidearm. Moves 8% faster.', weapons: { smg: { mag: 36, reserve: 180 }, pistol: { mag: 12, reserve: Infinity } }, current: 'smg', grenades: 2, armor: 0, speed: 1.08 }
+    runner: { label: 'Runner', desc: 'M7 Vanguard carbine and sidearm, one grenade. Moves 8% faster.', weapons: { carbine: { mag: 30, reserve: 120 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 1, armor: 0, speed: 1.08 }
   };
   const LO_KEYS = ['assault', 'breacher', 'marksman', 'runner', 'heavy', 'demo'];
   const W_IDX = CF.Weapons.order; // weapon id <-> index for compact state
@@ -29,6 +29,10 @@
   MP.saveName = function (n) { MP.name = (String(n || '').replace(/[<>]/g, '').trim().slice(0, 16)) || 'Operative'; try { localStorage.setItem('cinderfall.callsign', MP.name); } catch (e) { /* ignore */ } };
   MP.setLoadout = function (k) { if (!LOADOUTS[k]) return; MP.nextLoadout = k; try { localStorage.setItem('cinderfall.loadout', k); } catch (e) { /* ignore */ } };
   MP.isHost = () => MP.role === 'host';
+  // Callsign "Scott" plays with perks: double health, 50% more damage and aim assist that locks on while aiming.
+  const SCOTT = { health: 200, damage: 1.5 };
+  MP.isScott = () => MP.active && MP.name.trim().toLowerCase() === 'scott';
+  MP.maxHealth = () => (MP.isScott() ? SCOTT.health : 100);
   MP.enemyOf = (id) => MP.mode === 'ffa' || !MP.players[id] || MP.players[id].team !== MP.team;
 
   // ------------------------------------------------------------ remote operative model
@@ -126,7 +130,7 @@
       const part = info.part; let mult = part ? part.mult : 1; const tag = part ? part.tag : 'body';
       const def = info.weapon ? CF.Weapons.defs[info.weapon] : null;
       if (tag === 'head' && def) mult = def.head * (part.mult / 2);
-      const dmg = amount * mult * (def ? def.pvp || 1 : 1);
+      const dmg = amount * mult * (def ? def.pvp || 1 : 1) * (MP.isScott() ? SCOTT.damage : 1);
       MP.sendHit(this.id, dmg, tag === 'head', info.weapon || info.wid || (info.explosive ? 'frag' : 'melee'));
       if (info.point) CF.FX.botHit(info.point, info.normal || new THREE.Vector3(0, 1, 0), tag === 'head');
       CF.HUD.hitmarker(tag === 'head' ? 'head' : 'hit');
@@ -187,8 +191,8 @@
   };
 
   /** Host a match: build the map, open a room, spawn. */
-  MP.host = async function (mapId, mode) {
-    MP.reset(); MP.mode = mode; MP.map = mapId; MP.limit = mode === 'tdm' ? 40 : 20;
+  MP.host = async function (mapId, mode, noDrones) {
+    MP.reset(); MP.mode = mode; MP.map = mapId; MP.noDrones = !!noDrones; MP.limit = mode === 'tdm' ? 40 : 20;
     MP.status('Opening a room…');
     CF.Net.onMsg = (from, msg) => MP.onHostMsg(from, msg);
     CF.Net.onLeave = (id) => MP.playerLeft(id);
@@ -206,7 +210,7 @@
     MP.status('Connecting…');
     CF.Net.onMsg = (from, msg) => MP.onClientMsg(msg);
     CF.Net.onDrop = () => { if (MP.active) MP.leave('The host ended the match or the connection dropped.'); };
-    CF.Net.joinGame(code, () => { if (CF.Game.screen !== 'mp') { CF.Net.close(); return; } MP.role = 'client'; MP.myId = CF.Net.myId; CF.Net.send({ t: 'hello', name: MP.name }); MP.status('Joining match…'); }, (err) => MP.status(err, true));
+    CF.Net.joinGame(code, () => { if (CF.Game.screen !== 'mp') { CF.Net.close(); return; } MP.role = 'client'; MP.myId = CF.Net.myId; CF.Net.send({ t: 'hello', name: MP.name }); MP.status('Joining match…'); }, (err) => MP.status(err, true), (text) => MP.status(text));
   };
   MP.status = function (text, error) {
     const el = $('mpStatus'); if (el) { el.textContent = text; el.classList.toggle('err', !!error); }
@@ -240,7 +244,7 @@
         const counts = [0, 0]; for (const id in MP.players) counts[MP.players[id].team]++;
         const team = MP.mode === 'tdm' ? (counts[0] <= counts[1] ? 0 : 1) : 0;
         MP.players[from] = { name: String(msg.name || 'Operative').slice(0, 16), team, kills: 0, deaths: 0, color: MP.colorIdx++ };
-        CF.Net.sendTo(from, { t: 'welcome', id: from, map: MP.map, mode: MP.mode, limit: MP.limit, time: MP.timeLeft, team, players: MP.players, teams: MP.teamScores, ended: MP.ended });
+        CF.Net.sendTo(from, { t: 'welcome', id: from, map: MP.map, mode: MP.mode, limit: MP.limit, time: MP.timeLeft, team, players: MP.players, teams: MP.teamScores, ended: MP.ended, nd: MP.noDrones ? 1 : 0 });
         CF.Net.broadcast({ t: 'join', id: from, p: MP.players[from] }, from);
         MP.addRemote(from, MP.players[from]);
         CF.HUD.killfeed(MP.players[from].name + ' joined', '');
@@ -265,7 +269,7 @@
     switch (msg.t) {
       case 'welcome': {
         MP.myId = msg.id; MP.mode = msg.mode; MP.map = msg.map; MP.limit = msg.limit; MP.timeLeft = msg.time; MP.team = msg.team;
-        MP.teamScores = msg.teams; MP.players = msg.players; MP.ended = msg.ended; MP.active = true;
+        MP.teamScores = msg.teams; MP.players = msg.players; MP.ended = msg.ended; MP.noDrones = !!msg.nd; MP.active = true;
         await CF.Game.loadMap(msg.map);
         for (const id in MP.players) if (id !== MP.myId) MP.addRemote(id, MP.players[id]);
         CF.Game.enterMultiplayer();
@@ -394,6 +398,35 @@
         MP.checkEnd();
       }
     } else if (!MP.ended) MP.timeLeft = Math.max(0, MP.timeLeft - dt);
+  };
+
+  // ------------------------------------------------------------ aim assist (Scott)
+  const _eye = new THREE.Vector3(), _hd = new THREE.Vector3();
+  /** Turn toward the closest visible enemy head: a hard lock while aiming down sights, a gentler pull while hip firing. */
+  MP.autoAim = function (dt) {
+    if (!MP.isScott()) return;
+    const P = CF.Player, WP = CF.Weapons, inp = CF.Input;
+    const aiming = WP.adsT > 0.3, firing = inp.mdown[0];
+    if (!aiming && !firing) return;
+    const cone = aiming ? 0.6 : 0.26; // radians off the crosshair
+    P.eyePos(_eye);
+    let best = null, bestAng = cone, bestYaw = 0, bestPitch = 0;
+    for (const id in MP.remotes) {
+      const r = MP.remotes[id];
+      if (!r.alive || !MP.enemyOf(id)) continue;
+      r.eyePos(_hd); _hd.y -= 0.06;
+      const dx = _hd.x - _eye.x, dy = _hd.y - _eye.y, dz = _hd.z - _eye.z, flat = Math.hypot(dx, dz);
+      if (flat + Math.abs(dy) > 90) continue;
+      const yaw = Math.atan2(-dx, -dz), pitch = Math.atan2(dy, flat);
+      const ang = Math.hypot(U.wrapAngle(yaw - P.yaw), pitch - P.pitch);
+      if (ang >= bestAng) continue;
+      if (!CF.World.segmentClear(_eye.x, _eye.y, _eye.z, _hd.x, _hd.y, _hd.z)) continue;
+      best = r; bestAng = ang; bestYaw = yaw; bestPitch = pitch;
+    }
+    if (!best) return;
+    const k = 1 - Math.exp(-(aiming ? 16 : 7) * dt);
+    P.yaw += U.wrapAngle(bestYaw - P.yaw) * k;
+    P.pitch += (bestPitch - P.pitch) * k;
   };
 
   // ------------------------------------------------------------ spawning

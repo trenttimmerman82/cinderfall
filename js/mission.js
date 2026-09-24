@@ -6,6 +6,27 @@
   const find = (id) => L.interactables.find((i) => i.id === id);
   const MS = CF.Mission = { idx: 0, phase: null, t: 0, s: {}, spawner: null, breakersDone: [], said: {} };
 
+  // Weapons are earned: you start with the M7 and P-11, and each objective releases another one.
+  const UNLOCKS = [
+    { id: 'shotgun', task: 'Clear the yard', line: 'Yard secured. The quartermaster is releasing a KS-12 Breacher to you. It owns the tight spaces ahead.' },
+    { id: 'satchel', task: 'Bring the first breaker online', line: 'First breaker is up. Satchel charges are yours: throw them, then detonate when the machines bunch up.' },
+    { id: 'rail', task: 'Restore power', line: 'Grid restored. You have earned the VX-3 Lance. Scope in and hold Shift to steady it.' },
+    { id: 'minigun', task: 'Reach 50% on the uplink', line: 'Halfway there. The Rotor-6 is in your kit now. Give it a second to spin up.' },
+    { id: 'rocket', task: 'Finish the upload', line: 'Upload complete. The Havoc RPG is unlocked. Save a few rockets for the Warden.' }
+  ];
+  MS.unlocks = UNLOCKS;
+  MS.unlock = function (id) {
+    const WP = CF.Weapons, u = UNLOCKS.find((x) => x.id === id);
+    if (!u || WP.inv[id]) return;
+    WP.give(id, true);
+    A.play('weaponGet', null, { ui: true });
+    CF.HUD.popup('Unlocked · ' + WP.defs[id].name, 0, 'obj');
+    CF.HUD.killfeed(WP.defs[id].name + ' unlocked', 'Key ' + (WP.order.indexOf(id) + 1));
+    say('unlock-' + id, [[OW, u.line]]);
+  };
+  /** The next weapon still locked, for the pause screen. */
+  MS.nextUnlock = function () { return UNLOCKS.find((u) => !CF.Weapons.inv[u.id]) || null; };
+
   function setDoors(hall, arena, instant) {
     for (const id of ['hallW', 'hallE']) {
       if (hall) L.openDoor(id, instant);
@@ -50,7 +71,8 @@
         CF.HUD.phaseCard('Phase 01', 'The Yard', 'Clear the container yard. Units that have not spotted you take extra damage.');
         say('intro', [
           [OW, 'Cinder Station, oh-three-ten. The Warden AI has sealed the foundry and turned every security unit loose.'],
-          [OW, 'Clear the container yard first. Pick your first shot. Units that have not seen you take extra damage.']
+          [OW, 'Clear the container yard first. Pick your first shot. Units that have not seen you take extra damage.'],
+          [OW, 'You go in with the M7 and your sidearm. Every objective you complete releases heavier kit.']
         ]);
       },
       update(dt) {
@@ -109,7 +131,7 @@
           this.spawnAt('juggernaut', ['east']);
           say('jugg' + s.juggs.length, [[OW, s.juggs.length ? 'Heavy unit inbound. Get behind it and hit the glowing vent on its back.' : 'Another heavy is coming. Grenades will stagger it.']]);
         }
-        if (!s.half && s.progress >= 0.5) { s.half = true; say('half', [[OW, 'Halfway. Keep them off that terminal.']]); }
+        if (!s.half && s.progress >= 0.5) { s.half = true; say('half', [[OW, 'Halfway. Keep them off that terminal.']]); this.unlock('minigun'); }
         if (s.progress >= 1) {
           s.active = false; this.spawner = null;
           if (s.hum) { s.hum.stop(); s.hum = null; }
@@ -200,6 +222,8 @@
     this.spawner = null;
     A.play('objective', null, { ui: true }); CF.Music.sting('objective');
     CF.HUD.popup('Objective complete', 1000, 'obj'); CF.Game.addScore(1000);
+    const reward = { yard: 'shotgun', power: 'rail', uplink: 'rocket' }[this.phase.id];
+    if (reward) this.unlock(reward);
     const next = this.idx + 1;
     if (next >= PH.length) { CF.Game.victory(); return; }
     this.enter(next, false);
@@ -226,7 +250,7 @@
     const n = this.breakersDone.length;
     CF.HUD.popup('Breaker online', 250, 'obj'); CF.Game.addScore(250);
     CF.Music.sting('objective');
-    if (n === 1) say('b1', [[OW, 'One breaker online. The Warden knows what you are doing. Expect company.']]);
+    if (n === 1) { say('b1', [[OW, 'One breaker online. The Warden knows what you are doing. Expect company.']]); this.unlock('satchel'); }
     if (n === 2) say('b2', [[OW, 'Two down. One left.']]);
     if (this.spawner) { this.spawner.maxAlive = 4 + n; this.spawner.pool = ['sentry', 'sentry', 'stalker', 'hornet', 'hornet']; this.spawner.t = 1.5; }
     this.updatePowerObjective();
@@ -288,7 +312,8 @@
     const alive = CF.Enemies.alive((e) => !e.boss);
     if (alive >= s.maxAlive || s.remaining <= 0) return;
     const n = Math.min(Math.random() < 0.45 ? 2 : 1, s.maxAlive - alive, s.remaining);
-    for (let i = 0; i < n; i++) { this.spawnAt(U.choice(s.pool), s.zones); s.remaining--; }
+    const pool = CF.noDrones() ? s.pool.filter((t) => t !== 'hornet') : s.pool;
+    for (let i = 0; i < n; i++) { this.spawnAt(U.choice(pool), s.zones); s.remaining--; }
   };
 
   MS.saveState = function () { return { breakers: this.breakersDone.slice() }; };
@@ -300,6 +325,7 @@
   MS.skipTo = function (i) {
     CF.Enemies.clear();
     if (i >= 2) this.breakersDone = ['breakerA', 'breakerB', 'breakerC'];
+    for (const u of UNLOCKS.slice(0, [0, 1, 3, 5, 5][i] || 0)) CF.Weapons.give(u.id, true);
     for (const id of ['breakerA', 'breakerB', 'breakerC']) setBreaker(find(id), this.breakersDone.includes(id));
     this.enter(i, false);
     const cp = PH[i].cp();

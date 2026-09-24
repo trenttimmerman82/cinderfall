@@ -7,7 +7,7 @@
   const P = CF.Player = {
     body: { pos: new THREE.Vector3(), vel: new THREE.Vector3(), radius: 0.38, height: STAND, stepHeight: 0.55, grounded: false, stepped: 0 },
     yaw: 0, pitch: 0, recoilP: 0, recoilY: 0,
-    health: 100, armor: 0, alive: true, frozen: false, lastHurt: -99, deathT: 0, killer: '',
+    health: 100, maxHealth: 100, armor: 0, alive: true, frozen: false, lastHurt: -99, deathT: 0, killer: '',
     sprinting: false, sprintT: 0, sprintOut: 0, crouching: false, crouchT: 0, sliding: false, slideT: 0, slideTime: 0,
     mantling: false, mantleT: 0, mantleFrom: new THREE.Vector3(), mantleTo: new THREE.Vector3(),
     bobPhase: 0, bobAmp: 0, moveFrac: 0, stepDist: 0, eyeOff: 0, eye: EYE_STAND,
@@ -22,12 +22,13 @@
     b.pos.set(x, y, z); b.vel.set(0, 0, 0); b.grounded = true; b.height = STAND;
     this.yaw = yaw || 0; this.pitch = 0; this.recoilP = 0; this.recoilY = 0;
     this.alive = true; this.frozen = false; this.deathT = 0;
-    this.health = state && state.health != null ? state.health : 100;
+    this.maxHealth = state && state.maxHealth ? state.maxHealth : 100;
+    this.health = state && state.health != null ? state.health : this.maxHealth;
     this.armor = state && state.armor != null ? state.armor : 0;
     this.sprinting = false; this.sprintT = 0; this.crouching = false; this.crouchT = 0; this.sliding = false; this.slideT = 0;
     this.mantling = false; this.trauma = 0; this.eyeOff = 0; this.eye = EYE_STAND; this.lastHurt = -99; this.flinch = 0;
     this.updateCamera(0);
-    CF.HUD.setVitals(this.health, this.armor);
+    CF.HUD.setVitals(this.health, this.armor, this.maxHealth);
   };
 
   P.forward = function (out) { return out.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)); };
@@ -58,7 +59,7 @@
     CF.HUD.setVitals(this.health, this.armor);
   };
   P.heal = function (hp, armor) {
-    if (hp) this.health = Math.min(100, this.health + hp);
+    if (hp) this.health = Math.min(this.maxHealth, this.health + hp);
     if (armor) this.armor = Math.min(100, this.armor + armor);
     CF.HUD.setVitals(this.health, this.armor);
   };
@@ -235,9 +236,9 @@
     this.bobAmp = U.damp(this.bobAmp, b.grounded && !this.sliding ? U.clamp(hs / 5.1, 0, 1.5) : 0, 8, dt);
     // regen
     const diff = CF.Game.mode === 'mp' ? { regenDelay: 5, regenRate: 25 } : CF.diff();
-    if (this.time - this.lastHurt > diff.regenDelay && this.health < 100) { this.health = Math.min(100, this.health + diff.regenRate * dt); CF.HUD.setVitals(this.health, this.armor); }
+    if (this.time - this.lastHurt > diff.regenDelay && this.health < this.maxHealth) { this.health = Math.min(this.maxHealth, this.health + diff.regenRate * dt); CF.HUD.setVitals(this.health, this.armor); }
     // low health heartbeat
-    if (this.health < 30) { this.heartT -= dt; if (this.heartT <= 0) { this.heartT = 0.85; A.play('heartbeat', null, { ui: true, vol: 0.9 }); } }
+    if (this.health < 30 * this.maxHealth / 100) { this.heartT -= dt; if (this.heartT <= 0) { this.heartT = 0.85; A.play('heartbeat', null, { ui: true, vol: 0.9 }); } }
     this.updateCamera(dt);
   };
 

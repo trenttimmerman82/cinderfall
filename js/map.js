@@ -390,13 +390,7 @@
       { type: 'stalker', x: -36, z: 26, yaw: 0.6 },
       { type: 'stalker', x: 42, z: 30, yaw: -0.4 }
     ];
-    L.addPickup('weapon', -5.5, 1.2, 20.2, { weapon: 'shotgun' });
-    L.addPickup('weapon', 25.6, 3.8, -37.4, { weapon: 'rail' });
-    // heavy weapons, next to the armor plates in the yard
-    L.addPickup('weapon', -22, 0, 30, { weapon: 'rocket' });
-    L.addPickup('weapon', 28, 0, 20, { weapon: 'minigun' });
-    L.addPickup('weapon', -45, 0, 10, { weapon: 'satchel' });
-    L.addPickup('weapon', 46, 0, 17.5, { weapon: 'smg' });
+    // no weapon pickups: weapons are unlocked by objectives (CF.Mission.unlocks)
     for (const a of [[-24, 0, 30], [26, 0, 20], [-47, 0, 10], [48, 0, 17.5], [6, 0.8, -39], [61, 1.5, -54], [-62, 0, -27], [-36.8, 0, -53], [12, 0.8, -26]]) L.addPickup('armor', a[0], a[1], a[2]);
   };
   Map.kit = { container, crate, barrier, lampPost, barrel, stairs, shed, screenMesh, statusLight, FACE_DIR, FACE_ROT };

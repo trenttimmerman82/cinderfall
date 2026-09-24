@@ -41,7 +41,6 @@
       progress(1, 'Ready'); await U.nextFrame();
       this.bindUI();
       this.toMenu();
-      if (CF.News.unseen()) { CF.News.render(); this.backTo = 'main'; this.showScreen('news'); }
       this.last = performance.now();
       this.loopBound = this.loop.bind(this);
       requestAnimationFrame(this.loopBound);
@@ -205,14 +204,14 @@
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
       else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'mp' || this.screen === 'leaderboard')) this.back();
-      else if (e.code === 'Escape' && this.screen === 'news') this.act('newsok');
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
     for (const id of ['diffName', 'lbName']) {
       $(id).addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
-      $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.render(); });
+      $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.open(); });
     }
+    for (const id of ['diffNoDrones', 'mpNoDrones']) $(id).addEventListener('change', (e) => { CF.settings.noDrones = e.target.checked; CF.saveSettings(); });
     $('mpCode').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.initAudio(); this.act('mpjoin'); } });
     $('mpCode').addEventListener('input', (e) => { const v = CF.Net.cleanCode(e.target.value); if (v !== e.target.value) e.target.value = v; });
     window.addEventListener('resize', () => this.onResize());
@@ -226,7 +225,7 @@
   };
   G.act = function (a) {
     switch (a) {
-      case 'deploy': this.backTo = 'main'; $('diffName').value = CF.MP.name; this.showScreen('difficulty'); break;
+      case 'deploy': this.backTo = 'main'; $('diffName').value = CF.MP.name; $('diffNoDrones').checked = CF.settings.noDrones; this.showScreen('difficulty'); break;
       case 'multiplayer': this.openMpScreen(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
@@ -235,9 +234,7 @@
       case 'mpagain': CF.MP.hostRestart(); break;
       case 'settings': this.backTo = this.screen; this.syncSettingsUI(); this.settingsTab('controls'); this.showScreen('settings'); break;
       case 'manual': this.backTo = this.screen; this.showScreen('manual'); break;
-      case 'leaderboard': this.backTo = this.screen; CF.Board.render(); this.showScreen('leaderboard'); break;
-      case 'news': this.backTo = this.screen; CF.News.render(); this.showScreen('news'); break;
-      case 'newsok': CF.News.markSeen(); this.back(); break;
+      case 'leaderboard': this.backTo = this.screen; CF.Board.open(); this.showScreen('leaderboard'); break;
       case 'back': this.back(); break;
       case 'resume': this.resume(); break;
       case 'restart': this.restoreCheckpoint(); break;
@@ -285,6 +282,7 @@
     for (const [id, key] of TOGGLES) $(id).addEventListener('change', (e) => { S[key] = e.target.checked; changed(); });
     for (const [id, key] of SELECTS) $(id).addEventListener('change', (e) => { S[key] = e.target.value; changed(); });
     for (const b of document.querySelectorAll('[data-settab]')) b.addEventListener('click', () => this.settingsTab(b.dataset.settab));
+    for (const b of document.querySelectorAll('[data-lbtab]')) b.addEventListener('click', () => CF.Board.show(b.dataset.lbtab));
     $('bindReset').addEventListener('click', () => { this.stopCapture(); CF.Keys.reset(); $('bindNote').textContent = 'Key bindings restored to defaults.'; });
     $('settingsReset').addEventListener('click', () => {
       this.stopCapture();
@@ -398,7 +396,7 @@
     this.pending.length = 0; this.lastKill = -99; this.multi = 0;
     this.godMode = this.debugGod; this.slow = null; this.timeScale = 1;
     CF.time = 0;
-    CF.Weapons.reset(null); CF.Streak.reset(); CF.HUD.setStreak(0, 5, false);
+    CF.Weapons.reset(null); CF.Streak.reset();
     const s = L.points.start;
     CF.Player.spawn(s.x, s.y, s.z, s.yaw, { health: 100, armor: 0 });
     this.state = 'playing';
@@ -470,6 +468,8 @@
     A.setPaused(true); CF.Input.clearAll(); CF.Input.active = false;
     const ph = CF.Mission.phase;
     $('pauseWhere').textContent = ph ? ph.num + ' · ' + ph.title : 'Paused';
+    const nu = CF.Mission.nextUnlock();
+    $('pauseNext').textContent = nu ? 'Next weapon: ' + CF.Weapons.defs[nu.id].name + ' · ' + nu.task.toLowerCase() : 'Every weapon unlocked';
     this.backTo = 'pause';
     this.showScreen('pause');
     this.stopHold();
@@ -525,7 +525,7 @@
     CF.HUD.show(false);
     const st = this.stats, acc = st.shots ? st.hits / st.shots : 0, hsr = st.kills ? st.headshots / st.kills : 0;
     const dKey = CF.settings.difficulty;
-    let g = acc * 100 * 0.35 + hsr * 100 * 0.25 + Math.max(0, 30 - st.deaths * 8) + (st.time < 900 ? 20 : st.time < 1500 ? 12 : 5) + (dKey === 'elite' ? 10 : dKey === 'recruit' ? -6 : dKey === 'easy' ? -10 : 0);
+    let g = acc * 100 * 0.35 + hsr * 100 * 0.25 + Math.max(0, 30 - st.deaths * 8) + (st.time < 900 ? 20 : st.time < 1500 ? 12 : 5) + (dKey === 'elite' ? 10 : dKey === 'recruit' ? -6 : 0) - (CF.settings.noDrones ? 4 : 0);
     const rank = g >= 72 ? 'S' : g >= 58 ? 'A' : g >= 44 ? 'B' : g >= 30 ? 'C' : 'D';
     let best = 0;
     try { best = +localStorage.getItem('cinderfall.best.' + dKey) || 0; if (this.score > best) { localStorage.setItem('cinderfall.best.' + dKey, String(this.score)); } } catch (e) { /* storage unavailable */ }
@@ -534,7 +534,7 @@
       ['Score', this.score.toLocaleString('en-US') + (newBest ? ' · new best' : '')], ['Time', U.fmtTime(st.time)],
       ['Kills', st.kills], ['Headshot kills', st.headshots], ['Accuracy', Math.round(acc * 100) + '%'], ['Deaths', st.deaths],
       ['Damage dealt', Math.round(st.damageDealt).toLocaleString('en-US')], ['Damage taken', Math.round(st.damageTaken).toLocaleString('en-US')],
-      ['Difficulty', CF.diff().label], ['Best score', Math.max(best, this.score).toLocaleString('en-US')]
+      ['Difficulty', CF.diffLabel()], ['Best score', Math.max(best, this.score).toLocaleString('en-US')]
     ];
     const list = $('statsList'); list.textContent = '';
     for (const [k, v] of rows) {
@@ -804,6 +804,7 @@
     if (playing) this.stats.time += dt;
     if (mp && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
     else P.update(dt);
+    if (mp && playing && P.alive) CF.MP.autoAim(dt);
     if (P.alive && playing) CF.Weapons.update(dt, P);
     else if (P.alive) CF.Weapons.animate(dt, P);
     else { CF.Weapons.updateGrenades(dt); CF.Weapons.updateProjectiles(dt); }
@@ -879,6 +880,7 @@
   G.openMpScreen = function () {
     this.backTo = 'main';
     $('mpName').value = MPM().name;
+    $('mpNoDrones').checked = CF.settings.noDrones;
     this.renderMpPick(); this.renderLoadouts();
     this.mpBusy(false);
     if (!CF.Net.available()) MPM().status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true);
@@ -918,7 +920,7 @@
     if (!CF.Net.available()) { M.status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true); return; }
     if (!host && CF.Net.cleanCode($('mpCode').value).length !== 5) { M.status('Enter the 5-character room code your friend sees on their screen.', true); $('mpCode').focus(); return; }
     this.mpBusy(true);
-    if (host) M.host(this.mpSel.map, this.mpSel.mode); else M.join($('mpCode').value);
+    if (host) M.host(this.mpSel.map, this.mpSel.mode, CF.settings.noDrones); else M.join($('mpCode').value);
   };
   /** Called once the map is built: show the lobby so the Deploy click can capture the mouse. */
   G.enterMultiplayer = function () {
@@ -928,7 +930,7 @@
     this.initAudio(); A.resume(); A.setPaused(false);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
     CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset(); CF.HUD.objTarget = null; CF.HUD.bossBar(false);
-    this.stats = newStats(); this.score = 0; CF.HUD.setScore(0); CF.Streak.reset(); CF.HUD.setStreak(0, 5, false);
+    this.stats = newStats(); this.score = 0; CF.HUD.setScore(0); CF.Streak.reset();
     this.pending.length = 0; this.godMode = false; this.slow = null; this.timeScale = 1;
     this.resetPickups(); this.stopHold();
     CF.Player.alive = false; CF.Player.frozen = false;
@@ -954,7 +956,7 @@
   G.renderMpMenu = function () {
     const M = MPM(), def = CF.Maps[M.map];
     $('mpRoomCode').textContent = CF.Net.code || '-----';
-    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + (M.mode === 'tdm' ? 'Team deathmatch' : 'Free for all') + (M.isHost() ? ' · you are hosting' : '');
+    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + (M.mode === 'tdm' ? 'Team deathmatch' : 'Free for all') + (M.noDrones ? ' · No drones' : '') + (M.isHost() ? ' · you are hosting' : '');
     $('mpMenuTitle').textContent = this.mpLobby ? 'Ready to deploy' : 'Match in progress';
     const btn = $('mpResumeBtn');
     btn.textContent = this.mpLobby ? 'Deploy' : CF.Player.alive ? 'Resume' : 'Respawn';
@@ -979,7 +981,7 @@
     const s = M.pickSpawn();
     CF.Weapons.reset(lo);
     P.speedMul = lo.speed || 1;
-    P.spawn(s.x, s.y, s.z, s.yaw, { health: 100, armor: lo.armor || 0 });
+    P.spawn(s.x, s.y, s.z, s.yaw, { maxHealth: M.maxHealth(), armor: lo.armor || 0 });
     P.tilt = 0;
     M.spawnT = CF.time;
     this.state = 'playing'; this.deathT = 0;

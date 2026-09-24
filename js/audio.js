@@ -150,12 +150,6 @@
     A.tone(d, t, { f0: 200, f1: 60, dur: 0.1, gain: 0.7 });
     A.noise(d, t + 0.01, { type: 'bandpass', f0: 700, f1: 300, dur: 0.35, gain: 0.1, Q: 0.6 });
   };
-  R.smg = (d, t) => {
-    A.noise(d, t, { type: 'highpass', f0: 3200, dur: 0.025, gain: 0.5 });
-    A.noise(d, t, { type: 'lowpass', f0: 7000, f1: 900, dur: 0.1, gain: 0.75, Q: 0.8 });
-    A.tone(d, t, { f0: 175, f1: 55, dur: 0.09, gain: 0.6 });
-    A.tone(d, t, { type: 'square', f0: 2600, f1: 1900, dur: 0.015, gain: 0.04 });
-  };
   R.shotgun = (d, t) => {
     A.noise(d, t, { type: 'highpass', f0: 2000, dur: 0.05, gain: 0.8 });
     A.noise(d, t, { type: 'lowpass', f0: 5000, f1: 240, dur: 0.4, gain: 1.15, Q: 0.7 });

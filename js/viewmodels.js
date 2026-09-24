@@ -204,37 +204,6 @@
     return { root, gun, parts: P, sightY: 0.128, sightZ: -0.1 };
   }
 
-  function smg(hands) {
-    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
-    const P = {};
-    B(gun, M.metal, 0, 0.03, -0.08, 0.06, 0.08, 0.28);
-    B(gun, M.metal, 0, 0.074, -0.08, 0.045, 0.012, 0.26);
-    B(gun, M.polymer, 0, 0.03, -0.29, 0.058, 0.066, 0.15);
-    CZ(gun, M.steel, 0, 0.042, -0.42, 0.011, 0.12);
-    CZ(gun, M.metal, 0, 0.042, -0.49, 0.018, 0.05);
-    B(gun, M.accent, 0.031, 0.05, -0.12, 0.002, 0.006, 0.14); B(gun, M.accent, -0.031, 0.05, -0.12, 0.002, 0.006, 0.14);
-    P.mag = new THREE.Group(); P.mag.position.set(0, -0.01, -0.1); gun.add(P.mag);
-    B(P.mag, M.polymer, 0, -0.08, 0, 0.03, 0.16, 0.05, 0.08, 0, 0);
-    B(P.mag, M.accent, 0, -0.162, 0.006, 0.032, 0.01, 0.052, 0.08, 0, 0);
-    B(gun, M.polymer, 0, -0.05, 0.025, 0.032, 0.09, 0.045, -0.25, 0, 0);
-    B(gun, M.polymer, 0, -0.045, -0.3, 0.03, 0.08, 0.035, 0.1, 0, 0);
-    B(gun, M.metal, 0, 0.02, 0.13, 0.02, 0.05, 0.13);
-    B(gun, M.polymer, 0, 0.0, 0.2, 0.04, 0.09, 0.02);
-    P.bolt = B(gun, M.steel, 0.02, 0.078, 0.0, 0.018, 0.012, 0.03);
-    redDot(gun, 0.108, -0.1);
-    P.muzzle = node(gun, 0, 0.042, -0.53);
-    P.eject = node(gun, 0.035, 0.05, -0.05);
-    if (hands) {
-      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.04, 0.035); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
-      forearm(gun, 0.02, -0.08, 0.09, 0.16, -0.32, 0.48);
-      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.012, -0.07, -0.3);
-      const hl = hand(M.glove, -1); hl.rotation.set(-0.2, 0, 0.9); P.handL.add(hl);
-      forearm(P.handL, -0.02, -0.03, 0.03, -0.22, -0.3, 0.3);
-      P.handLHome = P.handL.position.clone();
-    }
-    return { root, gun, parts: P, sightY: 0.108, sightZ: -0.1 };
-  }
-
   function rocket(hands) {
     const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
     const P = {};
@@ -356,7 +325,7 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, smg, rocket, minigun, satchel };
+  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);

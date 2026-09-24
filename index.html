@@ -141,7 +141,6 @@
         <button class="menu-item" data-act="deploy"><span class="mi-label">Campaign</span><span class="mi-note">Take back Cinder Foundry</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
-        <button class="menu-item" data-act="news"><span class="mi-label">What's new</span><span class="mi-note">Weapons, maps and features in this update</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
         <button class="menu-item" data-act="manual"><span class="mi-label">Field manual</span><span class="mi-note">Keys and tactics</span></button>
       </nav>
@@ -158,11 +157,6 @@
       <header class="panel-head"><span class="eyebrow">Deploy</span><h2>Choose your threat level</h2></header>
       <label class="field callsign"><span>Playing as · your leaderboard name</span><input id="diffName" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <div class="diff-grid">
-        <button class="diff" data-diff="easy">
-          <span class="diff-name">Easy</span>
-          <span class="diff-desc">Relaxed play. Drones and Stalker dogs go down in a few hits.</span>
-          <span class="diff-stat">Enemy damage 40%</span>
-        </button>
         <button class="diff" data-diff="recruit">
           <span class="diff-name">Recruit</span>
           <span class="diff-desc">Machines hit softly and miss often. Health recovers quickly.</span>
@@ -179,6 +173,7 @@
           <span class="diff-stat">Enemy damage 150%</span>
         </button>
       </div>
+      <label class="set-row toggle diff-mod"><span><b>No drones</b> Hornet drones stay out of the fight and there is no kill-streak drone. Works with any threat level.</span><input type="checkbox" id="diffNoDrones"></label>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
     </div>
   </section>
@@ -259,9 +254,9 @@
           <div><dt>E</dt><dd>Interact (hold)</dd></div>
           <div><dt>G</dt><dd>Throw grenade</dd></div>
           <div><dt>F</dt><dd>Melee</dd></div>
-          <div><dt>1 – 8 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–6 picks a loadout while you wait to respawn)</dd></div>
+          <div><dt>1 – 7 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–6 picks a loadout while you wait to respawn)</dd></div>
           <div><dt>X</dt><dd>Last weapon</dd></div>
-          <div><dt>Z</dt><dd>Deploy attack drone (earned with 5 kills in a row)</dd></div>
+          <div><dt>Z</dt><dd>Deploy attack drone (earned with 5 kills within 30 seconds; it carries 60 rounds)</dd></div>
           <div><dt>Satchel</dt><dd>Click throws a charge · right click or Q detonates</dd></div>
           <div><dt>Esc</dt><dd>Pause · multiplayer menu</dd></div>
         </dl>
@@ -271,9 +266,12 @@
           <p><b>Stalker</b> — fast quadruped that pounces. Back-pedal and shoot, or slide past it.</p>
           <p><b>Hornet</b> — flying drone. Fragile, but it strafes. Short bursts work best.</p>
           <p><b>Juggernaut</b> — heavy with a rocket pod. Its red laser marks the target. Flank it and hit the glowing back vent.</p>
+          <h3>Earning your kit</h3>
+          <p>The campaign starts you with the M7 carbine and P-11 sidearm. Clearing the yard unlocks the KS-12 shotgun, the first breaker unlocks satchel charges, restoring power unlocks the VX-3 rail, the halfway point of the upload unlocks the Rotor-6 minigun, and finishing the upload unlocks the Havoc RPG. Pause to see what's next.</p>
+          <p><b>Kill streak</b> — get 5 kills within 30 seconds to earn an attack drone. It fires 60 rounds in short bursts, then heads home. Turn on <b>No drones</b> to play without Hornets or kill-streak drones.</p>
           <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
           <h3>Multiplayer loadouts</h3>
-          <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — Hex-9 SMG and 8% more speed. <b>Heavy</b> — Rotor-6 minigun (spins up before firing) and 50 armor. <b>Demolition</b> — Havoc RPG and satchel charges. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
+          <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — M7 carbine, one grenade and 8% more speed. <b>Heavy</b> — Rotor-6 minigun (spins up before firing) and 50 armor. <b>Demolition</b> — Havoc RPG and satchel charges. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
         </div>
       </div>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
@@ -282,7 +280,7 @@
 
   <section class="screen panel-screen dim" id="screen-pause" hidden>
     <div class="panel narrow">
-      <header class="panel-head"><span class="eyebrow" id="pauseWhere">Phase 01</span><h2>Paused</h2></header>
+      <header class="panel-head"><span class="eyebrow" id="pauseWhere">Phase 01</span><h2>Paused</h2><p class="panel-copy pause-next" id="pauseNext"></p></header>
       <nav class="stack">
         <button class="btn" data-act="resume">Resume</button>
         <button class="btn-ghost" data-act="restart">Restart from checkpoint</button>
@@ -304,20 +302,17 @@
     </div>
   </section>
 
-  <section class="screen panel-screen" id="screen-news" hidden>
-    <div class="panel">
-      <header class="panel-head"><span class="eyebrow" id="newsVersion">Update</span><h2>What's new</h2></header>
-      <ul class="news-list" id="newsList"></ul>
-      <footer class="panel-foot"><button class="btn" data-act="newsok">Let's go</button></footer>
-    </div>
-  </section>
-
   <section class="screen panel-screen" id="screen-leaderboard" hidden>
     <div class="panel wide">
       <header class="panel-head"><span class="eyebrow">Campaign · furthest phase first, then score</span><h2>Leaderboard</h2></header>
       <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+      <div class="set-tabs lb-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard" hidden>
+        <button role="tab" data-lbtab="world" aria-selected="true">Everyone</button>
+        <button role="tab" data-lbtab="local" aria-selected="false">This computer</button>
+      </div>
+      <p class="lb-rank" id="lbRank" aria-live="polite"></p>
       <div class="lb-table" id="lbTable"></div>
-      <p class="lb-note">Runs are saved in this browser. Your best run per callsign is kept.</p>
+      <p class="lb-note" id="lbNote">Runs are saved in this browser. Your best run per callsign is kept.</p>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
     </div>
   </section>
@@ -352,6 +347,7 @@
             <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
             <button class="card" data-mode="tdm"><b>Team deathmatch</b><span>Voltage vs Ronin. First team to 40 kills, 10 minutes.</span></button>
           </div>
+          <label class="set-row toggle diff-mod mp-mod"><span><b>No drones</b> Nobody in the match can call in a kill-streak drone.</span><input type="checkbox" id="mpNoDrones"></label>
           <button class="btn" data-act="mphost">Host match</button>
         </div>
         <div class="mp-col">
@@ -405,6 +401,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/config.js"></script>
 <script src="js/util.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/music.js"></script>
@@ -430,7 +427,7 @@
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
 <script src="js/streak.js"></script>
-<script src="js/meta.js"></script>
+<script src="js/board.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

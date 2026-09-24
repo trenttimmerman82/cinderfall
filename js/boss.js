@@ -211,7 +211,7 @@
       const S = CF.Level.spawns.arena;
       for (let i = 0; i < n; i++) {
         const s = S[Math.floor(Math.random() * S.length)];
-        CF.Enemies.spawn(i === 2 ? 'stalker' : 'hornet', s[0], s[1], { aware: true, spawnFx: true, noScore: false });
+        CF.Enemies.spawn(i === 2 ? 'stalker' : CF.noDrones() ? 'sentry' : 'hornet', s[0], s[1], { aware: true, spawnFx: true, noScore: false });
       }
     }
 

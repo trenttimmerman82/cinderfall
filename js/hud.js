@@ -162,13 +162,15 @@
   };
 
   // ------------------------------------------------------------ vitals + weapon
-  H.setVitals = function (hp, armor) {
-    const h = Math.ceil(hp), a = Math.ceil(armor);
-    if (this.last.hp !== h) {
-      this.el.healthFill.style.width = h + '%';
-      this.el.healthGhost.style.width = h + '%';
+  H.setVitals = function (hp, armor, max) {
+    const h = Math.ceil(hp), a = Math.ceil(armor), m = max || CF.Player.maxHealth || 100;
+    if (this.last.hp !== h || this.last.hpMax !== m) {
+      const pct = Math.min(100, h / m * 100) + '%';
+      this.el.healthFill.style.width = pct;
+      this.el.healthGhost.style.width = pct;
       this.el.healthNum.textContent = h;
-      this.vitals.classList.toggle('low', h < 30);
+      this.vitals.classList.toggle('low', h < m * 0.3);
+      this.last.hpMax = m;
       this.last.hp = h;
     }
     if (this.last.ar !== a) { this.el.armorFill.style.width = a + '%'; this.el.armorNum.textContent = a; this.last.ar = a; }
@@ -192,9 +194,19 @@
     let html = ''; for (let i = 0; i < max; i++) html += '<i class="gpip' + (i < n ? '' : ' off') + '"></i>';
     this.el.grenades.innerHTML = html;
   };
-  H.setStreak = function (n, need, ready) {
-    const t = ready ? 'Drone ready [' + CF.Keys.label('streak') + ']' : 'Streak ' + n + ' / ' + need;
-    if (this.last.stk !== t) { this.el.streak.textContent = t; this.el.streak.classList.toggle('ready', !!ready); this.last.stk = t; }
+  /** Kill-streak meter. s: null (no drones) | { n, need, ready, frac, secs } | { drone, ammo, max, frac }. frac fills the timer bar. */
+  H.setStreak = function (s) {
+    const el = this.el.streak;
+    if (!el.firstChild) el.innerHTML = '<span class="stk-text"></span><span class="stk-bar"><i></i></span>';
+    let t = '', mode = '', frac = 0;
+    if (s && s.drone) { t = 'Drone · ' + s.ammo + ' / ' + s.max + ' rds'; mode = 'drone'; frac = s.frac; }
+    else if (s && s.ready) { t = 'Drone ready [' + CF.Keys.label('streak') + ']'; mode = 'ready'; frac = 1; }
+    else if (s) { t = 'Streak ' + s.n + ' / ' + s.need + (s.n ? ' · ' + s.secs + 's' : ' in 30s'); frac = s.frac; }
+    if (this.last.stk !== t) { el.firstChild.textContent = t; this.last.stk = t; }
+    if (this.last.stkMode !== mode) { el.classList.toggle('ready', mode === 'ready'); el.classList.toggle('drone', mode === 'drone'); this.last.stkMode = mode; }
+    el.hidden = !s;
+    const w = Math.round(Math.max(0, Math.min(1, frac)) * 100);
+    if (this.last.stkW !== w) { el.lastChild.firstChild.style.width = w + '%'; this.last.stkW = w; }
   };
   H.setScore = function (s) { const t = s.toLocaleString('en-US'); if (this.last.sc !== t) { this.el.scoreNum.textContent = t; this.last.sc = t; } };
 

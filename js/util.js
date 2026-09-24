@@ -50,7 +50,7 @@ window.CF = window.CF || {};
   const DEFAULTS = {
     sens: 1.0, adsSens: 0.8, invertY: false,
     fov: 90, quality: 'high', shake: 1.0, showFps: false, dmgNumbers: true,
-    master: 0.8, music: 0.55, sfx: 0.9, difficulty: 'veteran',
+    master: 0.8, music: 0.55, sfx: 0.9, difficulty: 'veteran', noDrones: false,
     toggleCrouch: false, toggleSprint: false, aimMode: 'hold', viewBob: 1.0, crosshair: 'white', brightness: 1.0, grain: true
   };
   const KEY = 'cinderfall.settings.v1';
@@ -69,12 +69,15 @@ window.CF = window.CF || {};
   CF.saveSettings = () => { try { localStorage.setItem(KEY, JSON.stringify(CF.settings)); } catch (e) { /* storage unavailable */ } };
 
   CF.DIFF = {
-    easy: { label: 'Easy', dmg: 0.4, acc: 0.5, regenDelay: 2.5, regenRate: 45, aggro: 0.6, hp: 0.7, score: 0.6, typeHp: { hornet: 0.45, stalker: 0.45 } },
     recruit: { label: 'Recruit', dmg: 0.6, acc: 0.65, regenDelay: 3.0, regenRate: 38, aggro: 0.75, hp: 0.85, score: 0.8 },
     veteran: { label: 'Veteran', dmg: 1.0, acc: 1.0, regenDelay: 4.5, regenRate: 26, aggro: 1.0, hp: 1.0, score: 1.0 },
     elite: { label: 'Elite', dmg: 1.5, acc: 1.3, regenDelay: 6.0, regenRate: 18, aggro: 1.3, hp: 1.15, score: 1.4 }
   };
+  if (!CF.DIFF[CF.settings.difficulty]) CF.settings.difficulty = CF.settings.difficulty === 'easy' ? 'recruit' : 'veteran'; // Easy was retired
   CF.diff = () => CF.DIFF[CF.settings.difficulty] || CF.DIFF.veteran;
+  /** No drones: no Hornet drones in the campaign and no kill-streak drones anywhere. Multiplayer uses the host's choice. */
+  CF.noDrones = () => (CF.Game && CF.Game.mode === 'mp' ? !!(CF.MP && CF.MP.noDrones) : !!CF.settings.noDrones);
+  CF.diffLabel = () => CF.diff().label + (CF.settings.noDrones ? ' · No drones' : '');
 
   // ---------------------------------------------------------------- key bindings
   // Game code reads each action through its canonical code (the original default key);
@@ -93,15 +96,14 @@ window.CF = window.CF || {};
     { id: 'grenade', label: 'Throw grenade', canon: 'KeyG', def: ['KeyG', null] },
     { id: 'melee', label: 'Melee', canon: 'KeyV', def: ['KeyF', 'Mouse3'] },
     { id: 'last', label: 'Last weapon', canon: 'KeyQ', def: ['KeyX', null] },
-    { id: 'streak', label: 'Deploy drone (5-kill streak)', canon: 'KeyB', def: ['KeyZ', null] },
+    { id: 'streak', label: 'Deploy drone (kill streak)', canon: 'KeyB', def: ['KeyZ', null] },
     { id: 'slot1', label: 'Weapon 1 · loadout 1', canon: 'Digit1', def: ['Digit1', null] },
     { id: 'slot2', label: 'Weapon 2 · loadout 2', canon: 'Digit2', def: ['Digit2', null] },
     { id: 'slot3', label: 'Weapon 3 · loadout 3', canon: 'Digit3', def: ['Digit3', null] },
     { id: 'slot4', label: 'Weapon 4 · loadout 4', canon: 'Digit4', def: ['Digit4', null] },
     { id: 'slot5', label: 'Weapon 5 · loadout 5', canon: 'Digit5', def: ['Digit5', null] },
     { id: 'slot6', label: 'Weapon 6 · loadout 6', canon: 'Digit6', def: ['Digit6', null] },
-    { id: 'slot7', label: 'Weapon 7', canon: 'Digit7', def: ['Digit7', null] },
-    { id: 'slot8', label: 'Weapon 8', canon: 'Digit8', def: ['Digit8', null] }
+    { id: 'slot7', label: 'Weapon 7', canon: 'Digit7', def: ['Digit7', null] }
   ];
   const RESERVED = new Set(['Escape', 'KeyP', 'Mouse0', 'Mouse2', 'MetaLeft', 'MetaRight']);
   const BIND_KEY = 'cinderfall.binds.v2'; // v2: Q aims, F melees, X last weapon

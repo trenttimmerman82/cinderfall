@@ -20,10 +20,6 @@
       spreadHip: 1.1, spreadAds: 0.22, spreadMove: 1.0, spreadAir: 2.5, bloom: 0.5, bloomMax: 2.0, mag: 12, reserve: Infinity, maxReserve: Infinity,
       reload: 1.3, reloadEmpty: 1.55, magInAt: 0.6, falloff: [20, 45, 0.6], recoil: [1.5, 0.4, 0.05, 0.12], adsFov: 0.86, adsTime: 0.14,
       hip: [0.11, -0.12, -0.3], adsZ: -0.3, equip: 0.3, sound: 'pistol', tracerEvery: 1, shell: 0.8, moveMul: 1.0, noise: 34 },
-    smg: { id: 'smg', name: 'Hex-9 Kite', short: 'HEX-9', auto: true, rpm: 900, dmg: 17, head: 1.8, pellets: 1,
-      spreadHip: 2.0, spreadAds: 0.45, spreadMove: 1.3, spreadAir: 3, bloom: 0.26, bloomMax: 2.6, mag: 36, reserve: 180, maxReserve: 288,
-      reload: 1.55, reloadEmpty: 1.95, magInAt: 0.6, falloff: [12, 34, 0.55], recoil: [0.5, 0.3, 0.025, 0.035], adsFov: 0.8, adsTime: 0.15,
-      hip: [0.12, -0.13, -0.28], adsZ: -0.24, equip: 0.35, sound: 'smg', tracerEvery: 2, shell: 0.8, moveMul: 1.04, noise: 38 },
     rocket: { id: 'rocket', name: 'Havoc RPG', short: 'RPG', auto: false, rpm: 50, dmg: 0, head: 1, pellets: 1, rocket: { speed: 40, radius: 6.5, damage: 210 },
       spreadHip: 1.2, spreadAds: 0.2, spreadMove: 1.0, spreadAir: 3, bloom: 0, bloomMax: 0, mag: 1, reserve: 4, maxReserve: 8,
       reload: 2.1, reloadEmpty: 2.1, magInAt: 0.6, falloff: [400, 500, 1], recoil: [5, 0.8, 0.12, 0.3], adsFov: 0.7, adsTime: 0.24,
@@ -38,8 +34,8 @@
       hip: [0.16, -0.16, -0.3], adsZ: -0.3, equip: 0.4, sound: 'throw', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 8 }
   };
   // Player-vs-player damage scaling (multiplayer only)
-  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.smg.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'smg', 'rocket', 'minigun', 'satchel']; // append only: index is sent over the network
+  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel']; // index is sent over the network: bump Net's PREFIX when this changes
 
   const S = U.Spring;
   const WP = CF.Weapons = {
