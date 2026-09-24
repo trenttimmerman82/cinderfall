@@ -48,6 +48,15 @@
     L.box(x - 0.14, 2.2, z - 0.14, x + 0.14, 2.35, z + 0.14, 'neon_' + cn, { noCol: true, ao: false });
     return L.lamp(ax, 6.9, az, { color: CF.Neon.HEX[hn], intensity: 2.6, distance: 21, cone: 3.8, flicker: o.flicker, mat, poolStrength: 0.42 });
   }
+  /** Collision for a straight pipe: a chain of boxes along it (pipes are thin, so bullets still pass). */
+  function pipeCol(x0, y0, z0, x1, y1, z1, r, o) {
+    const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0), n = Math.max(1, Math.ceil(len / 0.5));
+    for (let i = 0; i < n; i++) {
+      const a = i / n, b = (i + 1) / n;
+      const ax = x0 + (x1 - x0) * a, ay = y0 + (y1 - y0) * a, az = z0 + (z1 - z0) * a, bx = x0 + (x1 - x0) * b, by = y0 + (y1 - y0) * b, bz = z0 + (z1 - z0) * b;
+      W.add(Math.min(ax, bx) - r, Math.min(ay, by) - r, Math.min(az, bz) - r, Math.max(ax, bx) + r, Math.max(ay, by) + r, Math.max(az, bz) + r, Object.assign({ surf: 'metal', shoot: false, nav: false }, o));
+    }
+  }
   function barrel(x, z, y) { L.addBarrel(x, y || 0, z); L.blob(x, z, 1.1, 1.1, y || 0); }
   function stairs(x0, z0, x1, z1, yBase, yTop, dir, m) {
     const n = Math.round((yTop - yBase) / 0.3), rise = (yTop - yBase) / n, k = n - 1;
@@ -129,7 +138,7 @@
     // ---------------------------------------------------------------- south dock (start)
     L.box(-18, 0, 44, 18, 1.2, 56, 'concrete', { top: 'metalFloor' });
     L.box(-18, 1.2, 43.95, 18, 1.28, 44.1, 'hazard', { noCol: true, ao: false });
-    for (const bx of [-15, -9, 9, 15]) L.box(bx - 0.4, 0.3, 43.7, bx + 0.4, 1.0, 44, 'rubber', { noCol: true });
+    for (const bx of [-15, -9, 9, 15]) L.box(bx - 0.4, 0.3, 43.7, bx + 0.4, 1.0, 44, 'rubber');
     stairs(-3, 42.2, 3, 44, 0, 1.2, 'z+', 'concrete');
     stairs(-12, 42.2, -9, 44, 0, 1.2, 'z+', 'concrete');
     stairs(9, 42.2, 12, 44, 0, 1.2, 'z+', 'concrete');
@@ -145,7 +154,7 @@
     L.propBox('cont_blue', 15, 1.2, 50.25, 3.0, 3.2, 9.5, 0);
     W.add(13.5, 1.2, 45.5, 16.5, 4.4, 55, { surf: 'metal' });
     // roll-up doors on the south wall
-    for (const dx of [-8, 8]) L.box(dx - 2.6, 1.2, 55.8, dx + 2.6, 5.2, 56, 'wall', { noCol: true, ao: false });
+    for (const dx of [-8, 8]) L.box(dx - 2.6, 1.2, 55.8, dx + 2.6, 5.2, 56, 'wall', { ao: false, surf: 'metal' });
     crate(-6, 1.2, 48.4); crate(-4.8, 1.2, 48.4); crate(-5.4, 2.4, 48.4, 1.0);
     crate(4, 1.2, 53.5); crate(10.5, 1.2, 47);
     ammoCache('cacheDock', 6.2, 1.2, 47.2, 'z-');
@@ -185,7 +194,7 @@
     shed(42, 8, 54, 20, 4.5, 'w', 12.5, 15.5, 'wall');
     L.box(47, 0, 10.5, 52.5, 2.2, 14, 'paintYellow');
     L.box(47.6, 2.2, 11, 49.4, 2.8, 13.5, 'paintDark');
-    L.pipe('steel', 51, 2.2, 12.2, 51, 6.3, 12.2, 0.22);
+    L.pipe('steel', 51, 2.2, 12.2, 51, 6.3, 12.2, 0.22); W.addCyl(51, 12.2, 0.24, 2.2, 6.3, { surf: 'metal' });
     L.box(44, 4.1, 15.8, 50, 4.2, 16.2, 'lampCool', { noCol: true, ao: false });
     L.lamp(47, 3.9, 16, { color: 0xbfd8ff, intensity: 1.4, distance: 12, prio: 0.6, poolSize: 8, poolStrength: 0.18 });
     breaker('breakerA', 45.6, 0, 8.4, 'z+', 'Generator shed');
@@ -195,6 +204,8 @@
     L.box(-51, 0, 5.8, -48.6, 1.7, 8.2, 'paintGreen'); L.box(-51, 0, 11.8, -48.6, 1.7, 14.2, 'paintGreen');
     L.cyl('steel', -49.8, 2.0, 7, 0.55, 0.6); L.cyl('steel', -49.8, 2.0, 13, 0.55, 0.6);
     L.pipe('steel', -52.8, 3.4, 4.6, -52.8, 3.4, 15.4, 0.2); L.pipe('steel', -49.8, 2.3, 7, -49.8, 3.4, 7, 0.14); L.pipe('steel', -49.8, 2.3, 13, -49.8, 3.4, 13, 0.14);
+    for (const pz of [7, 13]) { W.addCyl(-49.8, pz, 0.56, 1.7, 2.3, { surf: 'metal' }); W.addCyl(-49.8, pz, 0.16, 2.3, 3.6, { surf: 'metal', shoot: false }); }
+    pipeCol(-52.8, 3.4, 4.6, -52.8, 3.4, 15.4, 0.2);
     L.box(-50, 4.1, 9.8, -46, 4.2, 10.2, 'lampCool', { noCol: true, ao: false });
     L.lamp(-48, 3.9, 10, { color: 0xbfd8ff, intensity: 1.4, distance: 12, prio: 0.6, poolSize: 8, poolStrength: 0.18, flicker: 0.08 });
     breaker('breakerB', -53.6, 0, 10, 'x+', 'Pump house');
@@ -203,10 +214,10 @@
       L.cyl('paintGrey', t[0], t[3] / 2, t[1], t[2], t[3]);
       L.cyl('paintDark', t[0], t[3] + 0.15, t[1], t[2] * 0.96, 0.3);
       for (const ry of [0.25, 0.75]) L.cyl('paintDark', t[0], t[3] * ry, t[1], t[2] + 0.04, 0.18);
-      const s = t[2] * 0.8; W.add(t[0] - s, 0, t[1] - s, t[0] + s, t[3], t[1] + s, { surf: 'metal' });
+      W.addCyl(t[0], t[1], t[2] + 0.05, 0, t[3] + 0.3, { surf: 'metal' });
       L.blob(t[0], t[1], t[2] * 2.6, t[2] * 2.6);
     }
-    L.pipe('steel', -48, 1.2, 44, -46, 1.2, 16.4, 0.25);
+    L.pipe('steel', -48, 1.2, 44, -46, 1.2, 16.4, 0.25); pipeCol(-48, 1.2, 44, -46, 1.2, 16.4, 0.26);
     // pipe rack (east)
     for (let z = -2; z <= 38; z += 8) {
       L.box(58.3, 0, z - 0.15, 58.6, 5, z + 0.15, 'paintYellow', { shoot: false });
@@ -258,14 +269,14 @@
     L.box(18, 0.8, -18, 24, 3.8, -13, 'paintYellow'); L.box(19, 3.8, -17, 23, 4.6, -14, 'paintDark');
     L.box(-12, 0.8, -24, -8, 2.3, -21.5, 'paintGrey'); L.box(8, 0.8, -24, 12, 2.3, -21.5, 'paintGrey');
     L.box(-6, 0.8, -15, 6, 1.9, -13.6, 'paintDark');
-    for (let x = -5; x <= 5; x += 2.5) L.box(x - 0.5, 1.9, -14.7, x + 0.5, 2.3, -13.9, 'steel', { noCol: true });
+    for (let x = -5; x <= 5; x += 2.5) L.box(x - 0.5, 1.9, -14.7, x + 0.5, 2.3, -13.9, 'steel', { surf: 'metal' });
     crate(-27.6, 0.8, -24); crate(-27.6, 0.8, -25.2); crate(27.4, 0.8, -26); crate(-16, 0.8, -26.8, 1.0); crate(15.5, 0.8, -10.8);
     ammoCache('cacheHall', -26.5, 0.8, -11, 'x+');
     // north half: crucibles + control platform
     for (const cx of [-18, -2]) {
       L.cyl('paintDark', cx, 0.8 + 1.8, -36.5, 2.6, 3.6); L.cyl('steel', cx, 0.8 + 3.55, -36.5, 2.75, 0.2);
       L.cyl('moltenTop', cx, 0.8 + 3.62, -36.5, 2.3, 0.04);
-      W.add(cx - 2.1, 0.8, -38.6, cx + 2.1, 4.4, -34.4, { surf: 'metal' });
+      W.addCyl(cx, -36.5, 2.76, 0.8, 4.4, { surf: 'metal' });
       L.lamp(cx, 5.8, -36.5, { color: 0xff7a2a, intensity: 2.2, distance: 12, prio: 0.8, pool: false });
       L.emitters.push({ type: 'embers', x: cx, y: 4.5, z: -36.5, rate: 5 });
     }
@@ -291,7 +302,7 @@
     const pane = { noCol: true, ao: false };
     for (const wx of [-25, -17, 17, 25]) for (const o of [-1.6, 0, 1.6]) L.box(wx + o - 0.7, 9, -7.99, wx + o + 0.7, 10.6, -7.94, 'windowWarm', pane);
     for (const wz of [-36, -28, -14]) for (const o of [-1.6, 0, 1.6]) { L.box(-30.06, 9, wz + o - 0.7, -30.0, 10.6, wz + o + 0.7, 'windowWarm', pane); L.box(30.0, 9, wz + o - 0.7, 30.06, 10.6, wz + o + 0.7, 'windowWarm', pane); }
-    for (const sx of [-8, 8]) { const s = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.6), M.signDanger); s.position.set(sx, 1.5, -28.42); L.scene.add(s); L.box(sx - 0.05, 0.8, -28.6, sx + 0.05, 1.2, -28.5, 'steel', { noCol: true }); }
+    for (const sx of [-8, 8]) { const s = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.6), M.signDanger); s.position.set(sx, 1.5, -28.42); L.scene.add(s); L.box(sx - 0.05, 0.8, -28.6, sx + 0.05, 1.2, -28.5, 'steel', { shoot: false }); W.add(sx - 0.6, 1.2, -28.46, sx + 0.6, 1.8, -28.38, { shoot: false, nav: false }); }
     // side doors (sealed until power is restored)
     L.addDoor('hallW', -29.9, 0.8, -22, -29.3, 5.8, -18, 'paintDark', { light: [-31, 6.3, -20] });
     L.addDoor('hallE', 29.3, 0.8, -22, 29.9, 5.8, -18, 'paintDark', { light: [31, 6.3, -20] });
@@ -311,6 +322,7 @@
     for (const lx of [56.3, 58.2]) for (const lz of [-51.7, -49.8]) L.pipe('steel', lx, 2.1, lz, 57.25 + (lx - 57.25) * 0.25, 26, -50.75 + (lz + 50.75) * 0.25, 0.09);
     for (let y = 5; y < 25; y += 4) L.box(56.4 + y * 0.03, y, -51.6 + y * 0.03, 58.1 - y * 0.03, y + 0.12, -49.9 - y * 0.03, 'steel', { noCol: true, nav: false });
     L.cyl('paintGrey', 57.25, 20, -50.75, 1.6, 0.3, 1.1, 0);
+    W.add(56.15, 2.1, -51.85, 58.35, 26, -49.65, { surf: 'metal', shoot: false, nav: false });
     const beaconMat = M.lampRed.clone();
     const beacon = new THREE.Mesh(L.geo('sphere'), beaconMat); beacon.scale.setScalar(0.3); beacon.position.set(57.25, 26.3, -50.75); L.scene.add(beacon);
     L.animated.push((dt, t) => { beacon.visible = (t % 1.6) < 0.5; });
@@ -361,7 +373,8 @@
       const [vx, vy, vz, face, col] = v, sx = face[0] === 'x' ? 0.45 : 0.6, sz = face[0] === 'x' ? 0.6 : 0.45;
       L.box(vx - sx, vy, vz - sz, vx + sx, vy + 1.9, vz + sz, 'paintDark');
       const f = FACE_DIR[face];
-      L.box(vx - sx * 0.8 + f[0] * sx, vy + 0.5, vz - sz * 0.8 + f[1] * sz, vx + sx * 0.8 + f[0] * (sx + 0.02), vy + 1.75, vz + sz * 0.8 + f[1] * (sz + 0.02), 'neon_' + col, { noCol: true, ao: false });
+      const ax = face[0] === 'x', o0 = f[0] + f[1] > 0 ? 0 : -0.02, o1 = f[0] + f[1] > 0 ? 0.02 : 0;
+      L.box(ax ? vx + f[0] * sx + o0 : vx - sx * 0.8, vy + 0.5, ax ? vz - sz * 0.8 : vz + f[1] * sz + o0, ax ? vx + f[0] * sx + o1 : vx + sx * 0.8, vy + 1.75, ax ? vz + sz * 0.8 : vz + f[1] * sz + o1, 'neon_' + col, { noCol: true, ao: false });
       L.lamp(vx + f[0] * 1.1, vy + 1.3, vz + f[1] * 1.1, { color: CF.Neon.HEX[col], intensity: 1.3, distance: 7, pool: true, poolSize: 4, poolStrength: 0.5 });
     }
     CF.Neon.strip(-64, 6.9, -24.75, -52, 7.0, -24.62, 'red'); CF.Neon.strip(-46, 6.9, -24.75, -34.8, 7.0, -24.62, 'red');
@@ -393,5 +406,5 @@
     // no weapon pickups: weapons are unlocked by objectives (CF.Mission.unlocks)
     for (const a of [[-24, 0, 30], [26, 0, 20], [-47, 0, 10], [48, 0, 17.5], [6, 0.8, -39], [61, 1.5, -54], [-62, 0, -27], [-36.8, 0, -53], [12, 0.8, -26]]) L.addPickup('armor', a[0], a[1], a[2]);
   };
-  Map.kit = { container, crate, barrier, lampPost, barrel, stairs, shed, screenMesh, statusLight, ammoCache, FACE_DIR, FACE_ROT };
+  Map.kit = { container, crate, barrier, lampPost, barrel, stairs, shed, screenMesh, statusLight, ammoCache, pipeCol, FACE_DIR, FACE_ROT };
 })(window.CF);

@@ -284,12 +284,13 @@
     if (stage && this.last.bs !== stage) { this.el.bossStage.textContent = stage; this.last.bs = stage; }
   };
   H.showScope = function (on, steady, breath) {
-    if (this.last.scope !== on) { this.el.scope.hidden = !on; this.last.scope = on; }
+    if (this.last.scope !== on) { this.el.scope.hidden = !on; this.el.hud.classList.toggle('scoped', !!on); this.last.scope = on; }
     if (on) {
       const P = CF.Player, cam = CF.Game.camera, d = new THREE.Vector3();
       cam.getWorldDirection(d);
       const h = CF.World.raycast(cam.position.x, cam.position.y, cam.position.z, d.x, d.y, d.z, 400);
-      const txt = (steady ? 'STEADY · ' : breath < 4 ? 'HOLD ' + CF.Keys.label('sprint').toUpperCase() + ' TO STEADY · ' : '') + '3.5x · ' + (h ? Math.round(h.t) : '---') + ' m';
+      const mag = Math.tan(CF.settings.fov * Math.PI / 360) / Math.tan(cam.fov * Math.PI / 360);
+      const txt = (steady ? 'STEADY · ' : breath < 4 ? 'HOLD ' + CF.Keys.label('sprint').toUpperCase() + ' TO STEADY · ' : '') + mag.toFixed(1) + 'x · ' + (h ? Math.round(h.t) : '---') + ' m';
       if (this.last.sr !== txt) { this.el.scopeRead.textContent = txt; this.last.sr = txt; }
     }
   };

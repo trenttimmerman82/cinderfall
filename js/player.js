@@ -255,7 +255,7 @@
     this.updateCamera(dt, true);
   };
 
-  const _e = new THREE.Euler(0, 0, 0, 'YXZ');
+  const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _sway = { x: 0, y: 0 };
   P.updateCamera = function (dt, dead) {
     const cam = this.camera, b = this.body, st = CF.settings, WPN = CF.Weapons;
     if (!dead) {
@@ -277,7 +277,8 @@
     cam.position.set(b.pos.x, b.pos.y + this.eye + this.eyeOff - bobY, b.pos.z);
     cam.position.x += Math.cos(this.yaw) * bobX; cam.position.z -= Math.sin(this.yaw) * bobX;
     if (this.mantling) { cam.position.y -= Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.12; }
-    _e.set(this.pitch + this.recoilP + ny * 0.035 + this.flinch * 0.02, this.yaw + this.recoilY + nx * 0.035, this.tilt + nr * 0.04 + (this.mantling ? Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.06 : 0));
+    WPN.scopeSway(_sway);
+    _e.set(this.pitch + this.recoilP + ny * 0.035 + this.flinch * 0.02 + _sway.y, this.yaw + this.recoilY + nx * 0.035 - _sway.x, this.tilt + nr * 0.04 + (this.mantling ? Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.06 : 0));
     cam.quaternion.setFromEuler(_e);
     const base = st.fov + this.sprintT * 6 + this.slideT * 8;
     const adsMul = WPN.cur ? U.lerp(1, WPN.cur.def.adsFov, WPN.adsE) : 1;

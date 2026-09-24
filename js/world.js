@@ -29,6 +29,13 @@
     return b;
   };
 
+  /** Upright cylinder collider (tanks, crucibles, rocks, trunks): round for movement and bullets, boxed for the broad phase. */
+  W.addCyl = function (x, z, r, y0, y1, o) {
+    const b = this.add(x - r, y0, z - r, x + r, y1, z + r, o);
+    b.cyl = r; b.cx = x; b.cz = z;
+    return b;
+  };
+
   W.build = function () {
     const B = this.bounds, cs = this.cell;
     this.gx0 = B.minX - 4; this.gz0 = B.minZ - 4;
@@ -62,8 +69,8 @@
     return out;
   };
 
-  /** Ray vs world. dir must be normalized. Returns shared hit object or null. */
-  W.raycast = function (ox, oy, oz, dx, dy, dz, maxT, filter) {
+  /** Ray vs world. dir must be normalized. Returns shared hit object or null. solid: also stop at solids bullets pass through (fences, rails). */
+  W.raycast = function (ox, oy, oz, dx, dy, dz, maxT, filter, solid) {
     const st = ++this.stamp, marks = this.marks, cs = this.cell, gw = this.gw, gh = this.gh;
     const idx = 1 / (Math.abs(dx) > 1e-9 ? dx : 1e-9), idy = 1 / (Math.abs(dy) > 1e-9 ? dy : 1e-9), idz = 1 / (Math.abs(dz) > 1e-9 ? dz : 1e-9);
     let best = maxT, bestB = null, bestAxis = -1;
@@ -80,7 +87,7 @@
         for (let i = 0; i < list.length; i++) {
           const b = list[i];
           if (marks[b.id] === st) continue; marks[b.id] = st;
-          if (!b.enabled || !b.shoot) continue;
+          if (!b.enabled || !(b.shoot || (solid && b.solid))) continue;
           if (filter && !filter(b)) continue;
           let t0 = 0, t1 = best, axis = -1, a, c, tmp;
           a = (b.minX - ox) * idx; c = (b.maxX - ox) * idx; if (a > c) { tmp = a; a = c; c = tmp; }
@@ -89,6 +96,17 @@
           if (a > t0) { t0 = a; axis = 1; } if (c < t1) t1 = c; if (t0 > t1) continue;
           a = (b.minZ - oz) * idz; c = (b.maxZ - oz) * idz; if (a > c) { tmp = a; a = c; c = tmp; }
           if (a > t0) { t0 = a; axis = 2; } if (c < t1) t1 = c; if (t0 > t1) continue;
+          if (b.cyl) { // the box test passed: now the round side (vertical rays only need the y slab)
+            const px = ox - b.cx, pz = oz - b.cz, qa = dx * dx + dz * dz, qb = 2 * (px * dx + pz * dz), qc = px * px + pz * pz - b.cyl * b.cyl;
+            if (qa > 1e-12) {
+              const disc = qb * qb - 4 * qa * qc; if (disc < 0) continue;
+              const sq = Math.sqrt(disc), c0 = (-qb - sq) / (2 * qa), c1 = (-qb + sq) / (2 * qa);
+              let y0 = (b.minY - oy) * idy, y1 = (b.maxY - oy) * idy; if (y0 > y1) { tmp = y0; y0 = y1; y1 = tmp; }
+              const enter = Math.max(c0, y0, 0), exit = Math.min(c1, y1, best);
+              if (enter > exit) continue;
+              t0 = enter; axis = enter === c0 ? 3 : 1;
+            } else if (qc > 0) continue;
+          }
           if (t0 < best) { best = t0; bestB = b; bestAxis = axis; }
         }
       } else if ((cx < 0 && sx < 0) || (cx >= gw && sx > 0) || (cz < 0 && sz < 0) || (cz >= gh && sz > 0)) break;
@@ -102,8 +120,19 @@
     if (bestAxis === 0) h.nx = dx > 0 ? -1 : 1;
     else if (bestAxis === 1) h.ny = dy > 0 ? -1 : 1;
     else if (bestAxis === 2) h.nz = dz > 0 ? -1 : 1;
+    else if (bestAxis === 3) { const l = Math.hypot(h.x - bestB.cx, h.z - bestB.cz) || 1; h.nx = (h.x - bestB.cx) / l; h.nz = (h.z - bestB.cz) / l; }
     else { h.nx = -dx; h.ny = -dy; h.nz = -dz; }
     return h;
+  };
+
+  /** Move a flying point (drone, RC car camera) from p toward target, stopping pad metres short of any solid. */
+  W.sweep = function (p, tx, ty, tz, pad) {
+    const dx = tx - p.x, dy = ty - p.y, dz = tz - p.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (d < 1e-5) return p;
+    const h = this.raycast(p.x, p.y, p.z, dx / d, dy / d, dz / d, d + pad, null, true);
+    const k = h ? Math.max(0, h.t - pad) / d : 1;
+    p.x += dx * Math.min(1, k); p.y += dy * Math.min(1, k); p.z += dz * Math.min(1, k);
+    return p;
   };
 
   W.segmentClear = function (ax, ay, az, bx, by, bz) {
@@ -120,6 +149,7 @@
 
   // ------------------------------------------------------------ character movement
   function circleRect(x, z, r, b) {
+    if (b.cyl) { const dx = x - b.cx, dz = z - b.cz, R = r + b.cyl; return dx * dx + dz * dz < R * R; }
     const cx = x < b.minX ? b.minX : x > b.maxX ? b.maxX : x;
     const cz = z < b.minZ ? b.minZ : z > b.maxZ ? b.maxZ : z;
     const dx = x - cx, dz = z - cz;
@@ -154,9 +184,10 @@
         if (!o.solid) continue;
         const feet = b.pos.y, head = feet + b.height;
         if (o.maxY <= feet + 0.001 || o.minY >= head - 0.001) continue;
-        const cx = U.clamp(b.pos.x, o.minX, o.maxX), cz = U.clamp(b.pos.z, o.minZ, o.maxZ);
-        const dx = b.pos.x - cx, dz = b.pos.z - cz, d2 = dx * dx + dz * dz;
-        if (d2 >= r * r) continue;
+        let dx, dz, d2, rr = r;
+        if (o.cyl) { dx = b.pos.x - o.cx; dz = b.pos.z - o.cz; d2 = dx * dx + dz * dz; rr = r + o.cyl; }
+        else { const cx = U.clamp(b.pos.x, o.minX, o.maxX), cz = U.clamp(b.pos.z, o.minZ, o.maxZ); dx = b.pos.x - cx; dz = b.pos.z - cz; d2 = dx * dx + dz * dz; }
+        if (d2 >= rr * rr) continue;
         const rise = o.maxY - feet;
         if (canStep && rise <= b.stepHeight && this.headroom(b.pos.x, b.pos.z, r * 0.9, o.maxY, b.height, o)) {
           b.pos.y = o.maxY; b.stepped += rise; b.grounded = true; if (b.vel.y < 0) b.vel.y = 0;
@@ -164,7 +195,7 @@
         }
         b.hitWall = true;
         if (d2 > 1e-10) {
-          const d = Math.sqrt(d2), nx = dx / d, nz = dz / d, push = r - d;
+          const d = Math.sqrt(d2), nx = dx / d, nz = dz / d, push = rr - d;
           b.pos.x += nx * push; b.pos.z += nz * push;
           const vn = b.vel.x * nx + b.vel.z * nz;
           if (vn < 0) { b.vel.x -= vn * nx; b.vel.z -= vn * nz; }
@@ -217,6 +248,12 @@
       const gy = this.groundBelow(b.pos.x, b.pos.z, b.radius * 0.9, b.pos.y + 0.05, b.stepHeight + 0.05);
       if (gy !== null) { b.stepped += gy - b.pos.y; b.pos.y = gy; b.vel.y = 0; b.grounded = true; }
     }
+    // last line of defence at the map edge: nothing leaves the collision grid, whatever gap it found
+    const B = this.bounds, r = b.radius;
+    if (b.pos.x < B.minX + r) { b.pos.x = B.minX + r; if (b.vel.x < 0) b.vel.x = 0; b.hitWall = true; }
+    else if (b.pos.x > B.maxX - r) { b.pos.x = B.maxX - r; if (b.vel.x > 0) b.vel.x = 0; b.hitWall = true; }
+    if (b.pos.z < B.minZ + r) { b.pos.z = B.minZ + r; if (b.vel.z < 0) b.vel.z = 0; b.hitWall = true; }
+    else if (b.pos.z > B.maxZ - r) { b.pos.z = B.maxZ - r; if (b.vel.z > 0) b.vel.z = 0; b.hitWall = true; }
   };
 
   // ------------------------------------------------------------ navigation (2.5D heightfield + flow field)
@@ -224,15 +261,16 @@
   W.surfaceAt = function (x, z, maxH) {
     const list = this.query(x - 0.01, z - 0.01, x + 0.01, z + 0.01, _q3);
     let best = NaN;
+    const inside = (b) => !b.cyl || (x - b.cx) * (x - b.cx) + (z - b.cz) * (z - b.cz) < b.cyl * b.cyl;
     for (let i = 0; i < list.length; i++) {
       const c = list[i];
-      if (!c.nav || !c.solid) continue;
+      if (!c.nav || !c.solid || !inside(c)) continue;
       const s = c.maxY;
       if (s > maxH || (!isNaN(best) && s <= best)) continue;
       let ok = true;
       for (let j = 0; j < list.length; j++) {
         const o = list[j];
-        if (o === c || !o.solid) continue;
+        if (o === c || !o.solid || !inside(o)) continue;
         if (o.minY < s + CLEAR && o.maxY > s + 0.05) { ok = false; break; }
       }
       if (ok) best = s;

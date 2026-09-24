@@ -35,7 +35,7 @@
       N.strip(x0 - 0.05, top - 1.2, z1 + 0.02, x1 + 0.05, top - 1.0, z1 + 0.06, color);
     };
     const ac = (x, y, z, alongX) => { const lx = alongX ? 1.1 : 0.7, lz = alongX ? 0.7 : 1.1; L.box(x - lx, y, z - lz, x + lx, y + 1.25, z + lz, 'paintGrey'); L.cyl('steel', x, y + 1.3, z, 0.45, 0.08); };
-    const tank = (x, y, z, r, h) => { L.cyl('paintDark', x, y + 0.8 + h / 2, z, r, h); for (const a of [0, 1.57, 3.14, 4.71]) L.box(x + Math.cos(a) * r * 0.7 - 0.1, y, z + Math.sin(a) * r * 0.7 - 0.1, x + Math.cos(a) * r * 0.7 + 0.1, y + 0.8, z + Math.sin(a) * r * 0.7 + 0.1, 'steel', { noCol: true }); const s = r * 0.8; W.add(x - s, y, z - s, x + s, y + 0.8 + h, z + s, { surf: 'metal' }); };
+    const tank = (x, y, z, r, h) => { L.cyl('paintDark', x, y + 0.8 + h / 2, z, r, h); for (const a of [0, 1.57, 3.14, 4.71]) L.box(x + Math.cos(a) * r * 0.7 - 0.1, y, z + Math.sin(a) * r * 0.7 - 0.1, x + Math.cos(a) * r * 0.7 + 0.1, y + 0.8, z + Math.sin(a) * r * 0.7 + 0.1, 'steel', { noCol: true }); W.addCyl(x, z, r, y, y + 0.8 + h, { surf: 'metal' }); };
     const hut = (x0, z0, x1, z1, y, h) => { L.box(x0, y, z0, x1, y + h, z1, 'wall'); L.box(x0 - 0.2, y + h, z0 - 0.2, x1 + 0.2, y + h + 0.2, z1 + 0.2, 'paintDark', { nav: false }); };
     const railing = (x0, z0, x1, z1, y) => L.box(x0, y, z0, x1, y + 1.05, z1, 'steel', { shoot: false });
 
@@ -61,6 +61,7 @@
     for (const a of [[30, -10], [30, 8], [22, 6]]) { L.box(a[0] - 0.15, 1.5, a[1] - 0.15, a[0] + 0.15, 11, a[1] + 0.15, 'steel'); L.box(a[0] - 0.05, 11, a[1] - 0.05, a[0] + 0.05, 13, a[1] + 0.05, 'neon_red', { noCol: true }); }
     L.cyl('paintGrey', 26, 3.2, -4, 1.8, 0.3, 1.1, 0);
     L.box(25.4, 1.5, -4.6, 26.6, 2.6, -3.4, 'paintDark');
+    W.add(24.2, 2.6, -4.95, 27.8, 4.9, -3.05, { surf: 'metal' }); W.add(24.2, 4.9, -4.95, 27.8, 12, -3.05, { shoot: false, nav: false }); // the dish, and no perching on it
     ac(22, 1.5, -10, false); ac(30, 1.5, 0, true); hut(20, 2, 24, 6, 1.5, 3);
     L.lamp(26, 6, -2, { color: N.HEX.violet, intensity: 2, distance: 16, pool: true, poolSize: 11, poolStrength: 0.3 });
     // E (west, rooftop bar) top -1
@@ -68,7 +69,7 @@
     L.box(-31, -1, -6, -29.8, 0.1, 6, 'paintDark'); L.box(-31.1, 0.1, -6.1, -29.7, 0.2, 6.1, 'steel', { noCol: true });
     N.strip(-29.8, -0.6, -6, -29.75, -0.5, 6, 'pink');
     N.sign('BAR 夜', 'pink', -33.7, 2.6, 0, 'x+', 1.3, { intensity: 2.6, distance: 14 });
-    for (let z = -4; z <= 4; z += 2.6) { L.cyl('steel', -28.6, -0.55, z, 0.2, 0.9, 0, 0, true); }
+    for (let z = -4; z <= 4; z += 2.6) { L.cyl('steel', -28.6, -0.55, z, 0.2, 0.9, 0, 0, true); W.addCyl(-28.6, z, 0.2, -1, -0.1, { surf: 'metal' }); }
     for (const tb of [[-24, -8], [-22, 8], [-26, 10]]) { L.cyl('paintDark', tb[0], -0.45, tb[1], 0.7, 0.08); L.cyl('steel', tb[0], -0.72, tb[1], 0.08, 0.55, 0, 0, true); W.add(tb[0] - 0.5, -1, tb[1] - 0.5, tb[0] + 0.5, -0.4, tb[1] + 0.5, { surf: 'metal' }); }
     for (let i = 0; i < 9; i++) { const x = -33 + i * 1.8; L.lamp(x, 2.4, -11, { color: i % 2 ? 0xffc47a : N.HEX.pink, intensity: 0.8, distance: 5, pool: false }); L.box(x - 0.08, 2.32, -11.08, x + 0.08, 2.48, -10.92, i % 2 ? 'lampWarm' : 'neon_pink', { noCol: true }); }
     tank(-21, -1, -8, 1.4, 2); ac(-32, -1, 10, false);

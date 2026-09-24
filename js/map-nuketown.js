@@ -201,8 +201,8 @@
     if (door) { // open door leaf, hinged on the h[0] side, swung inward
       if (dress.noLeaf) return;
       const inn = c - out * (T / 2 + 0.47);
-      if (axis === 'x') deco(h[0] + 0.02, h[2], inn - 0.45, h[0] + 0.07, h[3] - 0.04, inn + 0.45, 'cabinet');
-      else deco(inn - 0.45, h[2], h[0] + 0.02, inn + 0.45, h[3] - 0.04, h[0] + 0.07, 'cabinet');
+      if (axis === 'x') L.box(h[0] + 0.02, h[2], inn - 0.45, h[0] + 0.07, h[3] - 0.04, inn + 0.45, 'cabinet', { ao: false });
+      else L.box(inn - 0.45, h[2], h[0] + 0.02, inn + 0.45, h[3] - 0.04, h[0] + 0.07, 'cabinet', { ao: false });
       return;
     }
     if (dress.shutter) { const cc = c + out * (T / 2 + 0.05); box(h[0] - 0.6, h[0] - 0.14, h[2], h[3], cc, 0.03, dress.shutter); box(h[1] + 0.14, h[1] + 0.6, h[2], h[3], cc, 0.03, dress.shutter); }
@@ -220,17 +220,21 @@
   function railingZ(z0, z1, x, y) { deco(x - 0.05, y + 0.95, z0, x + 0.05, y + 1.02, z1, 'woodDark'); for (let z = z0; z <= z1 + 0.01; z += 0.35) deco(x - 0.025, y, z - 0.025, x + 0.025, y + 0.95, z + 0.025, 'trim'); W.add(x - 0.06, y, z0, x + 0.06, y + 1.02, z1, { shoot: false }); }
 
   // ------------------------------------------------------------ roofs
+  /** Pitched roofs are scenery: an invisible, bullet-transparent cap keeps players off the slopes (and off the map edge behind them). */
+  function roofCap(x0, z0, x1, z1, y) { W.add(x0, y, z0, x1, y + 8, z1, { shoot: false, nav: false }); }
   function gableRoof(cx, cz, w, d, y, h, endMat, roofMat, alongZ) {
     const o = 0.55, ry = alongZ ? Math.PI / 2 : 0, ww = alongZ ? d : w, dd = alongZ ? w : d;
     put(roofMat || 'roofGray', gableRoofGeo(ww + 2 * o, dd + 2 * o, h), cx, y - 0.1, cz, 1, 1, 1, ry);
     put(endMat, gableEndGeo(ww - 0.02, dd, h, o, -0.25), cx, y - 0.1, cz, 1, 1, 1, ry);
     for (let i = 0; i < 3; i++) { const k = (i + 1) / 4, e = (dd / 2) * (1 - k); if (alongZ) solid(cx - e, y, cz - ww / 2, cx + e, y + h * k, cz + ww / 2); else solid(cx - ww / 2, y, cz - e, cx + ww / 2, y + h * k, cz + e); }
+    roofCap(cx - (alongZ ? dd : ww) / 2 - o, cz - (alongZ ? ww : dd) / 2 - o, cx + (alongZ ? dd : ww) / 2 + o, cz + (alongZ ? ww : dd) / 2 + o, y);
   }
   function hipRoof(cx, cz, w, d, y, h, roofMat) {
     const o = 0.7;
     put(roofMat || 'roofGray', hipRoofGeo(w + 2 * o, d + 2 * o, h), cx, y - 0.12, cz, 1, 1, 1);
     deco(cx - w / 2 - o, y - 0.34, cz - d / 2 - o, cx + w / 2 + o, y - 0.12, cz + d / 2 + o, 'trim');
     for (let i = 0; i < 3; i++) { const k = (i + 1) / 4, e = (d / 2) * (1 - k); solid(cx - w / 2 + (d / 2 - e), y, cz - e, cx + w / 2 - (d / 2 - e), y + h * k, cz + e); }
+    roofCap(cx - w / 2 - o, cz - d / 2 - o, cx + w / 2 + o, cz + d / 2 + o, y);
   }
 
   // ------------------------------------------------------------ props
@@ -238,26 +242,33 @@
     const rnd = U.mulberry32(seed || Math.round(x * 131 + z * 17));
     put('bark', geo('trunk'), x, h / 2, z, 0.28, h, 0.28);
     for (let i = 0; i < 2; i++) { const a = rnd() * 6.28; L.pipe('bark', x, h * 0.7, z, x + Math.cos(a) * r * 0.6, h + r * 0.2, z + Math.sin(a) * r * 0.6, 0.09); }
+    solid(x - 0.3, 0, z - 0.3, x + 0.3, h, z + 0.3);
+    W.add(x - r * 1.1, h - r * 0.2, z - r * 1.1, x + r * 1.1, h + r * 1.6 + 4, z + r * 1.1, { shoot: false, nav: false });
     const n = 5 + (rnd() * 3 | 0);
     for (let i = 0; i < n; i++) {
       const a = rnd() * 6.28, d = i ? r * (0.35 + rnd() * 0.45) : 0, s = r * (i ? 0.55 + rnd() * 0.3 : 0.85);
       put(rnd() < 0.35 ? 'leaves2' : 'leaves', blobGeo(i % 3), x + Math.cos(a) * d, h + r * 0.35 + (rnd() - 0.4) * r * 0.6, z + Math.sin(a) * d, s, s * 0.9, s, rnd() * 6);
     }
   }
-  function cypress(x, z, h) { put('bark', geo('trunk'), x, 0.4, z, 0.15, 0.8, 0.15); for (let i = 0; i < 4; i++) put('pine', blobGeo(i % 3), x, 0.9 + h * (0.12 + i * 0.2), z, 0.75 - i * 0.12, h * 0.2, 0.75 - i * 0.12, i); solid(x - 0.4, 0, z - 0.4, x + 0.4, h, z + 0.4); }
+  function cypress(x, z, h) {
+    put('bark', geo('trunk'), x, 0.4, z, 0.15, 0.8, 0.15); for (let i = 0; i < 4; i++) put('pine', blobGeo(i % 3), x, 0.9 + h * (0.12 + i * 0.2), z, 0.75 - i * 0.12, h * 0.2, 0.75 - i * 0.12, i);
+    solid(x - 0.75, 0, z - 0.75, x + 0.75, h, z + 0.75);
+    W.add(x - 0.75, h, z - 0.75, x + 0.75, h + 6, z + 0.75, { shoot: false, nav: false }); // nobody stands on a treetop
+  }
   function pine(x, z, h) { put('bark', geo('trunk'), x, h * 0.15, z, 0.22, h * 0.3, 0.22); for (let i = 0; i < 3; i++) put('pine', geo('cone'), x, h * (0.35 + i * 0.22), z, h * (0.3 - i * 0.07), h * 0.38, h * (0.3 - i * 0.07), i); }
   function bush(x, z, r, y, noCol) {
     y = y || 0;
     put('leaves', blobGeo(1), x, y + r * 0.55, z, r, r * 0.75, r, x);
     put('leaves2', blobGeo(2), x + r * 0.4, y + r * 0.4, z - r * 0.2, r * 0.6, r * 0.5, r * 0.6);
-    if (!noCol) solid(x - r * 0.8, y, z - r * 0.8, x + r * 0.8, y + r * 1.1, z + r * 0.8);
+    if (!noCol) solid(x - r * 1.05, y, z - r * 1.05, x + r * 1.15, y + r * 1.1, z + r * 1.05);
   }
   function hedge(x0, z0, x1, z1, hgt) {
     const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(len / 0.7)), hh = hgt || 1;
     for (let i = 0; i <= n; i++) { const k = i / n; put(i % 3 ? 'leaves' : 'leaves2', blobGeo(i % 3), x0 + (x1 - x0) * k, hh * 0.5, z0 + (z1 - z0) * k, 0.55, hh * 0.55, 0.55, i); }
-    solid(Math.min(x0, x1) - 0.45, 0, Math.min(z0, z1) - 0.45, Math.max(x0, x1) + 0.45, hh, Math.max(z0, z1) + 0.45);
+    solid(Math.min(x0, x1) - 0.62, 0, Math.min(z0, z1) - 0.62, Math.max(x0, x1) + 0.62, hh, Math.max(z0, z1) + 0.62);
   }
   function yucca(x, z, s) {
+    solid(x - 0.45 * s, 0, z - 0.45 * s, x + 0.45 * s, 0.95 * s, z + 0.45 * s);
     for (let i = 0; i < 14; i++) { const a = i * 2.4, t = 0.5 + (i % 3) * 0.25; put('joshua', geo('cone'), x + Math.cos(a) * 0.15 * s, 0.45 * s, z + Math.sin(a) * 0.15 * s, 0.06 * s, 1.1 * s, 0.06 * s, 0, Math.cos(a) * t, -Math.sin(a) * t); }
   }
   function joshua(x, z, rnd) {
@@ -285,8 +296,9 @@
     vput('chrome', extrude('carBumper', [[2.28, 0.4], [2.46, 0.44], [2.46, 0.6], [2.28, 0.6]], 1.8, 0.03), x, z, alongX, flip);
     vput('chrome', extrude('carBumperR', [[-2.3, 0.4], [-2.46, 0.44], [-2.46, 0.6], [-2.3, 0.6]], 1.8, 0.03), x, z, alongX, flip);
     if (alongX) wheels(x - 1.5, x + 1.5, z - 0.95, z + 0.95, 0.38); else wheels(x - 0.95, x + 0.95, z - 1.5, z + 1.5, 0.38, true);
-    solid(x - lx, 0, z - lz, x + lx, 1.0, z + lz, 'metal');
-    solid(alongX ? x - 1.5 : x - 0.8, 1.0, alongX ? z - 0.8 : z - 1.5, alongX ? x + 1.0 : x + 0.8, 1.6, alongX ? z + 0.8 : z + 1.0, 'metal');
+    solid(x - lx - (alongX ? 0.16 : 0.12), 0, z - lz - (alongX ? 0.12 : 0.16), x + lx + (alongX ? 0.16 : 0.12), 1.0, z + lz + (alongX ? 0.12 : 0.16), 'metal');
+    const c0 = flip ? -1.0 : -1.5, c1 = flip ? 1.5 : 1.0;
+    solid(alongX ? x + c0 : x - 0.8, 1.0, alongX ? z - 0.8 : z + c0, alongX ? x + c1 : x + 0.8, 1.6, alongX ? z + 0.8 : z + c1, 'metal');
   }
   function mannequin(x, y, z, pose) {
     const m = 'mannequin';
@@ -296,7 +308,9 @@
       L.pipe(m, x + s * 0.09, y + 0.88, z, x + s * 0.11, y + 0.05, z + (pose ? s * 0.12 : 0), 0.065);
       L.pipe(m, x + s * 0.22, y + 1.4, z, x + s * (pose ? 0.4 : 0.27), y + (pose ? 1.05 : 0.82), z - (pose ? 0.25 : 0), 0.045);
     }
-    solid(x - 0.25, y, z - 0.25, x + 0.25, y + 1.75, z + 0.25);
+    const w = pose ? 0.45 : 0.28;
+    solid(x - w, y, z - w, x + w, y + 1.75, z + w);
+    W.add(x - w, y + 1.75, z - w, x + w, y + 3, z + w, { shoot: false, nav: false }); // not a step stool
   }
   function sandbags(x0, z0, x1, z1, rows) {
     const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 0.55)), ang = Math.atan2(x1 - x0, z1 - z0);
@@ -309,7 +323,7 @@
   function roadBlock(x, z0, z1) {
     for (const z of [z0 + 0.2, z1 - 0.2]) { L.pipe('woodDark', x - 0.45, 0, z, x, 1.05, z, 0.04); L.pipe('woodDark', x + 0.45, 0, z, x, 1.05, z, 0.04); }
     for (const y of [0.95, 0.6]) { deco(x - 0.04, y, z0, x + 0.04, y + 0.22, z1, 'roadBlock'); plane(art().roadblock, z1 - z0, 0.22, x + 0.045, y + 0.11, (z0 + z1) / 2, Math.PI / 2); plane(art().roadblock, z1 - z0, 0.22, x - 0.045, y + 0.11, (z0 + z1) / 2, -Math.PI / 2); }
-    solid(x - 0.3, 0, z0, x + 0.3, 1.2, z1);
+    solid(x - 0.5, 0, z0, x + 0.5, 1.2, z1);
   }
   function powerPole(x, z, h) {
     put('bark', geo('trunk'), x, h / 2, z, 0.14, h, 0.14);
@@ -362,16 +376,18 @@
   function couch(x0, z0, x1, z1, back) { // back: 'x-', 'x+', 'z-', 'z+' = side the backrest is on
     L.box(x0, 0.12, z0, x1, 0.55, z1, 'couch');
     const t = 0.25;
-    if (back === 'x-') deco(x0, 0.55, z0, x0 + t, 1.0, z1, 'couch'); if (back === 'x+') deco(x1 - t, 0.55, z0, x1, 1.0, z1, 'couch');
-    if (back === 'z-') deco(x0, 0.55, z0, x1, 1.0, z0 + t, 'couch'); if (back === 'z+') deco(x0, 0.55, z1 - t, x1, 1.0, z1, 'couch');
+    const bk = (a, b, c, d) => L.box(a, 0.55, b, c, 1.0, d, 'couch', { ao: false });
+    if (back === 'x-') bk(x0, z0, x0 + t, z1); if (back === 'x+') bk(x1 - t, z0, x1, z1);
+    if (back === 'z-') bk(x0, z0, x1, z0 + t); if (back === 'z+') bk(x0, z1 - t, x1, z1);
   }
   function bed(x0, z0, x1, z1, y, head) {
     L.box(x0, y, z0, x1, y + 0.35, z1, 'woodDark'); deco(x0 + 0.03, y + 0.35, z0 + 0.03, x1 - 0.03, y + 0.55, z1 - 0.03, 'bedspread');
-    if (head === 'x-') deco(x0 - 0.02, y, z0, x0 + 0.1, y + 1.1, z1, 'woodDark'); else if (head === 'x+') deco(x1 - 0.1, y, z0, x1 + 0.02, y + 1.1, z1, 'woodDark');
-    else if (head === 'z-') deco(x0, y, z0 - 0.02, x1, y + 1.1, z0 + 0.1, 'woodDark'); else deco(x0, y, z1 - 0.1, x1, y + 1.1, z1 + 0.02, 'woodDark');
+    const hb = (a, b, c, d) => L.box(a, y, b, c, y + 1.1, d, 'woodDark', { ao: false });
+    if (head === 'x-') hb(x0 - 0.02, z0, x0 + 0.1, z1); else if (head === 'x+') hb(x1 - 0.1, z0, x1 + 0.02, z1);
+    else if (head === 'z-') hb(x0, z0 - 0.02, x1, z0 + 0.1); else hb(x0, z1 - 0.1, x1, z1 + 0.02);
   }
   function table(x0, z0, x1, z1, y) { L.box(x0, y + 0.72, z0, x1, y + 0.78, z1, 'wood', { noCol: true }); for (const [x, z] of [[x0 + 0.08, z0 + 0.08], [x1 - 0.08, z0 + 0.08], [x0 + 0.08, z1 - 0.08], [x1 - 0.08, z1 - 0.08]]) deco(x - 0.04, y, z - 0.04, x + 0.04, y + 0.72, z + 0.04, 'wood'); solid(x0, y, z0, x1, y + 0.78, z1); }
-  function chair(x, z, y) { deco(x - 0.22, y + 0.42, z - 0.22, x + 0.22, y + 0.47, z + 0.22, 'wood'); deco(x - 0.22, y + 0.47, z + 0.17, x + 0.22, y + 0.95, z + 0.22, 'wood'); for (const [dx, dz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) deco(x + dx - 0.02, y, z + dz - 0.02, x + dx + 0.02, y + 0.42, z + dz + 0.02, 'wood'); }
+  function chair(x, z, y) { deco(x - 0.22, y + 0.42, z - 0.22, x + 0.22, y + 0.47, z + 0.22, 'wood'); deco(x - 0.22, y + 0.47, z + 0.17, x + 0.22, y + 0.95, z + 0.22, 'wood'); for (const [dx, dz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) deco(x + dx - 0.02, y, z + dz - 0.02, x + dx + 0.02, y + 0.42, z + dz + 0.02, 'wood'); solid(x - 0.23, y, z - 0.23, x + 0.23, y + 0.95, z + 0.23); }
 
   // ------------------------------------------------------------ the yellow house (north side, faces the cul-de-sac to the south)
   function yellowHouse() {
@@ -413,7 +429,7 @@
     // living room
     couch(x0 + T, -26.4, x0 + T + 0.9, -23.4, 'x-'); couch(-6.6, -21.2, -4.2, -20.3, 'z+');
     deco(-6.5, 0.12, -25.9, -3, 0.13, -22.6, 'rug');
-    L.box(-2.4, 0.12, -26.2, xp - T / 2, 0.75, -24.8, 'woodDark'); deco(-2.2, 0.75, -26, -1.4, 1.35, -25, 'paintDark'); // tv cabinet
+    L.box(-2.4, 0.12, -26.2, xp - T / 2, 0.75, -24.8, 'woodDark'); L.box(-2.2, 0.75, -26, -1.4, 1.35, -25, 'paintDark', { ao: false }); // tv cabinet
     painting(x0 + T / 2 + 0.03, 1.9, -24.9, Math.PI / 2, 1.2, 0.9);
     roomLight(-5, F1, -25); roomLight(3, F1, -24.5);
     // kitchen: counters, fridge, stove, upper cabinets, dinette
@@ -421,13 +437,13 @@
     L.box(x1 - 0.75, 0.12, z0 + 0.8, x1 - T / 2, 0.95, -27.6, 'cabinet', { top: 'counter' });
     L.box(1.6, 0.12, z0 + 0.14, 2.4, 0.97, z0 + 0.82, 'appliance');
     L.box(x1 - 0.9, 0.12, -21.1, x1 - T / 2, 1.9, -19.95, 'appliance');
-    deco(-0.8, 2.35, z0 + T / 2, 2.8, 2.95, z0 + 0.5, 'cabinet'); deco(4.8, 1.6, z0 + T / 2, x1 - T / 2, 2.4, z0 + 0.5, 'cabinet');
+    L.box(-0.8, 2.35, z0 + T / 2, 2.8, 2.95, z0 + 0.5, 'cabinet', { ao: false }); L.box(4.8, 1.6, z0 + T / 2, x1 - T / 2, 2.4, z0 + 0.5, 'cabinet', { ao: false });
     table(2.2, -25.4, 3.8, -23.8, 0.12); chair(3, -26, 0.12); chair(3, -23.2, 0.12);
     mannequin(4.3, 0.12, -24.6, true);
     // upstairs: bed and dresser in the west room, bunk beds in the east room
     bed(x0 + T, -27.2, x0 + 2.4, -24.9, F, 'x-'); L.box(-1.9, F, -23.9, -0.25, F + 1.1, -23.3, 'woodDark');
     bed(x1 - 2.3, -28.1, x1 - T / 2, -26.2, F, 'x+'); deco(x1 - 2.3, F + 1.55, -28.1, x1 - T / 2, F + 1.75, -26.2, 'woodDark'); deco(x1 - 2.25, F + 1.75, -28.05, x1 - 0.2, F + 1.9, -26.25, 'bedspread');
-    for (const [x, z] of [[x1 - 2.3, -28.1], [x1 - 2.3, -26.2]]) deco(x - 0.04, F, z - 0.04, x + 0.04, F + 2, z + 0.04, 'woodDark');
+    for (const [x, z] of [[x1 - 2.3, -28.1], [x1 - 2.3, -26.2]]) L.box(x - 0.04, F, z - 0.04, x + 0.04, F + 2, z + 0.04, 'woodDark', { ao: false });
     deco(-8.5, F + 0.01, -23.5, -5, F + 0.02, -21, 'rug');
     painting(-0.14, F + 1.7, -23.5, Math.PI / 2, 0.9, 0.7);
     mannequin(-6, F, -20.4, false);
@@ -471,20 +487,21 @@
     L.box(-3.4, 0, 17.1, -2.8, 2.7, 17.7, 'lattice', { shoot: false });
     L.box(-6.6, 0, 17.4, -3.6, 0.75, 18.8, 'stone', { top: 'dirt' }); L.box(1.2, 0, 17.4, 5.2, 0.75, 18.8, 'stone', { top: 'dirt' });
     for (const x of [-5.9, -4.4, 1.9, 3.3, 4.6]) bush(x, 18.1, 0.55, 0.75, true);
+    solid(-6.6, 0.75, 17.4, -3.6, 1.4, 18.8); solid(1.2, 0.75, 17.4, 5.2, 1.4, 18.8);
     deco(-2.3, 0, 18.4, -0.5, 0.12, z0 - T / 2, 'concrete');
     // flag on the porch column
     L.pipe('chrome', -2.8, 2.2, 17.2, -2.4, 2.75, 16.7, 0.02); plane(art().flag, 1.0, 0.62, -1.9, 2.45, 16.7, 0, { double: true });
     // living room
     couch(x0 + T, 24, x0 + T + 0.9, 27, 'x-'); couch(-4.6, 19.2, -3.6, 20.4, 'z-');
     deco(-6, 0.12, 21.5, -2, 0.13, 27.5, 'rug');
-    L.box(-1.2, 0.12, 24, xp - T / 2, 0.75, 25.4, 'woodDark'); deco(-1.1, 0.75, 24.2, -0.45, 1.35, 25.2, 'paintDark');
+    L.box(-1.2, 0.12, 24, xp - T / 2, 0.75, 25.4, 'woodDark'); L.box(-1.1, 0.75, 24.2, -0.45, 1.35, 25.2, 'paintDark', { ao: false });
     painting(x0 + T / 2 + 0.03, 1.9, 24.9, Math.PI / 2, 1.3, 0.95);
     mannequin(-4.8, 0.12, 25.2, true);
     roomLight(-3.5, F1, 24.5); roomLight(3.8, F1, 25);
     // kitchen
     L.box(x1 - 0.75, 0.12, 20, x1 - T / 2, 0.95, 24.4, 'cabinet', { top: 'counter' }); L.box(3.8, 0.12, z1 - 0.8, x1 - T / 2, 0.95, z1 - T / 2, 'cabinet', { top: 'counter' });
     L.box(0.8, 0.12, z1 - 0.95, 1.8, 1.9, z1 - T / 2, 'appliance'); L.box(5.2, 0.12, z1 - 0.82, 6, 0.97, z1 - 0.14, 'appliance');
-    deco(x1 - 0.5, 1.6, 20, x1 - T / 2, 2.4, 24.4, 'cabinet');
+    L.box(x1 - 0.5, 1.6, 20, x1 - T / 2, 2.4, 24.4, 'cabinet', { ao: false });
     table(2, 22.5, 4, 24.3, 0.12); chair(3, 21.9, 0.12); chair(3, 24.9, 0.12);
     // upstairs
     bed(x0 + T, 24.8, x0 + 2.4, 27.2, F, 'x-'); L.box(-2.2, F, 20.4, -0.25, F + 1.0, 21, 'woodDark');
@@ -508,6 +525,7 @@
     deco(-6, 0.02, z1 + T / 2, 3, 0.07, 35, 'concrete');
     table(-3, 32.6, -1.8, 33.8, 0.07); chair(-3.6, 33.2, 0.07); chair(-1.2, 33.2, 0.07);
     L.cyl('chrome', -2.4, 1.5, 33.2, 0.03, 2.6, 0, 0, true); put('paintCherry', geo('cone'), -2.4, 2.75, 33.2, 1.3, 0.45, 1.3);
+    solid(-2.45, 0, 33.15, -2.35, 2.6, 33.25, 'metal'); W.add(-3.7, 2.5, 31.9, -1.1, 2.98, 34.5, { surf: 'fabric' }); W.add(-3.7, 2.98, 31.9, -1.1, 8, 34.5, { shoot: false, nav: false });
   }
 
   // ------------------------------------------------------------ the red house at the west end (solid, not enterable)
@@ -515,6 +533,8 @@
     const x0 = -36, x1 = -22, z0 = -9, z1 = 9;
     L.box(x0, 0, z0, x1, 3.3, z1, 'stucco', { side: 'stucco' });
     deco(x1, 0, z0, x1 + 0.08, 1.1, z1, 'brick');
+    solid(x1, 0, z0, x1 + 0.12, 3.45, z1);
+    W.add(x1 - 0.4, 3.3, z0 - 0.8, x1 + 0.9, 40, z1 + 0.8, { shoot: false, nav: false });
     deco(x1 + 0.02, 0.1, -7.6, x1 + 0.1, 2.6, -3.6, 'redDoor'); deco(x1 + 0.02, 0.1, -3.2, x1 + 0.1, 2.6, 0.8, 'redDoor');
     for (let z = -7.4; z < 0.8; z += 0.65) deco(x1 + 0.1, 0.1, z, x1 + 0.12, 2.6, z + 0.04, 'trim');
     deco(x1 + 0.02, 1.2, 2.2, x1 + 0.06, 2.6, 7.6, 'glassDay'); for (let z = 2.2; z <= 7.61; z += 1.35) deco(x1 + 0.06, 1.2, z - 0.05, x1 + 0.1, 2.6, z + 0.05, 'trim');
@@ -572,6 +592,7 @@
     for (let i = 0; i < 4; i++) put('sandbag', blobGeo(i % 3), x - 1.0 + (i % 2) * 0.6, 1.45, z - 0.35 + (i >> 1) * 0.7, 0.32, 0.14, 0.22, 0.3);
     wheels(x - 1.15, x + 1.2, z - 0.85, z + 0.85, 0.42, false, 'olive');
     solid(x - 2.1, 0, z - 0.9, x + 1.95, 1.4, z + 0.9, 'metal');
+    solid(x + 0.4, 1.25, z - 0.78, x + 0.55, 2.0, z + 0.78, 'metal'); solid(x - 1.15, 1.3, z - 0.78, x - 1.05, 2.04, z + 0.78, 'metal');
   }
   function armyTruck(x, z) {
     L.box(x + 1.6, 0.7, z - 1.2, x + 3.9, 2.6, z + 1.2, 'olive', { noCol: true }); deco(x + 3.88, 1.8, z - 1.0, x + 3.92, 2.4, z + 1.0, 'glassDay');
@@ -631,7 +652,7 @@
     trashCan(13.9, 11.2); trashCan(14.5, 11.9); trashCan(-15.2, -9.2);
     mailbox(-3, 14.9); mailbox(0.2, -14.9);
     // "Welcome to Nuketown" sign between the red house and the green house lot
-    for (const z of [7.4, 12.6]) { L.box(-17.3, 0, z - 0.32, -16.66, 2.6, z + 0.32, 'concrete'); sph('appliance', -16.98, 2.95, z, 0.36); }
+    for (const z of [7.4, 12.6]) { L.box(-17.3, 0, z - 0.32, -16.66, 2.6, z + 0.32, 'concrete'); sph('appliance', -16.98, 2.95, z, 0.36); solid(-17.34, 2.6, z - 0.36, -16.62, 3.32, z + 0.36); }
     L.box(-17.1, 0.35, 7.72, -16.86, 2.3, 12.28, 'paintCherry');
     plane(art().welcome, 4.5, 1.9, -16.84, 1.33, 10, Math.PI / 2); plane(art().welcome, 4.5, 1.9, -17.12, 1.33, 10, -Math.PI / 2);
     // clock tower behind the fence

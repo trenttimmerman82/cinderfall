@@ -18,19 +18,31 @@
 
   // ---------------------------------------------------------------- helpers
   const K = () => CF.Map.kit;
-  function snowCap(x0, y, z0, x1, z1, t) { L.box(x0 - 0.05, y, z0 - 0.05, x1 + 0.05, y + (t || 0.18), z1 + 0.05, 'snow', { noCol: true, ao: false }); }
-  function drift(x, z, sx, sz, h) { L.addGeo('snow', L.geo('sphere'), L.mat4(x, 0, z, 0, 0, 0, sx, h || 0.5, sz)); }
+  /** Walls that bound the play area get an invisible, bullet-transparent cap so their tops can't be walked on. */
+  const noStand = (x0, y, z0, x1, z1) => W.add(x0, y, z0, x1, y + 40, z1, { shoot: false, nav: false });
+  function snowCap(x0, y, z0, x1, z1, t) { L.box(x0 - 0.05, y, z0 - 0.05, x1 + 0.05, y + (t || 0.18), z1 + 0.05, 'snow', { ao: false, surf: 'snow', nav: false }); }
+  function drift(x, z, sx, sz, h) {
+    h = h || 0.5;
+    L.addGeo('snow', L.geo('sphere'), L.mat4(x, 0, z, 0, 0, 0, sx, h, sz));
+    if (sx < 0.5 || sz < 0.5) return;
+    for (const [k, y] of [[0.86, 0.5], [0.6, 0.8]]) W.add(x - sx * k, 0, z - sz * k, x + sx * k, h * y, z + sz * k, { surf: 'snow', shoot: false });
+  }
   function rock(x, z, s, h, ry) {
     L.addGeo('basalt', new THREE.IcosahedronGeometry(1, 0), L.mat4(x, h * 0.35, z, 0.2, ry || 0, 0.1, s, h, s * 0.8));
     L.addGeo('snow', new THREE.IcosahedronGeometry(1, 0), L.mat4(x, h * 0.35 + h * 0.55, z, 0.2, ry || 0, 0.1, s * 0.75, h * 0.3, s * 0.6));
-    W.add(x - s * 0.7, 0, z - s * 0.6, x + s * 0.7, h * 1.1, z + s * 0.6, { surf: 'concrete' });
+    W.addCyl(x, z, s * 0.95, 0, h * 1.1, { surf: 'concrete' }); W.add(x - s, h * 1.1, z - s, x + s, h * 1.1 + 6, z + s, { shoot: false, nav: false });
     L.blob(x, z, s * 2.6, s * 2.2);
   }
   /** A pressure-ridge slab of blue ice tilted out of the floe. Collision is the upright bounding box. */
   function iceSlab(x, z, w, h, d, ry, tilt) {
     L.addGeo('ice', L.geo('box'), L.mat4(x, h * 0.42, z, tilt || 0.25, ry, 0, w, h, d));
-    const c = Math.abs(Math.cos(ry)), s = Math.abs(Math.sin(ry)), hx = (w * c + d * s) / 2, hz = (w * s + d * c) / 2;
-    W.add(x - hx * 0.85, 0, z - hz * 0.85, x + hx * 0.85, h * 0.85, z + hz * 0.85, { surf: 'ice' });
+    const ax = Math.cos(ry), az = -Math.sin(ry), n = Math.max(2, Math.ceil(w / 0.8)), lean = Math.sin(tilt || 0.25) * h * 0.42;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n - 0.5, px = x + ax * t * w, pz = z + az * t * w;
+      // the slab leans (rotation about its long axis): its top sits off to one side of its foot
+      W.addCyl(px - az * lean * 0.5, pz + ax * lean * 0.5, d / 2 + lean * 0.5 + 0.1, 0, h * 0.84, { surf: 'ice' });
+    }
+    W.add(x - w / 2, h * 0.84, z - w / 2, x + w / 2, h * 0.84 + 6, z + w / 2, { shoot: false, nav: false });
     drift(x + 0.6, z + 0.6, w * 0.5, d + 1, 0.35);
   }
   function flag(x, z) {
@@ -57,7 +69,10 @@
     const cap = new THREE.CircleGeometry(r, 18, 0, PI); cap.rotateZ(0);
     for (const s of [-1, 1]) { const m = L.mat4(cx + s * len / 2, 0, cz, 0, s > 0 ? PI / 2 : -PI / 2, 0, 1, 1, 1); L.addGeo('panelWhite', cap, m); }
     L.box(cx + len / 2 - 0.02, 0, cz - 0.6, cx + len / 2 + 0.04, 1.9, cz + 0.6, 'panelDark', { noCol: true });
-    W.add(cx - len / 2, 0, cz - r * 0.85, cx + len / 2, r * 0.9, cz + r * 0.85, { surf: 'concrete', nav: false });
+    // the shelter's round cross-section: a solid skirt, bullet-only tiers above it, and a cap so its roof isn't a perch
+    W.add(cx - len / 2, 0, cz - r * 0.99, cx + len / 2, r * 0.45, cz + r * 0.99, { surf: 'concrete', nav: false });
+    for (const [y0, y1, w] of [[0.45, 0.75, 0.9], [0.75, 1.0, 0.66]]) W.add(cx - len / 2, r * y0, cz - r * w, cx + len / 2, r * y1, cz + r * w, { surf: 'concrete', nav: false, solid: false });
+    noStand(cx - len / 2, r * 0.45, cz - r * 0.99, cx + len / 2, cz + r * 0.99);
     snowCap(cx - len / 2, r - 0.1, cz - r * 0.35, cx + len / 2, cz + r * 0.35, 0.12);
     L.blob(cx, cz, len + 1.5, r * 2.6);
   }
@@ -86,7 +101,7 @@
       const a = rnd() * PI * 2, r = rnd() * s * 0.6, h = s * (0.6 + rnd() * 1.4), w = s * (0.12 + rnd() * 0.12);
       L.addGeo(i % 3 ? 'crystal' : 'iceDark', new THREE.OctahedronGeometry(1, 0), L.mat4(x + Math.cos(a) * r, y + h * 0.35, z + Math.sin(a) * r, Math.sin(a) * 0.5 * rnd(), a, Math.cos(a) * 0.5 * rnd(), w, h, w));
     }
-    if (!o.noCol) W.add(x - s * 0.5, y, z - s * 0.5, x + s * 0.5, y + s * 1.2, z + s * 0.5, { surf: 'ice' });
+    if (!o.noCol) { W.addCyl(x, z, s * 0.95, y, y + s * 1.2, { surf: 'ice' }); W.add(x - s * 0.8, y + s * 1.2, z - s * 0.8, x + s * 0.8, y + s * 2.6, z + s * 0.8, { shoot: false, nav: false }); }
     if (o.light !== false) L.lamp(x, y + s * 0.8, z, { color: 0x6fd6ff, intensity: o.intensity || 1.3, distance: o.distance || 9, poolStrength: 0.5, poolSize: s * 4, prio: 0.1, pulse: o.pulse || 0 });
     if (o.mist) L.emitters.push({ type: 'mist', x, y: y + 0.3, z, rate: 2 });
   }
@@ -94,8 +109,9 @@
   function module(x0, z0, x1, z1, fy, h, side, g0, g1, mat, o) {
     o = o || {};
     const t = 0.3, top = fy + h, dh = 2.3;
-    L.box(x0 + 0.5, 0, z0 + 0.5, x1 - 0.5, fy, z1 - 0.5, 'snowDirty');
-    L.box(x0, fy - 0.3, z0, x1, fy, z1, 'panelDark', { top: 'grate', surf: 'metal' });
+    // the packed-snow plinth stops under the floor plate: sharing the plate's top plane made the floor z-fight
+    L.box(x0 + 0.5, 0, z0 + 0.5, x1 - 0.5, fy - 0.3, z1 - 0.5, 'snowDirty');
+    L.box(x0, fy - 0.3, z0, x1, fy, z1, 'panelDark', { top: 'grate', surf: 'metal', skip: [3] });
     for (const sx of [x0 + 0.35, (x0 + x1) / 2, x1 - 0.35]) for (const sz of [z0 + 0.35, z1 - 0.35]) L.box(sx - 0.14, 0, sz - 0.14, sx + 0.14, fy - 0.3, sz + 0.14, 'steel', { noCol: true });
     const wall = (a0, a1, b0, b1) => L.box(a0, fy, b0, a1, top, b1, mat);
     const gapX = (zA, zB) => { wall(x0, g0, zA, zB); wall(g1, x1, zA, zB); L.box(g0, fy + dh, zA, g1, top, zB, mat); };
@@ -133,7 +149,7 @@
     wall(x0, x0 + t, z0 + t, z1 - t); wall(x1 - t, x1, z0 + t, z1 - t);
     L.box(x0 - 0.3, h, z0 - 0.3, x1 + 0.3, h + 0.4, z1 + 0.3, 'panelWhite', { nav: false });
     snowCap(x0 - 0.3, h + 0.4, z0 - 0.3, x1 + 0.3, z1 + 0.3, 0.3);
-    L.box(x0 + t, 0, z0 + t, x1 - t, 0.06, z1 - t, 'grate', { noCol: true, ao: false });
+    L.box(x0 + t, 0, z0 + t, x1 - t, 0.06, z1 - t, 'grate', { ao: false, surf: 'metal' });
     L.blob((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0 + 3, z1 - z0 + 3);
   }
   function tank(x, z, len, r, alongX, mat) {
@@ -264,9 +280,9 @@
     }
     // perimeter: ice cliffs with snow on top, broken by nunatak rock
     const rnd = CF.U.mulberry32(4041);
-    const cliff = (x0, z0, x1, z1) => { const h = 9 + rnd() * 7; L.box(x0, 0, z0, x1, h, z1, 'ice'); snowCap(x0, h, z0, x1, z1, 0.5); };
+    const cliff = (x0, z0, x1, z1) => { const h = 9 + rnd() * 7; L.box(x0, 0, z0, x1, h, z1, 'ice'); snowCap(x0, h, z0, x1, z1, 0.5); noStand(x0 - 0.05, h + 0.5, z0 - 0.05, x1 + 0.05, z1 + 0.05); };
     for (let x = -84; x < 84; x += 8) { cliff(x, -82, x + 8, -78 - rnd() * 2); cliff(x, 76 + rnd() * 2, x + 8, 80); }
-    for (let z = -78; z < 76; z += 8) { cliff(-84, z, -80 + rnd() * 1.5, z + 8); cliff(78 + rnd() * 1.5, z, 84, z + 8); }
+    for (let z = -82; z < 80; z += 8) { cliff(-84, z, -80 + rnd() * 1.5, z + 8); cliff(78 + rnd() * 1.5, z, 84, z + 8); }
     for (const r of [[-74, 30, 3, 5], [-72, 10, 4, 7], [-75, -16, 3, 6], [-70, -30, 2.4, 4], [74, 40, 3, 5], [-60, 70, 3.5, 5], [50, 70, 3, 4.5], [-76, 52, 3, 7]]) rock(r[0], r[1], r[2], r[3], rnd() * 6);
 
     // ================================================================ SOUTH: landing zone + supply camp
@@ -330,7 +346,7 @@
     // vehicle bay (north-east) — fuse cell 3, the station snowcat
     hall(16, -28, 38, -12, 6, 's', 22, 30, 'panelOrange', 4.4);
     buildSnowcat(33, -20, PI / 2);
-    L.box(16.4, 0, -27.6, 21, 1.05, -25.6, 'counter'); L.box(16.4, 1.05, -27.6, 21, 3, -27.3, 'panelDark', { noCol: true });
+    L.box(16.4, 0, -27.6, 21, 1.05, -25.6, 'counter'); L.box(16.4, 1.05, -27.6, 21, 3, -27.3, 'panelDark');
     for (const lx of [22, 32]) { L.box(lx - 1.2, 5.7, -20.1, lx + 1.2, 5.8, -19.9, 'lampCool', { noCol: true, ao: false }); L.lamp(lx, 5.5, -20, { color: 0xcfe0ff, intensity: 1.4, distance: 13, poolSize: 10, poolStrength: 0.15, prio: 0.5 }); }
     CF.Neon.sign('VEHICLE BAY', 'white', 26, 5.1, -11.55, 'z+', 0.5, { light: false });
     // fuse cells (pick up with E)
@@ -348,7 +364,7 @@
     cell('cell1', 20, 2.1, 3.0); cell('cell2', -26.3, 1.1, -23.8); cell('cell3', 18.6, 1.05, -26.6);
     // fuel farm, antenna field, weather station
     tank(-52, 22, 10, 1.7, true); tank(-52, 27, 10, 1.7, true); tank(-52, 32, 10, 1.7, true, 'panelOrange');
-    L.pipe('steel', -46.8, 1.2, 22, -38, 1.2, 12, 0.18);
+    L.pipe('steel', -46.8, 1.2, 22, -38, 1.2, 12, 0.18); K().pipeCol(-46.8, 1.2, 22, -38, 1.2, 12, 0.2);
     for (const a of [[-58, -2], [-52, 4], [-58, 10], [-50, -6]]) { L.pipe('steel', a[0], 0, a[1], a[0], 12, a[1], 0.07); L.box(a[0] - 0.25, 11.8, a[1] - 0.25, a[0] + 0.25, 12.1, a[1] + 0.25, 'lampRed', { noCol: true }); W.add(a[0] - 0.12, 0, a[1] - 0.12, a[0] + 0.12, 12, a[1] + 0.12, { shoot: false }); }
     L.pipe('steel', -8, 0, 28, -8, 5, 28, 0.06); W.add(-8.1, 0, 27.9, -7.9, 5, 28.1, { shoot: false });
     const anemo = new THREE.Group(); anemo.position.set(-8, 5.1, 28); L.scene.add(anemo);
@@ -370,16 +386,17 @@
       const p = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), M.lattice); p.position.set(44.4, 1.5, z + 1.5); p.rotation.y = PI / 2; L.scene.add(p);
     }
     W.add(44.2, 0, -40, 44.6, 3.2, 17, { surf: 'metal', shoot: false }); W.add(44.2, 0, 24, 44.6, 3.2, 26, { surf: 'metal', shoot: false });
-    L.box(44, 0, 26, 78, 5, 27.2, 'ice'); snowCap(44, 5, 26, 78, 27.2, 0.3);
+    L.box(44, 0, 26, 78, 5, 27.2, 'ice'); snowCap(44, 5, 26, 78, 27.2, 0.3); noStand(43.95, 5.3, 25.95, 78.05, 27.25);
     for (const z of [17, 24]) { L.box(43.9, 0, z - 0.3, 44.9, 3.8, z + 0.3, 'panelOrange'); L.box(43.8, 3.8, z - 0.4, 45, 4.1, z + 0.4, 'lampAmber', { noCol: true }); }
     CF.Neon.sign('STYX FIELD', 'orange', 44.1, 4.6, 20.5, 'x-', 0.6, { distance: 8 });
     const warn = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), M.signCold); warn.position.set(44.0, 2, 15.4); warn.rotation.y = -PI / 2; L.scene.add(warn);
     // north ridge with the ice gate that gives way after the Heart dies
     for (let x = -80; x < 44; x += 6) {
       if (x + 6 > -2 && x < 4) { continue; }
-      const h = 5 + rnd() * 2.5; L.box(x, 0, -42, Math.min(44, x + 6), h, -40, 'ice'); snowCap(x, h, -42, Math.min(44, x + 6), -40, 0.4);
+      const h = 5 + rnd() * 2.5; L.box(x, 0, -42, Math.min(44, x + 6), h, -40, 'ice'); snowCap(x, h, -42, Math.min(44, x + 6), -40, 0.4); noStand(x - 0.05, h + 0.4, -42.05, Math.min(44, x + 6) + 0.05, -39.95);
     }
     L.box(-8, 0, -42, -2, 5.6, -40, 'ice'); snowCap(-8, 5.6, -42, -2, -40, 0.4); L.box(4, 0, -42, 8, 5.9, -40, 'ice'); snowCap(4, 5.9, -42, 8, -40, 0.4);
+    noStand(-8.05, 6, -42.05, -1.95, -39.95); noStand(3.95, 6.3, -42.05, 8.05, -39.95); noStand(-2, 5.4, -42.05, 4, -39.95);
     L.addDoor('northGate', -2, 0, -41.8, 4, 5.4, -40.2, 'ice', { lift: -6 });
     L.doors.northGate.mesh.material = L.mats.ice.clone(); L.doors.northGate.mesh.material.vertexColors = false;
 
@@ -441,7 +458,7 @@
     // crater walls (ice cliffs rising above the rim) and floor
     L.box(-58, PIT_Y - 2, -76, -20, PIT_Y, -44, 'iceDark', { top: 'ice', surf: 'ice' });
     L.points.heartLamp = L.lamp(-39, PIT_Y + 6, -60, { color: 0x6fd6ff, intensity: 0, distance: 30, pool: false, on: false, pulse: 2.6, prio: 3 });
-    const rim = (x0, z0, x1, z1) => { const h = 2.5 + rnd() * 2; L.box(x0, PIT_Y, z0, x1, h, z1, 'ice'); snowCap(x0, h, z0, x1, z1, 0.3); };
+    const rim = (x0, z0, x1, z1) => { const h = 2.5 + rnd() * 2; L.box(x0, PIT_Y, z0, x1, h, z1, 'ice'); snowCap(x0, h, z0, x1, z1, 0.3); noStand(x0 - 0.05, h + 0.3, z0 - 0.05, x1 + 0.05, z1 + 0.05); };
     for (let x = -58; x < -20; x += 4) { rim(x, -44.8, x + 4, -43.8); rim(x, -76.2, x + 4, -75.2); }
     for (let z = -76; z < -44; z += 4) { rim(-58.8, z, -57.8, z + 4); if (z + 4 <= -63 || z >= -57) rim(-20.4, z, -19.4, z + 4); }
     rim(-20.4, -64, -19.4, -63); rim(-20.4, -57, -19.4, -56);
@@ -453,6 +470,7 @@
     L.box(-20, PIT_Y, -63.8, -8, 0.8, -63, 'ice'); L.box(-20, PIT_Y, -57, -8, 0.8, -56.2, 'ice');
     snowCap(-20, 0.8, -63.8, -8, -63, 0.2); snowCap(-20, 0.8, -57, -8, -56.2, 0.2);
     L.addDoor('hollowGate', -20.4, PIT_Y, -63, -19.6, PIT_Y + 5.2, -57, 'ice', { lift: -6 });
+    noStand(-20.45, PIT_Y + 5.2, -63.05, -19.55, -56.95); // the gate sits below the rim: nobody hops over it from the ramp walls
     L.doors.hollowGate.mesh.material = L.mats.ice.clone(); L.doors.hollowGate.mesh.material.vertexColors = false;
     // crystal forest inside the crater, cover pillars around the arena
     for (const c of [[-54, -48, 2.4], [-24, -48, 2], [-54, -72, 2.6], [-26, -72, 2.2], [-40, -47, 1.6], [-40, -73, 1.8], [-56, -60, 2], [-47, -50, 1.4], [-31, -70, 1.4]]) crystals(c[0], PIT_Y, c[1], c[2], { intensity: 1.5, distance: 11, mist: true });
@@ -514,8 +532,9 @@
     put('panelOrange', 0, 1.6, 0.4, 2.4, 1.2, 4.2); put('panelOrange', 0, 2.7, -0.6, 2.2, 1.2, 2.2);
     put('glassDay', 0, 2.9, -1.72, 2.0, 0.7, 0.05); put('panelWhite', 0, 3.35, -0.6, 2.3, 0.1, 2.3);
     put(wreck ? 'crystal' : 'lampWarm', 0, 1.7, -1.72, 1.8, 0.2, 0.05);
-    W.add(x - 2.4, 0, z - 2.4, x + 2.4, 3.3, z + 2.4, { surf: 'metal' });
+    for (const lz of [-1.7, 0, 1.7]) { const p = P(0, lz); W.addCyl(p[0], p[1], 1.85, 0, 3.4, { surf: 'metal' }); }
+    noStand(x - 2.6, 3.4, z - 2.6, x + 2.6, z + 2.6);
     L.blob(x, z, 6.5, 6.5);
-    if (wreck) crystals(x + 1, 0, z + 1.5, 1.3, { light: true, noCol: true });
+    if (wreck) crystals(x + 1, 0, z + 1.5, 1.3, { light: true });
   }
 })(window.CF);

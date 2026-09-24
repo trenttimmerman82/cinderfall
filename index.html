@@ -113,9 +113,14 @@
     </div>
 
     <div class="scope" id="scope" hidden>
-      <div class="scope-glass"></div>
-      <div class="scope-reticle"><i class="sr-h"></i><i class="sr-v"></i><i class="sr-c"></i></div>
-      <div class="scope-read" id="scopeRead">3.5x · 0 m</div>
+      <div class="scope-lens">
+        <svg class="scope-reticle" viewBox="-100 -100 200 200" aria-hidden="true">
+          <g class="sr-lines"><path d="M-100 0H-7M7 0H100M0 -100V-7M0 7V100"/><path class="sr-post" d="M-100 0H-55M55 0H100M0 55V100"/></g>
+          <g class="sr-dots"><circle cx="-14" cy="0" r="1.1"/><circle cx="-28" cy="0" r="1.1"/><circle cx="-42" cy="0" r="1.1"/><circle cx="14" cy="0" r="1.1"/><circle cx="28" cy="0" r="1.1"/><circle cx="42" cy="0" r="1.1"/><circle cx="0" cy="14" r="1.1"/><circle cx="0" cy="28" r="1.1"/><circle cx="0" cy="42" r="1.1"/><circle cx="0" cy="-14" r="1.1"/><circle cx="0" cy="-28" r="1.1"/></g>
+          <circle class="sr-c" cx="0" cy="0" r="1.3"/>
+        </svg>
+        <div class="scope-read" id="scopeRead">3.5x · 0 m</div>
+      </div>
     </div>
 
     <div class="phase-card" id="phaseCard" hidden>
@@ -143,7 +148,7 @@
     <div class="main-col">
       <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
-      <p class="tagline">Two operations: take Cinder Foundry back from its rogue security AI, or find out what came up the borehole at Halden Deep. Or jack in and fight your friends across the neon districts.</p>
+      <p class="tagline">Two operations: take Cinder Foundry back from its rogue security AI, or find out what came up the borehole at Halden Deep. Or deploy online and fight your friends across the neon districts.</p>
       <nav class="menu" aria-label="Main menu">
         <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry or Whiteout</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
@@ -378,7 +383,7 @@
 
   <section class="screen panel-screen" id="screen-mp" hidden>
     <div class="panel wide">
-      <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends</span><h2>Jack in</h2></header>
+      <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends</span><h2>Deploy online</h2></header>
       <div class="mp-grid">
         <div class="mp-col">
           <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>

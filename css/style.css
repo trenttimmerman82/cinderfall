@@ -196,14 +196,20 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .wm-dist { font: 500 11px/1 var(--f-mono); color: var(--bone); text-shadow: 0 1px 3px #000; }
 .world-marker.edge .wm-label { display: none; }
 
-.scope { position: absolute; inset: 0; }
-.scope-glass { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, transparent 0 min(34vh, 34vw), rgba(0, 0, 0, 0.6) calc(min(34vh, 34vw) + 1px), #000 calc(min(34vh, 34vw) + 14px)); }
-.scope-reticle { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
-.scope-reticle i { position: absolute; background: rgba(10, 10, 10, 0.95); }
-.scope-reticle .sr-h { width: min(68vh, 68vw); height: 1px; left: calc(min(68vh, 68vw) / -2); top: 0; }
-.scope-reticle .sr-v { height: min(68vh, 68vw); width: 1px; top: calc(min(68vh, 68vw) / -2); left: 0; }
-.scope-reticle .sr-c { width: 4px; height: 4px; left: -2px; top: -2px; background: #ff3b1f; border-radius: 50%; box-shadow: 0 0 6px #ff3b1f; }
-.scope-read { position: absolute; left: 50%; top: calc(50% + min(34vh, 34vw) - 36px); transform: translateX(-50%); font: 500 12px/1 var(--f-mono); color: #ff8a5c; letter-spacing: 0.1em; }
+/* Scope: a lens sized to the short side of the window (vmin), centred on the aim point. The black outside the lens is
+   the lens's own shadow, so it always fills the screen whatever the aspect ratio. HUD panels sit above it (z-index 2). */
+.scope { position: absolute; inset: 0; overflow: hidden; z-index: 1; }
+.scope-lens { position: absolute; left: 50%; top: 50%; width: 94vmin; height: 94vmin; transform: translate(-50%, -50%); border-radius: 50%;
+  box-shadow: 0 0 0 150vmax #000, inset 0 0 0 3px rgba(0, 0, 0, 0.95), inset 0 0 0 7px rgba(40, 44, 52, 0.9), inset 0 0 6vmin 2vmin rgba(0, 0, 0, 0.85);
+  background: radial-gradient(circle, transparent 62%, rgba(0, 0, 0, 0.18) 88%, rgba(0, 0, 0, 0.5) 100%); }
+.scope-reticle { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.sr-lines path { fill: none; stroke: rgba(8, 8, 10, 0.92); stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.sr-lines .sr-post { stroke-width: 4px; }
+.sr-dots circle { fill: rgba(8, 8, 10, 0.9); }
+.sr-c { fill: #ff3b1f; filter: drop-shadow(0 0 3px #ff3b1f); }
+.scope-read { position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); font: 500 clamp(10px, 1.5vmin, 13px)/1 var(--f-mono); color: #ff8a5c; letter-spacing: 0.1em; white-space: nowrap; text-shadow: 0 0 4px #000; }
+.vitals, .weapon-panel, .killfeed, .mp-bar, .radio, .hint, .interact, .popups, .hitmarker, .countdown, .phase-card, .rc-hud { z-index: 2; }
+#hud.scoped .hud-top, #hud.scoped .crosshair, #hud.scoped .aim-name { opacity: 0; }
 
 .phase-card { position: absolute; left: var(--hud-pad); top: 30%; display: grid; gap: 6px; animation: cardIn 4.2s ease-out forwards; }
 .pc-num { font: 500 13px/1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--sodium); }

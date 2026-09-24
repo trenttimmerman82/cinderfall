@@ -80,7 +80,7 @@
       }
       if (d.leaving) {
         // climb away and blink out
-        d.leaving -= dt; d.pos.y += dt * (3 + (1.4 - d.leaving) * 6); d.yaw += dt * 3;
+        d.leaving -= dt; W.sweep(d.pos, d.pos.x, d.pos.y + dt * (3 + (1.4 - d.leaving) * 6), d.pos.z, 0.4); d.yaw += dt * 3;
         d.root.position.copy(d.pos); d.root.rotation.set(0.25, d.yaw, 0);
         for (const r of d.m.p.rotors) r.rotation.y += dt * 60;
         if (d.leaving > 0) continue;
@@ -99,7 +99,9 @@
       d.ang += dt * 0.8;
       _t.set(P.body.pos.x + Math.cos(d.ang) * 3.5, P.body.pos.y + 3.4, P.body.pos.z + Math.sin(d.ang) * 3.5);
       if (!W.segmentClear(P.body.pos.x, P.body.pos.y + 1.6, P.body.pos.z, _t.x, _t.y, _t.z)) _t.set(P.body.pos.x, P.body.pos.y + 2.4, P.body.pos.z);
-      d.pos.x = U.damp(d.pos.x, _t.x, 3, dt); d.pos.y = U.damp(d.pos.y, _t.y + Math.sin(d.life * 2) * 0.2, 3, dt); d.pos.z = U.damp(d.pos.z, _t.z, 3, dt);
+      // fly toward the orbit point, but never through a wall or roof
+      W.sweep(d.pos, U.damp(d.pos.x, _t.x, 3, dt), U.damp(d.pos.y, _t.y + Math.sin(d.life * 2) * 0.2, 3, dt), U.damp(d.pos.z, _t.z, 3, dt), 0.45);
+      if (!W.segmentClear(P.body.pos.x, P.body.pos.y + 1.6, P.body.pos.z, d.pos.x, d.pos.y, d.pos.z) && d.pos.distanceTo(P.body.pos) > 7) d.pos.set(P.body.pos.x, P.body.pos.y + 2.4, P.body.pos.z); // lost behind cover: regroup
       d.seekT -= dt;
       if (d.seekT <= 0 || (d.target && !hostile(d.target))) { d.seekT = 0.3; d.target = pickTarget(d); }
       let yawTo = P.yaw;

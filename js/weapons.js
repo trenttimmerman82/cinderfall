@@ -198,7 +198,6 @@
       const a = Math.random() * Math.PI * 2, rr = spread * Math.sqrt(Math.random());
       const tx = Math.tan(rr) * Math.cos(a), ty = Math.tan(rr) * Math.sin(a);
       _d.copy(_f).addScaledVector(_r, tx).addScaledVector(_u, ty).normalize();
-      if (d.scope && this.adsE > 0.9) _d.copy(this.scopeDir(_d));
       const wh = W.raycast(_o.x, _o.y, _o.z, _d.x, _d.y, _d.z, 400);
       let tWorld = wh ? wh.t : 400;
       const wbox = wh ? wh.box : null, wsurf = wbox ? wbox.surf : null;
@@ -355,12 +354,14 @@
     const vel = new THREE.Vector3().addScaledVector(_r, U.rand(1.6, 2.6)).addScaledVector(_u, U.rand(1.4, 2.4)).addScaledVector(_f, U.rand(-0.4, 0.3)).add(P.body.vel);
     CF.FX.shell(pos, vel, size);
   };
-  // scoped sway: breathing drifts the aim unless steadied
-  WP.scopeDir = function (d) {
-    const t = this.t, steady = this.steady ? 0.15 : 1;
-    const sx = (Math.sin(t * 0.9) * 0.6 + Math.sin(t * 2.3) * 0.25) * 0.0022 * steady;
-    const sy = (Math.cos(t * 1.1) * 0.5 + Math.sin(t * 1.7) * 0.3) * 0.0022 * steady;
-    return _v.copy(d).addScaledVector(_r, sx).addScaledVector(_u, sy).normalize();
+  /** Scoped breathing sway (radians right, up). The camera carries it, so the reticle and the shot always agree. */
+  WP.scopeSway = function (out) {
+    const d = this.cur && this.cur.def, k = d && d.scope ? U.smoothstep(0.6, 1, this.adsE) : 0;
+    if (!k) { out.x = 0; out.y = 0; return out; }
+    const t = this.t, steady = (this.steady ? 0.15 : 1) * k;
+    out.x = (Math.sin(t * 0.9) * 0.6 + Math.sin(t * 2.3) * 0.25) * 0.0022 * steady;
+    out.y = (Math.cos(t * 1.1) * 0.5 + Math.sin(t * 1.7) * 0.3) * 0.0022 * steady;
+    return out;
   };
 
   // ------------------------------------------------------------ grenades

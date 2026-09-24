@@ -36,7 +36,13 @@
       if (alongX) N.strip(cx - lx - 0.2, 2.5, cz + bz + toward * 1.9 - 0.04, cx + lx + 0.2, 2.56, cz + bz + toward * 1.9 + 0.04, col);
       else N.strip(cx + bx + toward * 1.9 - 0.04, 2.5, cz - lz - 0.2, cx + bx + toward * 1.9 + 0.04, 2.56, cz + lz + 0.2, col);
       L.lamp(cx + (alongX ? 0 : toward * 0.6), 2.3, cz + (alongX ? toward * 0.6 : 0), { color: rnd() < 0.5 ? 0xffc47a : N.HEX[col], intensity: 1.2, distance: 6, pool: true, poolSize: 4.5, poolStrength: 0.5 });
-      for (let k = 0; k < 3; k++) L.box(cx - lx * 0.8 + k * lx * 0.8, 1.12, cz - lz * 0.7, cx - lx * 0.8 + k * lx * 0.8 + 0.35, 1.3 + rnd() * 0.2, cz - lz * 0.7 + 0.35, rnd() < 0.5 ? 'crate' : 'paintGreen', { noCol: true });
+      // produce boxes stay inside the counter's footprint so nothing hangs over the edge where a player could walk into it
+      const span = (alongX ? lx : lz) * 2 - 0.45, depth = (alongX ? lz : lx) * 2 - 0.45;
+      for (let k = 0; k < 3; k++) {
+        const a = -(alongX ? lx : lz) + 0.05 + k * span / 2, b = -(alongX ? lz : lx) + 0.05 + rnd() * depth * 0.3;
+        const x0 = cx + (alongX ? a : b), z0 = cz + (alongX ? b : a);
+        L.box(x0, 1.12, z0, x0 + 0.35, 1.3 + rnd() * 0.2, z0 + 0.35, rnd() < 0.5 ? 'crate' : 'paintGreen', { nav: false });
+      }
     };
 
     // ground, curbs, perimeter
@@ -88,7 +94,7 @@
 
     // hover van (east street), noodle kiosk (west street), crates and dumpsters
     L.box(21.5, 0, -5.2, 26.5, 2.4, -3, 'paintGrey');
-    L.box(22, 2.4, -5.0, 26, 2.9, -3.2, 'glass', { noCol: true });
+    L.box(22, 2.4, -5.0, 26, 2.9, -3.2, 'glass', { surf: 'metal' });
     N.strip(21.4, 0.25, -5.25, 26.6, 0.35, -2.95, 'magenta');
     L.lamp(24, 0.4, -4.1, { color: N.HEX.magenta, intensity: 1.5, distance: 6, pool: true, poolSize: 7, poolStrength: 0.6 });
     L.box(-27, 0, 2.6, -21, 2.8, 6.2, 'paintRed');
