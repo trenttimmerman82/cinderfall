@@ -3,14 +3,20 @@
 A first-person shooter that runs in the browser, built with [three.js](https://threejs.org).
 It is set in a rain-soaked neon city.
 
-- **Campaign.** The foundry's security AI has turned its machines on the night shift. Clear the yard,
+- **Campaign: Cinder Foundry.** The foundry's security AI has turned its machines on the night shift. Clear the yard,
   restore power, hold the uplink, and take down the Warden. You start with a carbine and a pistol; each objective
-  unlocks another weapon (shotgun, satchel charges, rail rifle, minigun, RPG). Three threat levels, and a
-  **No drones** option (no enemy Hornet drones) that works with any of them.
+  unlocks another weapon (shotgun, satchel charges, rail rifle, minigun, RPG).
+- **Campaign: Whiteout.** Halden Deep, a drilling station in Antarctica, went silent nine days ago. Something came up the
+  borehole. Six parts: land at the depot and find Dr. Varga's log, restore the comms mast, cross the crevasse field in a
+  whiteout (keep warm at the heat beacons), destroy the crystal blooms, kill the Rime Heart in the Hollow, then outrun
+  the collapsing ice shelf to the extraction aircraft. New enemies (Thralls, Skitters, Frost Drones, a Colossus), its own
+  music, weather and weapon progression.
+- Both campaigns have three threat levels and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
 - **Multiplayer.** Play online with friends: free-for-all or team deathmatch (Voltage vs Ronin) on
   **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones work here too.
-- **Global leaderboard.** Campaign runs are ranked against everyone who plays (needs the game server below).
+- **Global leaderboard.** Campaign runs are ranked against everyone who plays, separately for each campaign. Every run
+  records whether drones were on or off, and the board can be filtered by drone mode (needs the game server below).
 
 **Play:** open this repository's GitHub Pages link in a desktop browser. You need a mouse and keyboard.
 

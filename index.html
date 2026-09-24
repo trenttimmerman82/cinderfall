@@ -68,6 +68,11 @@
         <div class="vital-bar armor"><div class="vital-fill" id="armorFill"></div></div>
         <span class="vital-num" id="armorNum">0</span>
       </div>
+      <div class="vital-row warmth-row" id="warmthRow" hidden>
+        <span class="vital-tag">Warmth</span>
+        <div class="vital-bar warmth"><div class="vital-fill" id="warmthFill"></div></div>
+        <span class="vital-num" id="warmthNum">100</span>
+      </div>
       <div class="vital-row health-row">
         <span class="vital-tag">Health</span>
         <div class="vital-bar health"><div class="vital-ghost" id="healthGhost"></div><div class="vital-fill" id="healthFill"></div></div>
@@ -103,7 +108,7 @@
     </div>
 
     <div class="boss" id="bossBar" hidden>
-      <div class="boss-head"><span class="boss-name">The Warden</span><span class="boss-stage" id="bossStage">Shoulder cores</span></div>
+      <div class="boss-head"><span class="boss-name" id="bossName">The Warden</span><span class="boss-stage" id="bossStage">Shoulder cores</span></div>
       <div class="boss-track"><div class="boss-fill" id="bossFill"></div></div>
     </div>
 
@@ -119,6 +124,8 @@
       <div class="pc-sub" id="pcSub"></div>
     </div>
 
+    <div class="countdown" id="countdown" hidden><span id="cdLabel">Ice shelf collapse</span><b id="cdTime">2:00</b></div>
+    <div class="frost-edge" id="frostEdge"></div>
     <div class="fps" id="fps" hidden>0 fps</div>
     <div class="flash" id="flash"></div>
   </div>
@@ -136,9 +143,9 @@
     <div class="main-col">
       <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
-      <p class="tagline">The foundry's security AI has turned its machines on the night shift. Take it back alone, or jack in and fight your friends across the neon districts.</p>
+      <p class="tagline">Two operations: take Cinder Foundry back from its rogue security AI, or find out what came up the borehole at Halden Deep. Or jack in and fight your friends across the neon districts.</p>
       <nav class="menu" aria-label="Main menu">
-        <button class="menu-item" data-act="deploy"><span class="mi-label">Campaign</span><span class="mi-note">Take back Cinder Foundry</span></button>
+        <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry or Whiteout</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
@@ -152,9 +159,34 @@
     <div class="touch-note" id="touchNote" hidden>Cinderfall needs a mouse and keyboard. Open it on a desktop browser to play.</div>
   </section>
 
+  <section class="screen panel-screen" id="screen-campaign" hidden>
+    <div class="panel wide">
+      <header class="panel-head"><span class="eyebrow">Campaign</span><h2>Choose your operation</h2></header>
+      <div class="campaign-cards" id="campaignCards">
+        <button class="cc-card cc-foundry" data-campaign="foundry">
+          <span class="cc-art" aria-hidden="true"></span>
+          <span class="cc-where">Kowloon Arc · Sector 7 · 03:10</span>
+          <span class="cc-name">Cinder Foundry</span>
+          <span class="cc-desc">The foundry's security AI has turned its machines on the night shift. Restore power, hold the uplink and take down the Warden.</span>
+          <span class="cc-meta">5 phases · Warden security units · Night, acid rain</span>
+          <span class="cc-best"></span>
+        </button>
+        <button class="cc-card cc-halden" data-campaign="halden">
+          <span class="cc-art" aria-hidden="true"></span>
+          <span class="cc-where">Halden Deep Station · Antarctica · Polar night</span>
+          <span class="cc-name">Whiteout</span>
+          <span class="cc-desc">A deep drill station went silent nine days ago. Something came up the borehole. Find the survivor, cross the ice in a storm and kill what is growing under it.</span>
+          <span class="cc-meta">6 parts · The Rime · Blizzards, crevasses, cold</span>
+          <span class="cc-best"></span>
+        </button>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
   <section class="screen panel-screen" id="screen-difficulty" hidden>
     <div class="panel">
-      <header class="panel-head"><span class="eyebrow">Deploy</span><h2>Choose your threat level</h2></header>
+      <header class="panel-head"><span class="eyebrow">Deploy · <span id="diffCampaign">Cinder Foundry</span></span><h2>Choose your threat level</h2></header>
       <label class="field callsign"><span>Playing as · your leaderboard name</span><input id="diffName" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <div class="diff-grid">
         <button class="diff" data-diff="recruit">
@@ -173,7 +205,7 @@
           <span class="diff-stat">Enemy damage 150%</span>
         </button>
       </div>
-      <label class="set-row toggle diff-mod"><span><b>No drones</b> Enemy Hornet drones stay out of the fight. Your kill-streak drone still works. Works with any threat level.</span><input type="checkbox" id="diffNoDrones"></label>
+      <label class="set-row toggle diff-mod"><span><b>No drones</b> Enemy drones (Hornets in the foundry, Frost Drones at Halden Deep) stay out of the fight. Your kill-streak drone still works. Works with any threat level.</span><input type="checkbox" id="diffNoDrones"></label>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
     </div>
   </section>
@@ -266,8 +298,11 @@
           <p><b>Stalker</b> — fast quadruped that pounces. Back-pedal and shoot, or slide past it.</p>
           <p><b>Hornet</b> — flying drone. Fragile, but it strafes. Short bursts work best.</p>
           <p><b>Juggernaut</b> — heavy with a rocket pod. Its red laser marks the target. Flank it and hit the glowing back vent.</p>
+          <h3>Whiteout: the Rime</h3>
+          <p><b>Thrall</b>: a crewman with crystal through him. Throws ice shards; the head is the weak point. <b>Skitter</b>: six-legged crystal crawler that pounces. <b>Frost Drone</b>: a crusted survey drone (removed by <b>No drones</b>). <b>Colossus</b>: ice golem that lobs shard clusters; hit the glowing heart-shard on its back. <b>Bloom</b>: a crystal nest that breeds Skitters; shoot the core, explosives work best.</p>
+          <p><b>Cold</b>: in the storm your <b>warmth</b> drains outdoors. Stand near a lit heat beacon or go indoors to warm up; at zero you freeze. <b>Crevasses</b> are fatal. Cross on the rope bridges or the pipeline.</p>
           <h3>Earning your kit</h3>
-          <p>The campaign starts you with the M7 carbine and P-11 sidearm. Clearing the yard unlocks the KS-12 shotgun, the first breaker unlocks satchel charges, restoring power unlocks the VX-3 rail, the halfway point of the upload unlocks the Rotor-6 minigun, and finishing the upload unlocks the Havoc RPG. Pause to see what's next.</p>
+          <p>Both campaigns start you with the M7 carbine and P-11 sidearm, and every objective releases more. In Cinder Foundry, clearing the yard unlocks the KS-12 shotgun, the first breaker unlocks satchel charges, restoring power unlocks the VX-3 rail, the halfway point of the upload unlocks the Rotor-6 minigun, and finishing the upload unlocks the Havoc RPG. Whiteout has its own order, ending with the Havoc RPG before the Hollow. Pause to see what's next.</p>
           <p><b>Kill streak</b> — get 5 kills within 30 seconds to earn an attack drone. It fires 60 rounds in short bursts, then heads home. Turn on <b>No drones</b> to take the enemy Hornets out of the campaign; your kill-streak drone still works.</p>
           <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
           <h3>Multiplayer loadouts</h3>
@@ -304,8 +339,18 @@
 
   <section class="screen panel-screen" id="screen-leaderboard" hidden>
     <div class="panel wide">
-      <header class="panel-head"><span class="eyebrow">Campaign · furthest phase first, then score</span><h2>Leaderboard</h2></header>
-      <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+      <header class="panel-head"><span class="eyebrow" id="lbEyebrow">Campaign · furthest part first, then score</span><h2>Leaderboard</h2></header>
+      <div class="lb-controls">
+        <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+        <div class="lb-filter" role="group" aria-label="Campaign">
+          <span class="lb-filter-label">Campaign</span>
+          <div class="seg"><button data-lbcampaign="foundry" aria-selected="true">Cinder Foundry</button><button data-lbcampaign="halden" aria-selected="false">Whiteout</button></div>
+        </div>
+        <div class="lb-filter" role="group" aria-label="Drone mode">
+          <span class="lb-filter-label">Drone mode</span>
+          <div class="seg"><button data-lbmode="all" aria-pressed="true">All</button><button data-lbmode="drones" aria-pressed="false"><i class="lb-mode drones">Drones</i></button><button data-lbmode="nodrones" aria-pressed="false"><i class="lb-mode nodrones">No drones</i></button></div>
+        </div>
+      </div>
       <div class="set-tabs lb-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard" hidden>
         <button role="tab" data-lbtab="world" aria-selected="true">Everyone</button>
         <button role="tab" data-lbtab="local" aria-selected="false">This computer</button>
@@ -319,7 +364,7 @@
 
   <section class="screen panel-screen dim" id="screen-win" hidden>
     <div class="panel">
-      <header class="panel-head"><span class="eyebrow">Cinder Station secured</span><h2>Mission complete</h2></header>
+      <header class="panel-head"><span class="eyebrow" id="winWhere">Cinder Station secured</span><h2>Mission complete</h2></header>
       <div class="result">
         <div class="grade"><span class="grade-label">Rank</span><span class="grade-val" id="gradeVal">A</span></div>
         <dl class="stats" id="statsList"></dl>
@@ -407,22 +452,27 @@
 <script src="js/textures.js"></script>
 <script src="js/world.js"></script>
 <script src="js/neon.js"></script>
+<script src="js/frost.js"></script>
 <script src="js/level.js"></script>
 <script src="js/map.js"></script>
 <script src="js/maps.js"></script>
 <script src="js/map-market.js"></script>
 <script src="js/map-rooftops.js"></script>
 <script src="js/map-nuketown.js"></script>
+<script src="js/map-halden.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/viewmodels.js"></script>
 <script src="js/weapons.js"></script>
 <script src="js/player.js"></script>
 <script src="js/enemy-models.js"></script>
+<script src="js/enemy-models-frost.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/boss.js"></script>
+<script src="js/boss-heart.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/post.js"></script>
 <script src="js/mission.js"></script>
+<script src="js/mission-halden.js"></script>
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
 <script src="js/streak.js"></script>

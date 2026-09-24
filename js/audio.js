@@ -195,7 +195,13 @@
   R.kill = (d, t) => { A.tone(d, t, { type: 'triangle', f0: 200, f1: 90, dur: 0.18, gain: 0.3 }); A.tone(d, t + 0.02, { f0: 1500, f1: 1250, dur: 0.16, gain: 0.09 }); };
   R.armorHit = (d, t) => { A.tone(d, t, { type: 'square', f0: 900, f1: 650, dur: 0.035, gain: 0.05 }); };
   R.step = (d, t, o) => {
+    if (o.snow) { // crunch: a burst of tiny clicks under a soft thud
+      A.noise(d, t, { type: 'lowpass', f0: 500, f1: 180, dur: 0.1, gain: 0.12 * (o.vol || 1) });
+      for (let i = 0; i < 4; i++) A.noise(d, t + i * 0.018 + Math.random() * 0.01, { type: 'bandpass', f0: U.rand(2400, 4200), dur: 0.02, gain: 0.07 * (o.vol || 1), Q: 3 });
+      return;
+    }
     A.noise(d, t, { type: 'lowpass', f0: U.rand(650, 950), f1: 240, dur: 0.08, gain: 0.15 * (o.vol || 1), rate: U.rand(0.8, 1.2) });
+    if (o.ice) A.noise(d, t + 0.003, { type: 'bandpass', f0: U.rand(1600, 2200), dur: 0.05, gain: 0.05 * (o.vol || 1), Q: 5 });
     if (o.metal) A.noise(d, t + 0.005, { type: 'bandpass', f0: U.rand(2300, 3000), dur: 0.06, gain: 0.05 * (o.vol || 1), Q: 4 });
   };
   R.land = (d, t, o) => { A.noise(d, t, { type: 'lowpass', f0: 520, f1: 110, dur: 0.16, gain: 0.35 * (o.vol || 1) }); A.tone(d, t, { f0: 95, f1: 45, dur: 0.12, gain: 0.25 * (o.vol || 1) }); };
@@ -249,8 +255,36 @@
   R.shieldBreak = (d, t) => { R.explosion(d, t); A.tone(d, t, { type: 'square', f0: 1800, f1: 200, dur: 0.5, gain: 0.08, lp: 4000 }); };
   R.clank = (d, t) => { A.tone(d, t, { f0: U.rand(150, 220), f1: 140, dur: 1.6, gain: 0.05 }); A.noise(d, t, { type: 'bandpass', f0: U.rand(500, 900), dur: 0.08, gain: 0.08, Q: 3 }); };
 
+  // ---- Whiteout: crystal, ice and wind
+  const bell = (d, t, f, dur, gain) => { A.tone(d, t, { f0: f, dur, gain, attack: 0.002 }); A.tone(d, t, { f0: f * 2.76, dur: dur * 0.5, gain: gain * 0.4, attack: 0.002 }); A.tone(d, t, { f0: f * 5.4, dur: dur * 0.25, gain: gain * 0.2, attack: 0.002 }); };
+  R.shardShot = (d, t) => { A.noise(d, t, { type: 'highpass', f0: 4200, dur: 0.05, gain: 0.3 }); A.tone(d, t, { type: 'triangle', f0: U.rand(1900, 2300), f1: 900, dur: 0.12, gain: 0.1 }); A.noise(d, t, { type: 'bandpass', f0: 1400, f1: 500, dur: 0.1, gain: 0.25, Q: 2 }); };
+  R.heavyShard = (d, t) => { A.noise(d, t, { type: 'lowpass', f0: 2600, f1: 300, dur: 0.25, gain: 0.6 }); A.tone(d, t, { type: 'triangle', f0: 900, f1: 260, dur: 0.22, gain: 0.14 }); A.tone(d, t, { f0: 90, f1: 45, dur: 0.2, gain: 0.5 }); };
+  R.shardLob = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 900, f1: 2400, dur: 0.35, gain: 0.35, Q: 1.2 }); A.tone(d, t, { type: 'triangle', f0: 600, f1: 1500, dur: 0.3, gain: 0.08 }); };
+  R.shatter = (d, t) => {
+    A.noise(d, t, { type: 'highpass', f0: 3000, dur: 0.35, gain: 0.45 }); A.noise(d, t, { type: 'bandpass', f0: 1800, f1: 700, dur: 0.25, gain: 0.35, Q: 1.5 });
+    for (let i = 0; i < 5; i++) A.tone(d, t + i * 0.035 + Math.random() * 0.02, { type: 'triangle', f0: U.rand(2400, 5200), dur: 0.12, gain: 0.05 });
+    A.tone(d, t, { f0: 120, f1: 50, dur: 0.18, gain: 0.3 });
+  };
+  R.iceBurst = (d, t) => { R.shatter(d, t); A.noise(d, t, { type: 'lowpass', f0: 1400, f1: 150, dur: 0.7, gain: 0.7 }); A.tone(d, t, { f0: 70, f1: 30, dur: 0.5, gain: 0.7 }); };
+  R.crystalGrow = (d, t) => { A.tone(d, t, { type: 'triangle', f0: 300, f1: 1800, dur: 0.6, gain: 0.08, attack: 0.05 }); A.noise(d, t, { type: 'highpass', f0: 3500, dur: 0.6, gain: 0.08, attack: 0.2 }); bell(d, t + 0.55, 1320, 0.8, 0.05); };
+  R.thrallAlert = (d, t) => { A.tone(d, t, { type: 'sawtooth', f0: 180, f1: 120, dur: 0.5, gain: 0.08, lp: 900 }); A.tone(d, t, { type: 'triangle', f0: 1600, f1: 2200, dur: 0.4, gain: 0.04 }); A.noise(d, t, { type: 'bandpass', f0: 700, dur: 0.4, gain: 0.08, Q: 3 }); };
+  R.skitterCry = (d, t) => { A.tone(d, t, { type: 'triangle', f0: 2600, f1: 4200, dur: 0.18, gain: 0.07 }); A.tone(d, t + 0.05, { type: 'square', f0: 3400, f1: 2100, dur: 0.14, gain: 0.03, lp: 5000 }); A.noise(d, t, { type: 'bandpass', f0: 5200, dur: 0.2, gain: 0.08, Q: 4 }); };
+  R.iceCrack = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: U.rand(900, 2200), dur: 0.05, gain: 0.3, Q: 4 }); A.noise(d, t + 0.04, { type: 'lowpass', f0: 500, f1: 90, dur: 0.9, gain: 0.25 }); A.tone(d, t, { f0: U.rand(60, 90), f1: 30, dur: 0.8, gain: 0.2 }); };
+  R.chime = (d, t) => { const f = [1046.5, 1318.5, 1568, 1760, 2093][Math.floor(Math.random() * 5)]; bell(d, t, f, 1.6, 0.03); };
+  R.quake = (d, t) => { A.noise(d, t, { type: 'lowpass', f0: 300, f1: 60, dur: 2.2, gain: 0.9, attack: 0.3 }); A.tone(d, t, { f0: 38, f1: 24, dur: 2, gain: 0.8, attack: 0.3 }); R.iceCrack(d, t + 0.4); };
+  R.spikes = (d, t) => { A.noise(d, t, { type: 'highpass', f0: 2600, dur: 0.18, gain: 0.35 }); A.tone(d, t, { type: 'triangle', f0: 800, f1: 2600, dur: 0.12, gain: 0.06 }); A.noise(d, t, { type: 'lowpass', f0: 700, f1: 150, dur: 0.25, gain: 0.35 }); };
+  R.heartPulse = (d, t) => { A.tone(d, t, { f0: 55, f1: 40, dur: 0.35, gain: 0.7 }); A.tone(d, t + 0.28, { f0: 50, f1: 36, dur: 0.3, gain: 0.45 }); bell(d, t, 660, 1.2, 0.02); };
+  R.heartRoar = (d, t) => {
+    for (const f of [110, 164.8, 220]) A.tone(d, t, { type: 'sawtooth', f0: f, f1: f * 0.7, dur: 2.2, gain: 0.07, lp: 1400, attack: 0.15 });
+    A.noise(d, t, { type: 'bandpass', f0: 3000, f1: 800, dur: 2, gain: 0.12, Q: 1.5, attack: 0.2 }); A.tone(d, t, { f0: 45, f1: 30, dur: 2, gain: 0.6, attack: 0.1 });
+    for (let i = 0; i < 4; i++) bell(d, t + 0.3 + i * 0.25, [880, 1174.7, 1396.9, 1760][i], 1.4, 0.03);
+  };
+  R.beaconLight = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 400, f1: 1600, dur: 0.6, gain: 0.35, Q: 0.8, attack: 0.05 }); A.noise(d, t + 0.3, { type: 'lowpass', f0: 900, dur: 1.2, gain: 0.2, attack: 0.2 }); A.tone(d, t, { f0: 80, f1: 140, dur: 0.5, gain: 0.2 }); };
+  R.fuseTake = (d, t) => { R.magIn(d, t); [523, 784].forEach((f, i) => A.tone(d, t + 0.08 + i * 0.07, { type: 'triangle', f0: f, dur: 0.2, gain: 0.07 })); };
+  R.iceWall = (d, t) => { R.iceCrack(d, t); A.noise(d, t, { type: 'lowpass', f0: 1200, f1: 100, dur: 1.2, gain: 0.8 }); A.tone(d, t, { f0: 60, f1: 30, dur: 0.9, gain: 0.8 }); };
+
   // Throttle: max plays of a given sound within a short window
-  const LIMIT = { impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
+  const LIMIT = { shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
 
   /**
    * play(name, pos?, opts?) — pos is a world position ({x,y,z}) for spatial sounds, omitted for first-person/UI.
@@ -313,11 +347,25 @@
       const n = noiseSrc(); const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100;
       const lp = A.filter(out, 'lowpass', 7500, 0.5); n.connect(hp); hp.connect(lp);
       const n2 = noiseSrc(); const bp = A.filter(out, 'bandpass', 380, 0.7); const g2 = ctx.createGain(); g2.gain.value = 0.7; n2.connect(g2); g2.connect(bp);
+    } else if (kind === 'blizzard') {
+      const n = noiseSrc(); const f = A.filter(out, 'bandpass', 520, 0.9); n.connect(f);
+      const lfo = osc('sine', 0.09); const lg = ctx.createGain(); lg.gain.value = 320; lfo.connect(lg); lg.connect(f.frequency);
+      const n2 = noiseSrc(); const f2 = A.filter(out, 'bandpass', 1400, 6); const g2 = ctx.createGain(); g2.gain.value = 0.35; n2.connect(g2); g2.connect(f2);
+      const lfo2 = osc('sine', 0.21); const lg2 = ctx.createGain(); lg2.gain.value = 500; lfo2.connect(lg2); lg2.connect(f2.frequency);
+      const low = noiseSrc(); const lf = A.filter(out, 'lowpass', 160, 0.7); const lgn = ctx.createGain(); lgn.gain.value = 0.9; low.connect(lgn); lgn.connect(lf);
+    } else if (kind === 'rotor') {
+      const n = noiseSrc(); const f = A.filter(out, 'lowpass', 420, 1); const g = ctx.createGain(); g.gain.value = 0; n.connect(g); g.connect(f);
+      const chop = osc('square', 13); const cg = ctx.createGain(); cg.gain.value = 0.5; chop.connect(cg); cg.connect(g.gain);
+      const whine = osc('sawtooth', 310); const wf = A.filter(out, 'bandpass', 900, 3); const wg = ctx.createGain(); wg.gain.value = 0.12; whine.connect(wg); wg.connect(wf); freq = whine.frequency;
+    } else if (kind === 'frostBeam') {
+      const o = osc('triangle', 880); const f = A.filter(out, 'bandpass', 1800, 2); o.connect(f); freq = o.frequency;
+      const o2 = osc('sine', 1318); const g2 = ctx.createGain(); g2.gain.value = 0.4; o2.connect(g2); g2.connect(out);
+      const n = noiseSrc(); const nf = A.filter(out, 'highpass', 5000, 0.7); const ng = ctx.createGain(); ng.gain.value = 0.5; n.connect(ng); ng.connect(nf);
     } else if (kind === 'tinnitus') {
       const a = osc('sine', 3950); a.connect(out);
     }
     const ctl = {
-      out, freq, dead: false,
+      out, freq, dead: false, panner: pos ? target : null,
       set(g, tc) { if (!this.dead) out.gain.setTargetAtTime(g, ctx.currentTime, tc || 0.08); },
       pitch(f, tc) { if (freq && !this.dead) freq.setTargetAtTime(f, ctx.currentTime, tc || 0.08); },
       stop() {
@@ -334,6 +382,11 @@
     const wind = this.loop('wind'); wind.set(0.07, 1.5);
     const plant = this.loop('plant'); plant.set(0.025, 2);
     this.ambient = { wind, plant };
+  };
+  /** 'industrial' (foundry clanks, plant hum) or 'polar' (ice cracks and crystal chimes, no hum). */
+  A.setAmbience = function (kind) {
+    this.ambKind = kind;
+    if (this.ambient) this.ambient.plant.set(kind === 'polar' ? 0 : 0.025, 2);
   };
   A.stopAmbience = function () {
     if (!this.ambient) return;
@@ -378,7 +431,10 @@
       if (this.clankTimer <= 0) {
         this.clankTimer = U.rand(5, 14);
         const a = Math.random() * Math.PI * 2;
-        this.play('clank', { x: this.lx + Math.cos(a) * 45, y: this.ly + 8, z: this.lz + Math.sin(a) * 45 }, { ref: 30 });
+        if (this.ambKind === 'polar') {
+          if (Math.random() < 0.55) this.play('iceCrack', { x: this.lx + Math.cos(a) * 55, y: this.ly - 2, z: this.lz + Math.sin(a) * 55 }, { ref: 40 });
+          else this.play('chime', { x: this.lx + Math.cos(a) * 25, y: this.ly + 2, z: this.lz + Math.sin(a) * 25 }, { ref: 20 });
+        } else this.play('clank', { x: this.lx + Math.cos(a) * 45, y: this.ly + 8, z: this.lz + Math.sin(a) * 45 }, { ref: 30 });
       }
     }
   };

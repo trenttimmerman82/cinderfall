@@ -564,6 +564,87 @@
     }, { repeat: true });
   }
 
+  // ------------------------------------------------------------ polar station (Whiteout campaign)
+  function makeArctic() {
+    const n = S * S, rnd = U.mulberry32(9001);
+    const pack = (rgb, hgt, rough, ns) => ({ map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, ns), roughnessMap: grayTex(S, S, rough) });
+    // wind-packed snow: soft dunes, sastrugi ripples running one way, a faint blue in the hollows, sparkle
+    {
+      const n1 = tileNoise(S, 3, 3, 5, 9101, 0.55), n2 = tileNoise(S, 4, 24, 3, 9102, 0.5), n3 = tileNoise(S, 64, 64, 2, 9103);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const h = n1[i] * 0.6 + n2[i] * 0.4, hollow = sstep(0.55, 0.2, h);
+        const glint = n3[i] > 0.93 && rnd() < 0.5 ? 1 : 0;
+        const v = 0.86 + (h - 0.5) * 0.12 + glint * 0.1;
+        rgb[i * 3] = v * (0.93 - hollow * 0.08); rgb[i * 3 + 1] = v * (0.96 - hollow * 0.04); rgb[i * 3 + 2] = v;
+        hgt[i] = h + (n3[i] - 0.5) * 0.08; rough[i] = glint ? 0.35 : 0.82 + (n3[i] - 0.5) * 0.1;
+      }
+      T.list.snow = pack(rgb, hgt, rough, 1.6);
+    }
+    // blue glacial ice: deep colour variation, trapped bubbles, white fracture lines
+    {
+      const n1 = tileNoise(S, 3, 3, 5, 9201, 0.6), n2 = tileNoise(S, 12, 12, 3, 9202);
+      const crack = new Float32Array(n); scratch(crack, S, rnd, 11, S * 0.3, 0.7);
+      const bub = new Float32Array(n); for (let k = 0; k < n / 900; k++) stamp(bub, S, rnd() * S | 0, rnd() * S | 0, 1 + rnd() * 2.5, 1, 'max');
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const d = n1[i], c = crack[i], b = bub[i];
+        const r = 0.3 + d * 0.2 + c * 0.16 + b * 0.12, g = 0.52 + d * 0.18 + c * 0.14 + b * 0.1, bl = 0.7 + d * 0.14 + c * 0.08;
+        rgb[i * 3] = Math.min(1, r); rgb[i * 3 + 1] = Math.min(1, g); rgb[i * 3 + 2] = Math.min(1, bl);
+        hgt[i] = d * 0.3 - c * 0.7 + n2[i] * 0.1; rough[i] = 0.12 + c * 0.45 + n2[i] * 0.12;
+      }
+      T.list.ice = pack(rgb, hgt, rough, 1.4);
+    }
+    // insulated sandwich panels (light grey, tinted per material): vertical seams, rivet rows, grime at the foot
+    {
+      const n1 = tileNoise(S, 4, 4, 4, 9301, 0.5), n2 = tileNoise(S, 1, 8, 3, 9302);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      const P = S / 4;
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, px = x % P;
+        const seam = px < 3 ? 1 : 0, lip = px > P - 4 ? 1 : 0;
+        const rivet = ((px === (P * 0.5 | 0) || px === 8) && y % (S / 8) < 3) ? 1 : 0;
+        const streak = Math.max(0, n2[i] - 0.6) * 0.8, foot = sstep(0.7, 1, y / S) * 0.2;
+        const v = 0.8 + (n1[i] - 0.5) * 0.08 - streak * 0.25 - foot - seam * 0.3 + lip * 0.06 + rivet * 0.05;
+        rgb[i * 3] = v; rgb[i * 3 + 1] = v; rgb[i * 3 + 2] = v * 1.01;
+        hgt[i] = -seam * 0.8 + lip * 0.2 + rivet * 0.6 + n1[i] * 0.05; rough[i] = 0.5 + streak * 0.3 + foot;
+      }
+      T.list.panel = pack(rgb, hgt, rough, 2.4);
+    }
+    // basalt nunatak rock with snow caught in the cracks
+    {
+      const n1 = tileNoise(S, 5, 5, 6, 9401, 0.6), n2 = tileNoise(S, 16, 16, 3, 9402);
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const h = n1[i] * 0.7 + n2[i] * 0.3, snow = sstep(0.34, 0.24, h);
+        const v = 0.16 + h * 0.2;
+        rgb[i * 3] = v + snow * 0.7; rgb[i * 3 + 1] = v + snow * 0.72; rgb[i * 3 + 2] = v * 1.08 + snow * 0.75;
+        hgt[i] = h; rough[i] = 0.9 - snow * 0.1;
+      }
+      T.list.basalt = pack(rgb, hgt, rough, 3.2);
+    }
+    // station signage and terminals
+    const sign = (w, h, draw) => { const c = makeCanvas(w, h), x = c.getContext('2d'); draw(x, w, h); return toTex(c, { repeat: false }); };
+    T.list.signHalden = sign(1024, 200, (x, w, h) => {
+      x.fillStyle = '#f2efe8'; x.fillRect(0, 0, w, h); x.fillStyle = '#d4471c'; x.fillRect(0, 0, 150, h); x.fillRect(0, h - 22, w, 22);
+      x.fillStyle = '#fff'; x.font = '900 120px Impact, "Arial Black", sans-serif'; x.textBaseline = 'middle'; x.textAlign = 'center'; x.fillText('H', 75, 96);
+      x.textAlign = 'left'; x.fillStyle = '#1b2430'; x.font = '900 92px Impact, "Arial Black", sans-serif'; x.fillText('HALDEN DEEP', 180, 78);
+      x.fillStyle = '#d4471c'; x.font = 'bold 34px "Arial Narrow", Arial, sans-serif'; x.fillText('HALDEN-SATO POLAR RESOURCES · STATION 4', 184, 150);
+    });
+    T.list.signCold = sign(512, 256, (x, w, h) => {
+      x.fillStyle = '#f0ece2'; x.fillRect(0, 0, w, h); x.fillStyle = '#1f5fa8'; x.fillRect(0, 0, w, 84);
+      x.fillStyle = '#fff'; x.font = '900 60px Impact, "Arial Black", sans-serif'; x.textAlign = 'center'; x.fillText('WARNING', w / 2, 64);
+      x.fillStyle = '#111'; x.font = 'bold 36px Arial, sans-serif'; x.fillText('CREVASSE FIELD', w / 2, 140); x.fillText('ROPE UP · STAY ON FLAGS', w / 2, 196);
+    });
+    const w = 256, h = 160;
+    T.list.scrLog = makeScreen(['STATION LOG 41', 'DR. I. VARGA', 'AUDIO ATTACHED', 'HOLD TO PLAY'], '#ffd08a', w, h);
+    T.list.scrLogOn = makeScreen(['STATION LOG 41', 'PLAYING...', '03:12 / 03:12', 'END OF FILE'], '#8fe8ff', w, h);
+    T.list.scrMast = makeScreen(['MAST CONTROL', 'FUSE CELLS 0 / 3', 'TRANSMIT: OFFLINE', 'INSERT CELLS'], '#ff8a5c', w, h);
+    T.list.scrMastOn = makeScreen(['MAST CONTROL', 'FUSE CELLS 3 / 3', 'TRANSMIT: LIVE', 'CH 4 · SKUA'], '#8fe8ff', w, h);
+    T.list.scrBeacon = makeScreen(['HEAT BEACON', 'PILOT: COLD', 'FUEL 64%', 'HOLD TO LIGHT'], '#ffb347', w, h);
+    T.list.scrBeaconOn = makeScreen(['HEAT BEACON', 'BURNING', 'OUTPUT 11 KW', 'STAY CLOSE'], '#ffcf7a', w, h);
+  }
+
   T.build = async function (renderer, progress) {
     S = CF.bootQuality === 'low' ? 256 : 512;
     T.maxAniso = Math.min(CF.bootQuality === 'high' ? 8 : 4, renderer.capabilities.getMaxAnisotropy());
@@ -578,6 +659,7 @@
       ['Mowing the lawns', makeSuburb],
       ['Heating the crucibles', makeMolten],
       ['Booting terminals', makeScreens],
+      ['Packing the snow', makeArctic],
       ['Scattering debris', () => { makeDecals(); makeParticles(); }]
     ];
     for (let i = 0; i < steps.length; i++) {

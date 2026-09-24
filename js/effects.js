@@ -96,7 +96,7 @@
     this.holes = this.makeDecals(260, T.bulletHole, true);
     this.scorches = this.makeDecals(36, T.scorch, true);
     this.oils = this.makeDecals(48, T.oil, true);
-    this.initDebris(); this.initShells();
+    this.initDebris(); this.initShells(); this.initIce();
     this.lights = [];
     for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffaa55, 0, 12, 2); scene.add(l); this.lights.push({ light: l, t: 0, dur: 1, i0: 0 }); }
     this.lightNext = 0;
@@ -218,6 +218,50 @@
     this.sh = { mesh, n, next: 0, items: [] };
     for (let i = 0; i < n; i++) this.sh.items.push({ life: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), rv: new THREE.Vector3(), s: new THREE.Vector3(), floor: 0, bounces: 0 });
     const zero = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < n; i++) mesh.setMatrixAt(i, zero);
+  };
+  /** Ice shards: same physics as debris chips, glassy crystal material. */
+  FX.initIce = function () {
+    const n = 120;
+    const mat = new THREE.MeshStandardMaterial({ color: 0xbfe8ff, emissive: new THREE.Color(0.1, 0.45, 0.7), roughness: 0.1, metalness: 0.2, envMapIntensity: 1.6 });
+    const mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), mat, n);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.frustumCulled = false; mesh.castShadow = false;
+    this.scene.add(mesh);
+    this.ice = { mesh, n, next: 0, items: [] };
+    for (let i = 0; i < n; i++) this.ice.items.push({ life: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), rv: new THREE.Vector3(), s: 0.05, floor: 0 });
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < n; i++) mesh.setMatrixAt(i, zero);
+  };
+  FX.iceBits = function (x, y, z, count, speed, size) {
+    for (let k = 0; k < count; k++) {
+      const d = this.ice.items[this.ice.next]; this.ice.next = (this.ice.next + 1) % this.ice.n;
+      d.life = U.rand(1.2, 2.6); d.p.set(x + U.gauss() * 0.2, y, z + U.gauss() * 0.2);
+      d.v.set(U.gauss() * speed * 0.7, U.rand(0.4, 1.3) * speed, U.gauss() * speed * 0.7);
+      d.r.set(Math.random() * 6, Math.random() * 6, Math.random() * 6); d.rv.set(U.rand(-12, 12), U.rand(-12, 12), U.rand(-12, 12));
+      d.s = size * U.rand(0.5, 1.5); d.floor = W.groundHeight(x, y + 0.1, z);
+    }
+  };
+  /** Crystal enemy death: a burst of glassy shards and cold mist instead of sparks and oil. */
+  FX.shatter = function (pos, s) {
+    s = s || 1;
+    this.flashLight(pos, 0x8fe0ff, 7 * s, 13 * s, 0.35);
+    this.flash.spawn(pos.x, pos.y, pos.z, 0, 0, 0, 0.1, 2 * s, 3.2 * s, 1.4, 3.4, 4.6, 1, 0, 0, 0);
+    this.iceBits(pos.x, pos.y, pos.z, Math.round(12 * s), 5.5 * Math.sqrt(s), 0.09 * s);
+    for (let k = 0; k < 10; k++) this.smoke.spawn(pos.x + U.gauss() * 0.4, pos.y + U.rand(-0.2, 0.6), pos.z + U.gauss() * 0.4, U.gauss() * 1.6, U.rand(0.2, 1.4), U.gauss() * 1.6, U.rand(1.2, 2.2), 0.7 * s, 2.8 * s, 0.62, 0.72, 0.8, 0.5, -0.1, 1, 1);
+    for (let k = 0; k < 14; k++) this.add.spawn(pos.x, pos.y, pos.z, U.gauss() * 4, U.rand(1, 5), U.gauss() * 4, U.rand(0.3, 0.7), 0.1, 0.02, 1.2, 3.2, 4.4, 1, 6, 0.4, 0);
+  };
+  /** Frost detonation (shard mortars, the Heart's volleys). */
+  FX.frostBurst = function (pos, scale) {
+    const s = scale || 1, x = pos.x, y = pos.y, z = pos.z;
+    this.flashLight(pos, 0x9fe4ff, 12 * s, 20 * s, 0.45);
+    this.flash.spawn(x, y, z, 0, 0, 0, 0.12, 3 * s, 4.6 * s, 1.6, 3.4, 4.6, 1, 0, 0, 0);
+    this.iceBits(x, y + 0.2, z, Math.round(14 * s), 6 * s, 0.1);
+    for (let k = 0; k < 16; k++) {
+      const a = Math.random() * 6.283, sp = U.rand(1, 4) * s;
+      this.smoke.spawn(x + U.gauss() * s * 0.5, y + U.rand(0, 1) * s, z + U.gauss() * s * 0.5, Math.cos(a) * sp, U.rand(0.4, 1.6), Math.sin(a) * sp, U.rand(1.6, 3), 1.2 * s, U.rand(4, 6) * s, 0.7, 0.8, 0.88, 0.55, -0.15, 0.9, 1);
+    }
+    for (let k = 0; k < 20; k++) this.add.spawn(x, y + 0.2, z, U.gauss() * 5 * s, U.rand(1, 6) * s, U.gauss() * 5 * s, U.rand(0.3, 0.8), 0.12, 0.02, 1.4, 3.6, 5, 1, 7, 0.4, 0);
+    const gy = W.groundHeight(x, y + 0.5, z);
+    this.ring(new THREE.Vector3(x, gy + 0.08, z), 6 * s, 0.55, [0.6, 1.8, 2.6]);
+    CF.Audio.play('iceBurst', pos, { ref: 9 });
   };
   FX.debris = function (x, y, z, nx, ny, nz, count, speed, size, color) {
     for (let k = 0; k < count; k++) {
@@ -344,8 +388,16 @@
     this.scene.add(m);
     this.rings.push({ m, t: 0, life, radius });
   };
-  FX.spawnBeam = function (pos, h) {
+  FX.spawnBeam = function (pos, h, frost) {
     h = h || 3;
+    if (frost) { // the Rime grows up out of the ice instead of beaming in
+      this.ring(new THREE.Vector3(pos.x, pos.y + 0.06, pos.z), 2.6, 0.9, [0.5, 1.6, 2.4]);
+      this.iceBits(pos.x, pos.y + 0.2, pos.z, 8, 4, 0.08);
+      for (let k = 0; k < 16; k++) this.add.spawn(pos.x + U.gauss() * 0.5, pos.y + U.rand(0, h), pos.z + U.gauss() * 0.5, 0, U.rand(0.5, 2.5), 0, U.rand(0.4, 0.9), 0.1, 0.02, 1.2, 3.2, 4.6, 1, 0, 0, 0);
+      this.flashLight(new THREE.Vector3(pos.x, pos.y + 1.2, pos.z), 0x6fd8ff, 4, 9, 0.8);
+      CF.Audio.play('crystalGrow', pos, { ref: 6 });
+      return;
+    }
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 30, 16, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 0.4, 0.2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.8 }));
     m.position.set(pos.x, pos.y + 15, pos.z); m.renderOrder = 21; this.scene.add(m);
     this.rings.push({ m, t: 0, life: 1.0, beam: true });
@@ -420,6 +472,7 @@
     this.updateTracers(dt);
     stepBits(this.deb, dt, false);
     stepBits(this.sh, dt, true);
+    stepBits(this.ice, dt, false);
     for (const s of this.lights) {
       if (s.t >= s.dur) { if (s.light.intensity !== 0) s.light.intensity = 0; continue; }
       s.t += dt; const k = 1 - Math.min(1, s.t / s.dur); s.light.intensity = s.i0 * k * k;
@@ -456,5 +509,6 @@
     for (const m of this.markers.slice()) this.removeMarker(m);
     for (const d of this.deb.items) d.life = 0.0001;
     for (const d of this.sh.items) d.life = 0.0001;
+    for (const d of this.ice.items) d.life = 0.0001;
   };
 })(window.CF);

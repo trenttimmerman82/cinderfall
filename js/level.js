@@ -6,8 +6,9 @@
 
   // World-UV scale per material (1 texture repeat per 1/s metres)
   const UVS = { facade: 1 / 12, concrete: 0.25, concreteDark: 0.25, asphalt: 1 / 6, metalFloor: 0.5, wall: 0.25, wallRust: 0.25, hazard: 1, paintYellow: 0.33, paintGrey: 0.33, paintDark: 0.33, paintRed: 0.5, paintGreen: 0.33, steel: 0.5, rubber: 0.5, crate: 1 / 1.2,
-    grass: 1 / 5, sand: 1 / 6, dirt: 1 / 6, wallpaper: 0.5, wallpaper2: 0.5, checker: 0.5, carpetBeige: 0.5, stone: 0.5, sidingWhite: 0.25, sidingTeal: 0.25, boardYellow: 0.4, lattice: 1, stucco: 0.25, sidingBlue: 0.25, boardBrown: 0.4, woodDark: 0.5, trailerWhite: 0.4, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5 };
-  const SURF = { metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal' };
+    grass: 1 / 5, sand: 1 / 6, dirt: 1 / 6, wallpaper: 0.5, wallpaper2: 0.5, checker: 0.5, carpetBeige: 0.5, stone: 0.5, sidingWhite: 0.25, sidingTeal: 0.25, boardYellow: 0.4, lattice: 1, stucco: 0.25, sidingBlue: 0.25, boardBrown: 0.4, woodDark: 0.5, trailerWhite: 0.4, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5,
+    snow: 1 / 7, snowDirty: 1 / 7, ice: 1 / 6, iceDark: 1 / 6, basalt: 1 / 4, panelOrange: 1 / 3, panelWhite: 1 / 3, panelRed: 1 / 3, panelBlue: 1 / 3, panelDark: 1 / 3, grate: 0.5 };
+  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal' };
   const FACES = [
     { c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], n: [1, 0, 0], u: (x, y, z) => -z, v: (x, y) => y },
     { c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], n: [-1, 0, 0], u: (x, y, z) => z, v: (x, y) => y },
@@ -102,6 +103,21 @@
     M.chrome = std({ color: 0xdfe3e8, metalness: 1, roughness: 0.18, envMapIntensity: 1.2 }); M.shutter = tint(T.planks, 0x2f4a3a); M.garageDoor = tint(T.siding, 0xf0ece0);
     M.leaves2 = tint(T.grass, 0x9fc07a); M.pine = tint(T.grass, 0x5f8a6a); M.leaves = tint(T.grass, 0xb8d890);
     M.glassDay = std({ color: 0x223040, roughness: 0.05, metalness: 0.9, envMapIntensity: 1.2 });
+    // polar station (Whiteout)
+    M.snow = std(Object.assign(tri(T.snow), { color: 0xf4f7ff, metalness: 0, envMapIntensity: 0.5 }));
+    M.snowDirty = std(Object.assign(tri(T.snow), { color: 0xb9bcc0, metalness: 0, envMapIntensity: 0.4 }));
+    M.ice = std(Object.assign(tri(T.ice), { color: 0xc4dcee, metalness: 0.05, envMapIntensity: 0.9 }));
+    M.iceDark = std(Object.assign(tri(T.ice), { color: 0x6f9fc4, metalness: 0.05, envMapIntensity: 0.9 }));
+    M.basalt = std(Object.assign(tri(T.basalt), { color: 0xffffff, metalness: 0 }));
+    const panel = (c) => std(Object.assign(tri(T.panel), { color: c, metalness: 0.15 }));
+    M.panelOrange = panel(0xe0562a); M.panelWhite = panel(0xe9e7e1); M.panelRed = panel(0xb3301f); M.panelBlue = panel(0x2f6aa6); M.panelDark = panel(0x3b414a);
+    M.grate = std(Object.assign(tri(T.metalFloor), { color: 0x8d949c, metalness: 0.75 }));
+    M.crystal = std({ color: 0x8fd8ff, emissive: new THREE.Color(0.08, 0.45, 0.75), roughness: 0.08, metalness: 0.3, envMapIntensity: 1.6 });
+    M.crystalGlow = basic(0.5, 3.2, 4.6);
+    M.lampHeat = basic(6.5, 2.6, 0.5); M.flame = basic(8, 3.2, 0.6);
+    M.signHalden = new THREE.MeshStandardMaterial({ map: T.signHalden, roughness: 0.6, metalness: 0.1 });
+    M.signCold = new THREE.MeshStandardMaterial({ map: T.signCold, roughness: 0.6, metalness: 0.1 });
+    for (const k of ['scrLog', 'scrLogOn', 'scrMast', 'scrMastOn', 'scrBeacon', 'scrBeaconOn']) M[k] = scr(T[k]);
   };
   /** Wet-night tuning: glossier ground and stronger reflections. */
   L.applyTheme = function (th) {
@@ -315,7 +331,7 @@
   const SKY_FS = [
     'uniform vec3 uMoon; uniform float uTime; varying vec3 vDir;',
     'uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGlow; uniform vec3 uGlow2; uniform vec2 uGlowDir; uniform vec2 uGlow2Dir;',
-    'uniform vec3 uCloudDark; uniform vec3 uCloudLit; uniform float uStars; uniform float uMoonAmt;',
+    'uniform vec3 uCloudDark; uniform vec3 uCloudLit; uniform float uStars; uniform float uMoonAmt; uniform float uAurora; uniform vec3 uAur1; uniform vec3 uAur2; uniform float uStorm; uniform vec3 uStormCol;',
     'float h3(vec3 p){ p = fract(p*0.3183099+0.1); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }',
     'float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }',
     'float n2(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h2(i),h2(i+vec2(1,0)),f.x), mix(h2(i+vec2(0,1)),h2(i+vec2(1,1)),f.x), f.y); }',
@@ -335,10 +351,22 @@
     '  float c = fbm(uv*1.4); float cov = smoothstep(0.46, 0.82, c);',
     '  vec3 cc = mix(uCloudDark, uCloudLit, clamp((g1 + g2) * 2.2 + exp(-h*5.0) * 0.35, 0.0, 1.0));',
     '  col = mix(col, cc, cov * smoothstep(0.0, 0.12, h) * 0.9);',
+    '  if (uAurora > 0.0) {',
+    '   vec2 ap = d.xz / (h + 0.3);',
+    '   float wob = fbm(vec2(ap.x * 0.35 + uTime * 0.012, ap.y * 0.2)) * 2.6;',
+    '   float y1 = ap.y * 0.8 + sin(ap.x * 0.9 + wob + uTime * 0.04) * 0.45;',
+    '   float y2 = ap.y * 0.8 + sin(ap.x * 0.7 - wob * 0.8 + 2.1 + uTime * 0.03) * 0.5 + 0.9;',
+    '   float c1 = exp(-pow(y1 + 0.35, 2.0) * 9.0), c2 = exp(-pow(y2 - 0.2, 2.0) * 7.0) * 0.6;',
+    '   float rays = 0.45 + 0.55 * n2(vec2(ap.x * 7.0 + uTime * 0.1 + wob, 3.0));',
+    '   float vert = smoothstep(0.03, 0.2, h) * smoothstep(0.95, 0.3, h) * (1.0 - cov * 0.7);',
+    '   vec3 ac = mix(uAur1, uAur2, smoothstep(0.12, 0.5, h));',
+    '   col += ac * (c1 + c2) * rays * vert * uAurora;',
+    '  }',
     ' }',
     ' float md = dot(d, uMoon);',
     ' col += (vec3(0.85,0.9,1.0) * smoothstep(0.99935, 0.99962, md) * 2.2 + vec3(0.16,0.2,0.28) * pow(max(md,0.0), 400.0) + vec3(0.04,0.05,0.07) * pow(max(md,0.0), 18.0)) * uMoonAmt;',
     ' if (h < 0.0) col = mix(uHor, uHor * 0.3, smoothstep(0.0, -0.25, h));',
+    ' col = mix(col, uStormCol * (1.0 + max(h, 0.0) * 0.4), uStorm * 0.92);',
     ' gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');
@@ -376,7 +404,8 @@
         uMoon: { value: moonDir.clone().normalize() }, uTime: { value: 0 },
         uZen: { value: v3(k.zen) }, uHor: { value: v3(k.hor) }, uGlow: { value: v3(k.glow) }, uGlow2: { value: v3(k.glow2) },
         uGlowDir: { value: new THREE.Vector2(k.glowDir[0], k.glowDir[1]).normalize() }, uGlow2Dir: { value: new THREE.Vector2(k.glow2Dir[0], k.glow2Dir[1]).normalize() },
-        uCloudDark: { value: v3(k.cloudDark) }, uCloudLit: { value: v3(k.cloudLit) }, uStars: { value: k.stars }, uMoonAmt: { value: k.moon }
+        uCloudDark: { value: v3(k.cloudDark) }, uCloudLit: { value: v3(k.cloudLit) }, uStars: { value: k.stars }, uMoonAmt: { value: k.moon },
+        uAurora: { value: k.aurora || 0 }, uStorm: { value: 0 }, uStormCol: { value: new THREE.Vector3() }, uAur1: { value: v3(k.aur1 || [0.1, 0.9, 0.5]) }, uAur2: { value: v3(k.aur2 || [0.5, 0.2, 0.9]) }
       },
       vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false, depthTest: true, fog: false
     });
@@ -406,7 +435,63 @@
     env.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   };
 
+  /** Distant snow-capped ranges (polar maps): craggy cones shaded by slope and height, fading into the haze. */
+  L.buildMountains = function (th) {
+    const k = th.mountains, rnd = U.mulberry32(k.seed || 5);
+    const pos = [], nrm = [], idx = [];
+    const peak = (x, z, r, h) => {
+      const seg = 13, rings = 6, base = pos.length / 3, stretch = 1.2 + rnd() * 0.9, rot = rnd() * Math.PI;
+      r = Math.min(r, (Math.hypot(x, z) - 130) / (stretch * 1.3)); if (r < 12) return;
+      const cr = Math.cos(rot), sr = Math.sin(rot);
+      for (let j = 0; j <= rings; j++) {
+        const f = j / rings, rr = r * Math.pow(1 - f, 1.15), y = -8 + (h + 8) * f;
+        for (let i = 0; i < seg; i++) {
+          const a = i / seg * Math.PI * 2 + f * 0.6, jit = j === rings ? 0 : 0.55 + rnd() * 0.75;
+          const lx = Math.cos(a) * rr * jit * stretch, lz = Math.sin(a) * rr * jit;
+          pos.push(x + lx * cr - lz * sr, y + (j && j < rings ? (rnd() - 0.45) * h * 0.22 : 0), z + lx * sr + lz * cr);
+        }
+      }
+      for (let j = 0; j < rings; j++) for (let i = 0; i < seg; i++) {
+        const a = base + j * seg + i, b = base + j * seg + (i + 1) % seg, c = a + seg, d = b + seg;
+        idx.push(a, c, b, b, c, d);
+      }
+    };
+    for (let i = 0; i < (k.count || 40); i++) {
+      const a = rnd() * Math.PI * 2, r = k.r0 + rnd() * (k.r1 - k.r0);
+      const h = k.hMin + rnd() * rnd() * (k.hMax - k.hMin);
+      peak(Math.cos(a) * r, Math.sin(a) * r, h * (1.0 + rnd() * 0.7), h);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const haze = th.fog;
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uSun: { value: new THREE.Vector3(th.moon.dir[0], th.moon.dir[1], th.moon.dir[2]).normalize() }, uHaze: { value: new THREE.Vector3(haze[0], haze[1], haze[2]) },
+        uRock: { value: v3(k.rock) }, uSnow: { value: v3(k.snow) }, uHazeD: { value: k.haze || 0.004 } },
+      vertexShader: 'varying vec3 vW; varying vec3 vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normal; gl_Position = projectionMatrix * viewMatrix * w; }',
+      fragmentShader: [
+        'uniform vec3 uSun; uniform vec3 uHaze; uniform vec3 uRock; uniform vec3 uSnow; uniform float uHazeD; varying vec3 vW; varying vec3 vN;',
+        'float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }',
+        'void main(){ vec3 n = normalize(vN); float slope = n.y;',
+        ' float nz = h21(floor(vW.xz * 0.35 + vW.y * 0.2)) - 0.5;',
+        ' float snow = smoothstep(0.62, 0.82, slope * 0.9 + vW.y * 0.006 + nz * 0.35);',
+        ' float band = 0.75 + 0.25 * h21(floor(vec2(vW.y * 0.4, vW.x * 0.02)));',
+        ' vec3 base = mix(uRock * band, uSnow, snow);',
+        ' float lit = 0.3 + 0.7 * max(0.0, dot(n, uSun));',
+        ' vec3 col = base * lit;',
+        ' float d = length(vW - cameraPosition);',
+        ' col = mix(col, uHaze, clamp(1.0 - exp(-d * uHazeD), 0.0, 0.92));',
+        ' gl_FragColor = vec4(col, 1.0); }'
+      ].join('\n'), fog: false
+    });
+    this.mountainMat = mat; mat.userData.hazeD = k.haze || 0.004;
+    const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.renderOrder = -5;
+    this.scene.add(mesh);
+    this.flareStacks = null;
+  };
+
   L.buildSkyline = function (th) {
+    this.mountainMat = null;
+    if (th.mountains) { this.buildMountains(th); return; }
     const k = th.skyline, rnd = U.mulberry32(k.seed || 77);
     const box = this.geo('box'), cyl = this.geo('cylLo');
     const B = () => ({ pos: [], nrm: [], uv: [], col: [], idx: [] });

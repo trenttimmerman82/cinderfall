@@ -33,7 +33,33 @@
         rain: { count: 2600, roofs: [[-30.5, -42.5, 30.5, -7.5, 12.6], [41.8, 7.8, 54.2, 20.2, 4.8], [-54.2, 3.8, -41.8, 16.2, 4.8], [-18, 45, 18, 56, 6.8]] }
       }),
       build: () => CF.Map.build(),
+      enemies: ['sentry', 'stalker', 'hornet', 'juggernaut'],
+      inside: (p) => (p.x > -29.2 && p.x < 29.2 && p.z > -41.2 && p.z < -8.8) || (p.x > 42 && p.x < 54 && p.z > 8 && p.z < 20) || (p.x > -54 && p.x < -42 && p.z > 4 && p.z < 16),
       menuCam: (t, cam) => { const a = t * 0.04 + 2.2; cam.position.set(Math.sin(a) * 30, 8 + Math.sin(a * 1.7) * 1.2, 15 + Math.cos(a) * 17); cam.lookAt(Math.sin(a + 0.6) * 6, 4.2, -8); }
+    },
+    halden: {
+      id: 'halden', name: 'Halden Deep', campaign: true, nav: true,
+      bounds: { minX: -84, maxX: 84, minZ: -82, maxZ: 80 },
+      // polar twilight: the sun just under the horizon, pink light on the snow, blue in the shadows, aurora overhead
+      theme: base({
+        fog: [0.1, 0.12, 0.17], fogDensity: 0.0095,
+        hemi: [0x8ea6d0, 0x6a7384, 0.62], moon: { color: 0xffc7a2, intensity: 0.78, dir: [-0.55, 0.28, 0.78] },
+        sky: { zen: [0.008, 0.024, 0.07], hor: [0.3, 0.26, 0.28], glow: [0.7, 0.34, 0.14], glowDir: [-0.55, 0.78], glow2: [0.04, 0.08, 0.16], glow2Dir: [0.5, -0.8],
+          cloudDark: [0.06, 0.07, 0.1], cloudLit: [0.46, 0.32, 0.3], stars: 0.35, moon: 0, aurora: 0.55, aur1: [0.06, 0.85, 0.45], aur2: [0.12, 0.3, 0.55] },
+        env: { top: [0.06, 0.09, 0.16], bottom: [0.3, 0.32, 0.36], band: [0.42, 0.26, 0.2], panels: [[1.2, 1.3, 1.5], [1.5, 1.0, 0.8], [0.8, 1.2, 1.6], [1.3, 1.3, 1.4]] },
+        poolMul: 0.9, rainBright: 0, embers: 0,
+        skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+        mountains: { r0: 200, r1: 380, count: 60, hMin: 22, hMax: 88, rock: [0.07, 0.075, 0.09], snow: [0.6, 0.64, 0.76], haze: 0.004, seed: 12 },
+        rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+        post: { bloom: 0.4, exposure: 0.92, sat: 1.04, shadow: [-0.004, 0.002, 0.012], high: [0.012, 0.004, -0.004], threshold: 1.25 },
+        wet: false, shadowBias: -0.0008, shadowNormalBias: 0.08,
+        frost: { stormFog: [0.3, 0.34, 0.4], stormDensity: 0.055, aurora: 0.6 }
+      }),
+      build: () => CF.MapHalden.build(),
+      enemies: ['thrall', 'skitter', 'frostdrone', 'colossus', 'bloom'],
+      inside: (p) => (p.y > 0.9 && ((p.x > -34 && p.x < -14 && p.z > 4 && p.z < 16) || (p.x > 14 && p.x < 32 && p.z > 2 && p.z < 14))) ||
+        (p.x > -44 && p.x < -24 && p.z > -26 && p.z < -10) || (p.x > 16 && p.x < 38 && p.z > -28 && p.z < -12) || (p.x > 60 && p.x < 76 && p.z > -76 && p.z < -64),
+      menuCam: (t, cam) => { const a = t * 0.03 + 0.6; cam.position.set(Math.sin(a) * 44, 12 + Math.sin(a * 1.4) * 2, 30 + Math.cos(a) * 26); cam.lookAt(0, 6, -4); }
     },
     market: {
       id: 'market', name: 'Neon Market', mp: true, nav: false, blurb: 'Tight streets, alleys and balconies around a holographic plaza.',

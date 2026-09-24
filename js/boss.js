@@ -80,6 +80,7 @@
     constructor(x, y, z) {
       const m = buildModel();
       this.m = m; this.root = m.root; this.boss = true; this.name = 'the Warden';
+      if (CF.HUD.setBossName) CF.HUD.setBossName('The Warden');
       this.T = { height: 7, radius: 2.4, flying: false, name: 'Warden', score: 3000, eye: 6.2 };
       this.body = { pos: new THREE.Vector3(x, y, z), vel: new THREE.Vector3(), radius: 2.4, height: 7 };
       this.home = new THREE.Vector3(x, y, z);

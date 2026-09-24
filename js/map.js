@@ -393,5 +393,5 @@
     // no weapon pickups: weapons are unlocked by objectives (CF.Mission.unlocks)
     for (const a of [[-24, 0, 30], [26, 0, 20], [-47, 0, 10], [48, 0, 17.5], [6, 0.8, -39], [61, 1.5, -54], [-62, 0, -27], [-36.8, 0, -53], [12, 0.8, -26]]) L.addPickup('armor', a[0], a[1], a[2]);
   };
-  Map.kit = { container, crate, barrier, lampPost, barrel, stairs, shed, screenMesh, statusLight, FACE_DIR, FACE_ROT };
+  Map.kit = { container, crate, barrier, lampPost, barrel, stairs, shed, screenMesh, statusLight, ammoCache, FACE_DIR, FACE_ROT };
 })(window.CF);

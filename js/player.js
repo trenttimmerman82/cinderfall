@@ -21,7 +21,7 @@
     const b = this.body;
     b.pos.set(x, y, z); b.vel.set(0, 0, 0); b.grounded = true; b.height = STAND;
     this.yaw = yaw || 0; this.pitch = 0; this.recoilP = 0; this.recoilY = 0;
-    this.alive = true; this.frozen = false; this.deathT = 0;
+    this.alive = true; this.frozen = false; this.deathT = 0; this.chillT = 0;
     this.maxHealth = state && state.maxHealth ? state.maxHealth : 100;
     this.health = state && state.health != null ? state.health : this.maxHealth;
     this.armor = state && state.armor != null ? state.armor : 0;
@@ -158,7 +158,8 @@
     if (inp.mdown[0] && this.sprinting && live) this.stopSprint();
     this.sprintOut = Math.max(0, this.sprintOut - dt);
     // speeds
-    const wmul = (WPN.cur ? WPN.cur.def.moveMul : 1) * (this.speedMul || 1);
+    this.chillT = Math.max(0, (this.chillT || 0) - dt);
+    const wmul = (WPN.cur ? WPN.cur.def.moveMul : 1) * (this.speedMul || 1) * (this.chillT > 0 ? 0.6 : 1);
     let speed = this.sprinting ? 7.9 : this.crouching ? 2.5 : 5.1;
     speed *= U.lerp(1, 0.58, WPN.adsE) * wmul;
     // horizontal velocity
@@ -211,8 +212,8 @@
     this.hazardT -= dt;
     for (const h of CF.Level.hazards) {
       if (b.pos.x > h.minX && b.pos.x < h.maxX && b.pos.z > h.minZ && b.pos.z < h.maxZ && b.pos.y < h.maxY) {
-        this.damage(h.dps * dt / CF.diff().dmg, null, 'Molten metal');
-        if (this.hazardT <= 0) { this.hazardT = 0.5; CF.HUD.hint('Molten metal · climb out', true); CF.FX.sparks(b.pos.x, b.pos.y + 0.2, b.pos.z, 0, 1, 0, 6, 3); }
+        this.damage(h.dps * dt / CF.diff().dmg, null, h.name || 'Molten metal');
+        if (this.hazardT <= 0) { this.hazardT = 0.5; CF.HUD.hint(h.hint || 'Molten metal · climb out', true); CF.FX.sparks(b.pos.x, b.pos.y + 0.2, b.pos.z, 0, 1, 0, 6, 3); }
       }
     }
     // derived motion state
@@ -228,8 +229,8 @@
       this.bobPhase += (hs / interval) * Math.PI * dt;
       if (this.stepDist > interval) {
         this.stepDist = 0;
-        const metal = b.groundBox && b.groundBox.surf === 'metal';
-        A.play('step', null, { vol: this.crouching ? 0.35 : this.sprinting ? 1.0 : 0.7, metal, send: 0.1 });
+        const surf = b.groundBox && b.groundBox.surf;
+        A.play('step', null, { vol: this.crouching ? 0.35 : this.sprinting ? 1.0 : 0.7, metal: surf === 'metal', snow: surf === 'snow', ice: surf === 'ice', send: 0.1 });
         if (this.sprinting) CF.Enemies.noise(b.pos, 9);
       }
     }

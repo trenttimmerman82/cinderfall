@@ -11,10 +11,29 @@
   ];
   const BASS_PAT = [0, 0, 12, 0, 0, 7, 0, 12];   // per eighth, semitone offsets
   const ARP_PAT = [0, 1, 2, 3, 2, 1, 2, 3, 0, 2, 1, 3, 2, 3, 1, 2];
+  // Whiteout: E minor, slower, glassy. Em – Cmaj7 – Am – B
+  const FROST = {
+    bpm: 84,
+    chords: [
+      { root: 40, tones: [52, 55, 59, 64] },
+      { root: 36, tones: [48, 52, 55, 59] },
+      { root: 45, tones: [57, 60, 64, 69] },
+      { root: 47, tones: [59, 63, 66, 71] }
+    ],
+    bass: [0, 0, 7, 0, 12, 0, 7, 5], arp: [3, 2, 1, 0, 1, 2, 3, 2, 0, 1, 3, 2, 1, 3, 2, 0]
+  };
+  const NEON = { bpm: 104, chords: CHORDS, bass: BASS_PAT, arp: ARP_PAT };
 
   const M = CF.Music = {
     ctx: null, A: null, bus: null, lp: null, playing: false, timer: null,
-    intensity: 0, target: 0, step: 0, nextTime: 0, bpm: 104, mode: 'menu', boss: false
+    intensity: 0, target: 0, step: 0, nextTime: 0, bpm: 104, mode: 'menu', boss: false, theme: 'neon', T: NEON
+  };
+  /** 'neon' (Cinder Foundry) or 'frost' (Whiteout). */
+  M.setTheme = function (name) {
+    const T = name === 'frost' ? FROST : NEON;
+    if (this.T === T) return;
+    this.T = T; this.theme = name === 'frost' ? 'frost' : 'neon'; this.bpm = T.bpm;
+    if (this.dl) this.dl.delayTime.setTargetAtTime((60 / this.bpm) * 0.75, this.ctx.currentTime, 0.1);
   };
 
   M.init = function (A) {
@@ -24,7 +43,7 @@
     this.bus.connect(this.lp); this.lp.connect(A.music);
     // echo for arps and stabs
     this.echoIn = ctx.createGain();
-    const dl = ctx.createDelay(1.0); dl.delayTime.value = (60 / this.bpm) * 0.75;
+    const dl = this.dl = ctx.createDelay(1.0); dl.delayTime.value = (60 / this.bpm) * 0.75;
     const fb = ctx.createGain(); fb.gain.value = 0.32;
     const df = ctx.createBiquadFilter(); df.type = 'lowpass'; df.frequency.value = 2200;
     this.echoIn.connect(dl); dl.connect(df); df.connect(fb); fb.connect(dl); df.connect(this.bus);
@@ -68,9 +87,10 @@
   };
 
   M.playStep = function (s, t, six) {
-    const I = this.mode === 'menu' ? 0.18 : this.intensity;
+    const I = this.mode === 'menu' ? 0.18 : this.intensity, T = this.T, frost = this.theme === 'frost';
     const bar = Math.floor(s / 16), inBar = s % 16;
-    const chord = CHORDS[Math.floor(bar / 2) % 4];
+    const chord = T.chords[Math.floor(bar / 2) % 4];
+    if (frost) { this.frostStep(s, t, six, I, chord, bar, inBar); return; }
     if (s % 32 === 0) this.pad(chord, t, six * 32, I);
     if (I > 0.28 && inBar % 2 === 0) {
       const e = (inBar / 2) | 0;
@@ -88,6 +108,49 @@
     }
     if (this.boss && I > 0.9 && inBar === 0) this.stab(chord, t);
     if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+
+  // ---------------------------------------------------------------- Whiteout arrangement
+  M.frostStep = function (s, t, six, I, chord, bar, inBar) {
+    const T = this.T;
+    if (s % 32 === 0) this.choir(chord, t, six * 32, I);
+    // bell arpeggio: sparse in the menu and exploration, running in combat
+    const arpOn = this.mode === 'menu' ? inBar % 4 === 0 : I > 0.55 ? inBar % 2 === 0 : inBar % 4 === 0 && (bar % 2 === 0 || I > 0.3);
+    if (arpOn) this.bell(chord.tones[T.arp[inBar]] + 12, t, this.mode === 'menu' ? 0.03 : 0.036 + I * 0.012);
+    if (I > 0.3 && inBar % 4 === 0) this.bassF(chord.root + T.bass[(inBar / 2) | 0], t, six * 3.6, I);
+    if (I > 0.48 && (inBar === 0 || inBar === 10 || (I > 0.75 && inBar === 6))) this.tom(t, 64);
+    if (I > 0.6 && (inBar === 4 || inBar === 12)) this.tom(t, 110, 0.5);
+    if (I > 0.62 && inBar % 2 === 1) this.A.noise(this.bus, t, { type: 'bandpass', f0: 6500, dur: 0.05, gain: 0.018 + (inBar % 4 === 3 ? 0.012 : 0), Q: 1.2 });
+    if (this.boss && I > 0.9 && inBar === 0) this.stab(chord, t);
+    if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  M.choir = function (chord, t, dur, I) {
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.6;
+    f.frequency.setValueAtTime(900 + I * 1400, t); f.connect(this.bus); f.connect(this.rev);
+    const total = dur + 2.4;
+    for (let i = 0; i < 4; i++) {
+      const o = this.osc(i % 2 ? 'triangle' : 'sine', mtof(chord.tones[i]), t, total, 0.022, f, 2.2, 2.4, (i - 1.5) * 5);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 4.6 + i * 0.3; const lg = ctx.createGain(); lg.gain.value = 3.5;
+      lfo.connect(lg); lg.connect(o.detune); lfo.start(t); lfo.stop(t + total + 0.1);
+    }
+    this.osc('sine', mtof(chord.root), t, total, 0.06, this.bus, 1.6, 2.4);
+  };
+  M.bell = function (note, t, gain) {
+    const f = mtof(note);
+    this.osc('sine', f, t, 1.1, gain, this.echoIn, 0.002, 1.05);
+    this.osc('sine', f * 2.76, t, 0.35, gain * 0.35, this.echoIn, 0.002, 0.33);
+    this.osc('triangle', f * 5.4, t, 0.12, gain * 0.12, this.echoIn, 0.002, 0.1);
+  };
+  M.bassF = function (note, t, dur, I) {
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500 + I * 500; f.connect(this.bus);
+    this.osc('triangle', mtof(note), t, dur, 0.1, f, 0.02, dur * 0.6);
+    this.osc('sine', mtof(note - 12), t, dur, 0.08, this.bus, 0.02, dur * 0.6);
+  };
+  M.tom = function (t, f0, g) {
+    const ctx = this.ctx, o = ctx.createOscillator(); o.frequency.setValueAtTime(f0 * 1.9, t); o.frequency.exponentialRampToValueAtTime(f0, t + 0.3);
+    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.45 * (g || 1), t); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    o.connect(gn); gn.connect(this.bus); gn.connect(this.rev); o.start(t); o.stop(t + 0.6);
+    this.A.noise(this.bus, t, { type: 'lowpass', f0: 900, dur: 0.06, gain: 0.08 * (g || 1) });
   };
 
   M.osc = function (type, f, t, dur, gain, dest, att, rel, detune) {

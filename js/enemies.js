@@ -10,8 +10,20 @@
     hornet: { name: 'Hornet', hp: 45, walk: 5, run: 8, radius: 0.5, height: 0.5, eye: 0, range: [8, 20], sight: 50, fovCos: -1,
       dmg: 5, projSpeed: 68, burst: 2, burstGap: 0.12, cool: [0.9, 1.6], spread: 2.6, score: 80, flying: true, bolt: 'laser' },
     juggernaut: { name: 'Juggernaut', hp: 520, walk: 1.6, run: 2.4, radius: 0.62, height: 2.9, eye: 2.45, range: [10, 34], sight: 50, fovCos: 0.3,
-      dmg: 12, projSpeed: 60, burst: 4, burstGap: 0.17, cool: [2.0, 3.0], spread: 2.6, score: 350, stagger: 160, bolt: 'slug' }
+      dmg: 12, projSpeed: 60, burst: 4, burstGap: 0.17, cool: [2.0, 3.0], spread: 2.6, score: 350, stagger: 160, bolt: 'slug' },
+    // Whiteout: Rime-infected station crew and crystal growths. kind = the AI archetype each one borrows.
+    thrall: { name: 'Thrall', kind: 'sentry', hp: 95, walk: 1.5, run: 4.1, radius: 0.36, height: 1.95, eye: 1.72, range: [8, 22], sight: 40, fovCos: 0.45,
+      dmg: 8, projSpeed: 48, burst: 3, burstGap: 0.16, cool: [1.3, 2.2], spread: 2.4, score: 100, stagger: 40, bolt: 'shard', frost: true, sfx: 'shardShot', alert: 'thrallAlert' },
+    skitter: { name: 'Skitter', kind: 'stalker', hp: 60, walk: 2.6, run: 9.6, radius: 0.42, height: 0.9, eye: 0.75, range: [0, 0], sight: 36, fovCos: 0.3,
+      dmg: 15, score: 110, stagger: 36, frost: true, alert: 'skitterCry' },
+    frostdrone: { name: 'Frost Drone', kind: 'hornet', hp: 50, walk: 5, run: 8.5, radius: 0.5, height: 0.5, eye: 0, range: [8, 20], sight: 50, fovCos: -1,
+      dmg: 5, projSpeed: 60, burst: 3, burstGap: 0.1, cool: [1.0, 1.7], spread: 2.4, score: 80, flying: true, drone: true, bolt: 'shard', frost: true, sfx: 'droneShot' },
+    colossus: { name: 'Colossus', kind: 'juggernaut', hp: 560, walk: 1.5, run: 2.3, radius: 0.66, height: 3.0, eye: 2.5, range: [9, 32], sight: 48, fovCos: 0.3,
+      dmg: 13, projSpeed: 52, burst: 5, burstGap: 0.14, cool: [2.0, 3.0], spread: 2.4, score: 380, stagger: 170, bolt: 'shardHeavy', frost: true, lob: true, sfx: 'heavyShard' },
+    bloom: { name: 'Crystal Bloom', kind: 'bloom', hp: 620, walk: 0, run: 0, radius: 1.3, height: 3.2, eye: 2, range: [0, 0], sight: 0, fovCos: 1, dmg: 0, score: 500, frost: true, static: true }
   };
+  TYPES.hornet.drone = true;
+  for (const k in TYPES) TYPES[k].kind = TYPES[k].kind || k;
   const E = CF.Enemies = { types: TYPES, list: [], proj: [], flowT: 0, combatCount: 0, scene: null };
   const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _pc = new THREE.Vector3(), _eye = new THREE.Vector3(), _dir = new THREE.Vector3(), _flow = { x: 0, z: 0 };
 
@@ -37,8 +49,9 @@
   class Enemy {
     constructor(type, x, y, z, o) {
       o = o || {};
-      const T = this.T = TYPES[type]; this.type = type; this.name = T.name;
+      const T = this.T = TYPES[type]; this.type = type; this.kind = T.kind; this.name = T.name;
       this.m = CF.EnemyModels[type]();
+      for (const mm of this.m.mats) if (mm.emissive) mm.userData.e0 = mm.emissive.clone();
       this.root = this.m.root; E.scene.add(this.root);
       this.body = { pos: new THREE.Vector3(x, y, z), vel: new THREE.Vector3(), radius: T.radius, height: Math.min(T.height, 1.9), stepHeight: 0.62, grounded: true, stepped: 0, noSnap: false };
       this.hp = this.maxHp = T.hp * CF.diff().hp * ((CF.diff().typeHp || {})[this.type] || 1) * (o.hpMul || 1);
@@ -57,7 +70,7 @@
       this.hover = U.rand(3.5, 6.5); this.orbitA = Math.random() * 6.28; this.orbitDir = Math.random() < 0.5 ? -1 : 1;
       this.noScore = !!o.noScore; this.onDeath = o.onDeath || null; this.tag = o.tag || null;
       if (T.flying) { this.body.pos.y = y + this.hover; this.body.noSnap = true; }
-      if (o.spawnFx) { CF.FX.spawnBeam(new THREE.Vector3(x, y, z), T.height); this.root.scale.set(0.001, 0.001, 0.001); }
+      if (o.spawnFx) { CF.FX.spawnBeam(new THREE.Vector3(x, y, z), T.height, T.frost); this.root.scale.set(0.001, 0.001, 0.001); }
       this.root.position.copy(this.body.pos); this.root.rotation.y = this.yaw;
       this.root.updateMatrixWorld(true); this.cacheHits();
     }
@@ -71,7 +84,7 @@
       if (this.state === 'idle' || this.state === 'patrol' || this.state === 'alert') {
         this.state = 'hunt'; this.reactT = instant ? 0 : U.rand(0.35, 0.7) / CF.diff().aggro;
         this.spotT = CF.time;
-        A.play(this.type === 'stalker' ? 'screech' : 'alert', this.body.pos, { ref: 6 });
+        A.play(this.T.alert || (this.kind === 'stalker' ? 'screech' : 'alert'), this.body.pos, { ref: 6 });
         for (const o of E.list) if (o !== this && o.alive && (o.state === 'idle' || o.state === 'patrol') && o.body.pos.distanceTo(this.body.pos) < 22) { o.lastKnown.copy(this.lastKnown); o.state = 'hunt'; o.reactT = U.rand(0.5, 1.1); o.spotT = CF.time; }
       }
     }
@@ -86,7 +99,7 @@
       const dmg = amount * mult;
       this.hp -= dmg; this.flashT = 0.09; this.flinch = Math.min(1, this.flinch + dmg / 40);
       this.staggerAcc += dmg;
-      if (info.dir && info.knock) { const k = info.knock * Math.min(1.5, dmg / 60) * (this.type === 'juggernaut' ? 0.2 : 1); this.body.vel.x += info.dir.x * k; this.body.vel.z += info.dir.z * k; }
+      if (info.dir && info.knock) { const k = info.knock * Math.min(1.5, dmg / 60) * (this.kind === 'juggernaut' ? 0.2 : this.T.static ? 0 : 1); this.body.vel.x += info.dir.x * k; this.body.vel.z += info.dir.z * k; }
       if (info.source === 'player') { const P = CF.Player; this.becomeAware(P.chestPos(_v2), true); this.lastKnown.copy(P.body.pos); this.seenT = CF.time; }
       if (info.point) CF.FX.botHit(info.point, info.normal || _v.set(0, 1, 0), tag === 'weak');
       if (info.point) A.play('impactBot', info.point, { ref: 4 });
@@ -104,14 +117,15 @@
     die(info, head) {
       this.alive = false; this.state = 'dead'; this.deadT = 0;
       const c = this.center(new THREE.Vector3());
-      CF.FX.botExplode(c, this.type === 'juggernaut' ? 1.6 : this.type === 'stalker' ? 0.8 : 1);
-      if (this.type === 'juggernaut') CF.Game.explode(c, { radius: 4, damage: 40, source: 'enemy', noFx: true, shake: 0.5 });
+      const big = this.kind === 'juggernaut' ? 1.6 : this.kind === 'bloom' ? 2 : this.kind === 'stalker' ? 0.8 : 1;
+      if (this.T.frost) { CF.FX.shatter(c, big); A.play('shatter', c, { ref: 7, vol: big }); } else CF.FX.botExplode(c, big);
+      if (this.kind === 'juggernaut') CF.Game.explode(c, { radius: 4, damage: 40, source: 'enemy', noFx: true, shake: 0.5 });
       const d = info && info.dir ? _v.copy(info.dir) : _v.set(0, 0, 0);
       for (const part of this.m.gibs) {
         const vel = new THREE.Vector3(d.x * U.rand(2, 5) + U.gauss() * 2.5, U.rand(3, 6.5), d.z * U.rand(2, 5) + U.gauss() * 2.5);
         CF.FX.gib(part, vel, 9);
       }
-      this.m.eyeMat.color.setRGB(0.06, 0.01, 0.01);
+      if (this.T.frost) this.m.eyeMat.color.setRGB(0.02, 0.05, 0.08); else this.m.eyeMat.color.setRGB(0.06, 0.01, 0.01);
       if (this.m.ventMat) this.m.ventMat.color.setRGB(0.2, 0.05, 0.01);
       for (const mm of this.m.mats) if (mm.emissive) mm.emissive.setRGB(0, 0, 0);
       this.fallDir = Math.random() < 0.5 ? -1 : 1;
@@ -157,19 +171,20 @@
       if (this.spawnT < 1) {
         this.spawnT = Math.min(1, this.spawnT + dt / 0.7);
         const s = U.easeOutBack(this.spawnT); this.root.scale.set(Math.max(0.001, 1 + (s - 1) * 0.3), Math.max(0.001, s), Math.max(0.001, 1 + (s - 1) * 0.3));
-        for (const mm of this.m.mats) if (mm.emissive) mm.emissive.setRGB(1.5 * (1 - this.spawnT), 0.3 * (1 - this.spawnT), 0.1 * (1 - this.spawnT));
+        const sk = 1 - this.spawnT;
+        for (const mm of this.m.mats) if (mm.emissive) { const e = mm.userData.e0; if (T.frost) mm.emissive.setRGB(e.r + 0.4 * sk, e.g + 1.4 * sk, e.b + 2 * sk); else mm.emissive.setRGB(e.r + 1.5 * sk, e.g + 0.3 * sk, e.b + 0.1 * sk); }
         this.pose(dt, 0); this.root.position.copy(b.pos); this.root.updateMatrixWorld(true); this.cacheHits();
         return;
       }
       this.perceive(dt, P);
       this.flashT -= dt; this.flinch = Math.max(0, this.flinch - dt * 4); this.recoil = Math.max(0, this.recoil - dt * 8);
       this.staggerAcc = Math.max(0, this.staggerAcc - dt * 80);
-      if (T.stagger && this.staggerAcc > T.stagger && this.staggerT <= 0) { this.staggerT = this.type === 'juggernaut' ? 1.0 : 0.45; this.staggerAcc = 0; this.burstLeft = 0; }
+      if (T.stagger && this.staggerAcc > T.stagger && this.staggerT <= 0) { this.staggerT = this.kind === 'juggernaut' ? 1.0 : 0.45; this.staggerAcc = 0; this.burstLeft = 0; }
       this.staggerT -= dt;
       const k = Math.max(0, this.flashT / 0.09) * 0.7;
-      for (const mm of this.m.mats) if (mm.emissive) mm.emissive.setRGB(k, k * 0.9, k * 0.8);
+      for (const mm of this.m.mats) if (mm.emissive) { const e = mm.userData.e0; mm.emissive.setRGB(e.r + k, e.g + k * 0.9, e.b + k * 0.8); }
       if (this.reactT > 0) this.reactT -= dt;
-      if (T.flying) this.flyAI(dt, P); else if (this.type === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
+      if (T.static) this.staticAI(dt, P); else if (T.flying) this.flyAI(dt, P); else if (this.kind === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
       this.root.position.copy(b.pos); this.root.rotation.y = this.yaw;
       this.root.updateMatrixWorld(true); this.cacheHits();
     }
@@ -249,14 +264,14 @@
           let mx = -fz * this.strafe, mz = fx * this.strafe, sp = T.walk * 1.3;
           if (dist < T.range[0]) { mx -= fx * 1.2; mz -= fz * 1.2; sp = T.run * 0.8; }
           else if (dist > T.range[1] * 0.8) { mx += fx * 0.8; mz += fz * 0.8; }
-          if (this.type === 'juggernaut') { mx = fx * 0.6 + mx * 0.3; mz = fz * 0.6 + mz * 0.3; sp = T.walk; }
+          if (this.kind === 'juggernaut') { mx = fx * 0.6 + mx * 0.3; mz = fz * 0.6 + mz * 0.3; sp = T.walk; }
           const l = Math.hypot(mx, mz) || 1;
           this.moveDir(mx / l, mz / l, stag ? 0 : sp, dt, false); speed = sp;
-          if (this.hp < this.maxHp * 0.4 && this.type === 'sentry' && Math.random() < dt * 0.5) this.findCover(P);
+          if (this.hp < this.maxHp * 0.4 && this.kind === 'sentry' && Math.random() < dt * 0.5) this.findCover(P);
         }
         if (!stag && this.reactT <= 0) this.shootLogic(dt, P, dist);
       }
-      if (this.type === 'juggernaut' && this.state !== 'idle' && this.state !== 'patrol') this.rocketLogic(dt, P);
+      if (this.kind === 'juggernaut' && this.state !== 'idle' && this.state !== 'patrol') this.rocketLogic(dt, P);
       this.physics(dt);
       this.pose(dt, Math.hypot(b.vel.x, b.vel.z));
     }
@@ -298,8 +313,9 @@
       _dir.x += U.gauss() * spread; _dir.y += U.gauss() * spread * 0.7; _dir.z += U.gauss() * spread; _dir.normalize();
       E.shoot(T.bolt, muzzle, _dir, T.projSpeed, T.dmg, this);
       this.recoil = 1; this.lastFired = CF.time;
-      CF.FX.muzzle(muzzle, _dir, 5, 1.4, 0.5, this.type === 'juggernaut' ? 1.1 : 0.6);
-      A.play(this.type === 'hornet' ? 'droneShot' : this.type === 'juggernaut' ? 'heavyShot' : 'enemyShot', muzzle, { ref: 6 });
+      if (T.frost) CF.FX.muzzle(muzzle, _dir, 1.2, 3.4, 5, this.kind === 'juggernaut' ? 1.1 : 0.6);
+      else CF.FX.muzzle(muzzle, _dir, 5, 1.4, 0.5, this.kind === 'juggernaut' ? 1.1 : 0.6);
+      A.play(T.sfx || (this.kind === 'hornet' ? 'droneShot' : this.kind === 'juggernaut' ? 'heavyShot' : 'enemyShot'), muzzle, { ref: 6 });
     }
 
     rocketLogic(dt, P) {
@@ -307,7 +323,7 @@
       if (this.tele) {
         this.tele.t -= dt;
         const from = this.m.p.podMuzzle.getWorldPosition(_v);
-        E.line(from, this.tele.target, 6, 0.3, 0.2, 0.025);
+        if (this.T.frost) E.line(from, this.tele.target, 0.6, 3, 5, 0.025); else E.line(from, this.tele.target, 6, 0.3, 0.2, 0.025);
         if (this.tele.t <= 0) {
           this.rq = [0, 0.28].map((t) => ({ t, target: this.tele.target.clone().add(new THREE.Vector3(U.gauss() * 0.8, 0, U.gauss() * 0.8)) }));
           this.tele = null; this.rocketT = U.rand(6, 9) / CF.diff().aggro;
@@ -317,7 +333,12 @@
       if (this.rq && this.rq.length) {
         for (let i = this.rq.length - 1; i >= 0; i--) {
           const r = this.rq[i]; r.t -= dt;
-          if (r.t <= 0) { E.rocket(this.m.p.podMuzzle.getWorldPosition(new THREE.Vector3()), r.target, this); this.rq.splice(i, 1); }
+          if (r.t <= 0) {
+            const from = this.m.p.podMuzzle.getWorldPosition(new THREE.Vector3());
+            if (this.T.lob) { E.mortar(from, r.target, 1.25, this, 36, 'shardLob'); A.play('shardLob', from, { ref: 8 }); CF.FX.muzzle(from, _v.set(0, 1, 0), 1.2, 3.4, 5, 1.1); }
+            else E.rocket(from, r.target, this);
+            this.rq.splice(i, 1);
+          }
         }
       }
       this.rocketT -= dt;
@@ -343,7 +364,7 @@
       } else if (this.leapState === 'air') {
         P.chestPos(_pc);
         if (!this.leapHit && this.center(_v).distanceTo(_pc) < 1.25) {
-          this.leapHit = true; P.damage(T.dmg, b.pos, 'a Stalker'); P.body.vel.x += b.vel.x * 0.35; P.body.vel.z += b.vel.z * 0.35;
+          this.leapHit = true; P.damage(T.dmg, b.pos, 'a ' + this.name); P.body.vel.x += b.vel.x * 0.35; P.body.vel.z += b.vel.z * 0.35;
         }
         if (b.grounded && b.vel.y <= 0) { this.leapState = 'recover'; this.leapT = 0.75; }
       } else if (this.leapState === 'recover') {
@@ -355,9 +376,9 @@
         if (this.reactT > 0) { this.faceTarget(P, dt, 6); this.moveDir(0, 0, 0, dt); }
         else if (this.biteT > 0) {
           this.biteT -= dt; this.faceTarget(P, dt, 8); this.moveDir(0, 0, 0, dt);
-          if (this.biteT <= 0 && dist < 2.3 && Math.abs(ppos.y - b.pos.y) < 1.6) { P.damage(T.dmg * 0.8, b.pos, 'a Stalker'); A.play('meleeHit', b.pos, { ref: 4 }); }
-        } else if (dist < 1.9 && Math.abs(ppos.y - b.pos.y) < 1.4) { this.biteT = 0.42; A.play('screech', b.pos, { ref: 5 }); }
-        else if (this.canSee && dist < 7.5 && dist > 3 && this.staggerT <= 0 && Math.random() < dt * 2.2) { this.leapState = 'wind'; this.leapT = 0.38; A.play('screech', b.pos, { ref: 6 }); }
+          if (this.biteT <= 0 && dist < 2.3 && Math.abs(ppos.y - b.pos.y) < 1.6) { P.damage(T.dmg * 0.8, b.pos, 'a ' + this.name); A.play('meleeHit', b.pos, { ref: 4 }); }
+        } else if (dist < 1.9 && Math.abs(ppos.y - b.pos.y) < 1.4) { this.biteT = 0.42; A.play(this.T.alert || 'screech', b.pos, { ref: 5 }); }
+        else if (this.canSee && dist < 7.5 && dist > 3 && this.staggerT <= 0 && Math.random() < dt * 2.2) { this.leapState = 'wind'; this.leapT = 0.38; A.play(this.T.alert || 'screech', b.pos, { ref: 6 }); }
         else if (this.staggerT <= 0) {
           const unreachable = !isFinite(W.flowDist(b.pos.x, b.pos.z)) || (dist < 4 && ppos.y - b.pos.y > 1.2);
           if (unreachable && this.canSee && dist < 7 && Math.random() < dt * 1.5) { this.leapState = 'wind'; this.leapT = 0.3; }
@@ -366,6 +387,11 @@
       }
       this.physics(dt);
       this.pose(dt, Math.hypot(b.vel.x, b.vel.z));
+    }
+    staticAI(dt) {
+      if (this.state === 'idle' || this.state === 'patrol') this.state = 'combat';
+      this.body.vel.set(0, 0, 0);
+      this.pose(dt, 0);
     }
     soldierPatrol(dt) {
       const b = this.body, tgt = this.patrol[this.pIdx];
@@ -409,7 +435,7 @@
     }
 
     pose(dt, speed) {
-      const p = this.m.p, t = this.type, T = this.T;
+      const p = this.m.p, t = this.kind, T = this.T;
       const amp = U.clamp(speed / T.run, 0, 1.2);
       this.phase += dt * (t === 'stalker' ? 2.2 : t === 'juggernaut' ? 1.1 : 1.6) * Math.max(speed, 0.001) * (t === 'stalker' ? 1.1 : 1.4);
       const ph = this.phase, fl = this.flinch;
@@ -430,7 +456,7 @@
         } else {
           p.cannon.position.z = -0.2 + this.recoil * 0.1;
           p.armR.rotation.x = -0.3 - this.aimPitch * 0.5; p.armL.rotation.x = Math.sin(ph) * 0.3 * amp;
-          if (this.m.ventMat) { const pulse = 0.65 + 0.35 * Math.sin(CF.time * 4); this.m.ventMat.color.setRGB(6 * pulse, 2.2 * pulse, 0.45 * pulse); }
+          if (this.m.ventMat) { const pulse = 0.65 + 0.35 * Math.sin(CF.time * 4), vc = this.m.ventCol || [6, 2.2, 0.45]; this.m.ventMat.color.setRGB(vc[0] * pulse, vc[1] * pulse, vc[2] * pulse); }
           if (amp > 0.2 && Math.sin(ph) * Math.sin(ph - dt * 3) < 0) this.footfall();
         }
       } else if (t === 'stalker') {
@@ -445,6 +471,11 @@
         p.head.rotation.x = -this.aimPitch * 0.3 + (this.biteT > 0 ? Math.sin(this.biteT * 30) * 0.3 : 0);
         p.jaw.rotation.x = this.biteT > 0 || this.leapState ? 0.5 : 0.1;
         p.tail.rotation.y = Math.sin(CF.time * 3 + this.phase) * 0.4;
+      } else if (t === 'bloom') {
+        const pulse = 0.5 + 0.5 * Math.sin(CF.time * 2.2 + this.phase);
+        p.core.scale.setScalar(0.62 + pulse * 0.12 + fl * 0.2);
+        this.m.eyeMat.color.setRGB(0.5 + pulse * 0.8, 2.6 + pulse * 2, 4 + pulse * 2.5);
+        p.crown.rotation.y += dt * 0.25;
       } else if (t === 'hornet') {
         for (const r of p.rotors) r.rotation.y += dt * 38;
         const fwd = -(this.body.vel.x * -Math.sin(this.yaw) + this.body.vel.z * -Math.cos(this.yaw));
@@ -474,8 +505,8 @@
         return;
       }
       const k = Math.min(1, this.deadT / 0.55);
-      this.root.rotation.x = this.fallDir * U.easeOutCubic(k) * 1.45 * (this.type === 'stalker' ? 0.3 : 1);
-      this.root.rotation.z = this.type === 'stalker' ? this.fallDir * U.easeOutCubic(k) * 1.4 : 0;
+      this.root.rotation.x = this.fallDir * U.easeOutCubic(k) * 1.45 * (this.kind === 'stalker' ? 0.3 : this.kind === 'bloom' ? 0 : 1);
+      this.root.rotation.z = this.kind === 'stalker' ? this.fallDir * U.easeOutCubic(k) * 1.4 : 0;
       if (this.deadT > 6) this.root.position.y -= dt * 0.5;
       if (this.deadT > 8) this.remove();
     }
@@ -497,7 +528,7 @@
   };
   E.alive = function (filter) { let n = 0; for (const e of this.list) if (e.alive && (!filter || filter(e))) n++; return n; };
   E.clear = function () {
-    for (const e of this.list) E.scene.remove(e.root);
+    for (const e of this.list) { E.scene.remove(e.root); if (e.cleanup) e.cleanup(); }
     this.list.length = 0;
     for (const p of this.proj) if (p.mesh) E.scene.remove(p.mesh);
     this.proj.length = 0; this.lines.length = 0;
@@ -560,14 +591,15 @@
     if (best) {
       best.center(_v);
       const info = { dir: new THREE.Vector3(dir.x, 0, dir.z).normalize(), point: _v.clone(), normal: new THREE.Vector3(-dir.x, 0, -dir.z), part: null, weapon: null, source: 'player', knock: 9, melee: true };
-      if (best.damageMelee) best.damageMelee(dmg, info); else best.damage(dmg * (best.type === 'juggernaut' ? 0.5 : 1), info);
+      if (best.damageMelee) best.damageMelee(dmg, info); else best.damage(dmg * (best.kind === 'juggernaut' ? 0.5 : 1), info);
       CF.Game.stats.hits++;
     }
     return best;
   };
 
   // ------------------------------------------------------------ projectiles
-  const BOLT = { bolt: { c: [6, 1.1, 0.35], len: 1.3, w: 0.075, r: 0.22 }, laser: { c: [5.5, 0.4, 2.2], len: 1.0, w: 0.05, r: 0.2 }, slug: { c: [6, 2.6, 0.6], len: 1.6, w: 0.11, r: 0.3 }, mortar: { c: [6, 2, 0.4], len: 0.8, w: 0.3, r: 0.4 } };
+  const BOLT = { bolt: { c: [6, 1.1, 0.35], len: 1.3, w: 0.075, r: 0.22 }, laser: { c: [5.5, 0.4, 2.2], len: 1.0, w: 0.05, r: 0.2 }, slug: { c: [6, 2.6, 0.6], len: 1.6, w: 0.11, r: 0.3 }, mortar: { c: [6, 2, 0.4], len: 0.8, w: 0.3, r: 0.4 },
+    shard: { c: [0.9, 3.6, 5.5], len: 1.1, w: 0.07, r: 0.22 }, shardHeavy: { c: [1.2, 3.8, 6], len: 1.5, w: 0.11, r: 0.3 }, shardLob: { c: [1.5, 4, 6], len: 0.9, w: 0.28, r: 0.4 } };
   E.shoot = function (kind, pos, dir, speed, dmg, owner) {
     const s = BOLT[kind] || BOLT.bolt;
     this.proj.push({ kind, pos: pos.clone(), prev: pos.clone(), vel: dir.clone().multiplyScalar(speed), dmg, owner, life: 3, r: s.r, whiz: false, spec: s, src: owner ? 'a ' + owner.name : 'enemy fire' });
@@ -579,10 +611,12 @@
     this.proj.push({ kind: 'rocket', pos: from.clone(), prev: from.clone(), vel: dir.multiplyScalar(24), dmg: 45, owner, life: 5, r: 0.35, whiz: false, mesh, target: target.clone(), spec: null, src: 'a Juggernaut rocket' });
     A.play('rocket', from, { ref: 8 });
   };
-  E.mortar = function (from, target, flight, owner, dmg) {
+  E.mortar = function (from, target, flight, owner, dmg, look) {
     const t = flight || 1.6, g = 16;
     const vel = new THREE.Vector3((target.x - from.x) / t, (target.y - from.y + 0.5 * g * t * t) / t, (target.z - from.z) / t);
-    this.proj.push({ kind: 'mortar', pos: from.clone(), prev: from.clone(), vel, dmg: dmg || 35, owner, life: t + 1, r: 0.4, whiz: true, grav: g, spec: BOLT.mortar, src: 'the Warden', target: target.clone() });
+    const frost = look === 'shardLob';
+    this.proj.push({ kind: 'mortar', pos: from.clone(), prev: from.clone(), vel, dmg: dmg || 35, owner, life: t + 1, r: 0.4, whiz: true, grav: g, spec: frost ? BOLT.shardLob : BOLT.mortar, frost,
+      src: owner ? (owner.boss ? owner.name : 'a ' + owner.name) : 'enemy fire', target: target.clone() });
   };
   /** Draw a one-frame beam (telegraph lasers). */
   E.line = function (a, b, r, g, bl, w) { this.lines.push({ a: a.clone(), b: b.clone(), c: [r, g, bl], w: w || 0.03 }); };
@@ -648,7 +682,7 @@
       if (dead) {
         if (p.kind === 'rocket' || p.kind === 'mortar') {
           const at = hitPos || p.pos;
-          CF.Game.explode(at, { radius: p.kind === 'rocket' ? 4.5 : 3.6, damage: p.dmg, source: 'enemy', killer: p.src, scale: 0.8 });
+          CF.Game.explode(at, { radius: p.kind === 'rocket' ? 4.5 : 3.6, damage: p.dmg, source: 'enemy', killer: p.src, scale: 0.8, frost: p.frost });
         }
         if (p.mesh) this.scene.remove(p.mesh);
         this.proj.splice(i, 1);
@@ -678,7 +712,7 @@
       const s = p.spec, vl = p.vel.length() || 1;
       const L = p.kind === 'mortar' ? s.len : Math.min(s.len, p.pos.distanceTo(p.prev) + s.len * 0.5);
       quad(p.pos.x - p.vel.x / vl * L, p.pos.y - p.vel.y / vl * L, p.pos.z - p.vel.z / vl * L, p.pos.x, p.pos.y, p.pos.z, s.w, s.c, 0.08);
-      if (p.kind === 'mortar') CF.FX.glow(p.pos.x, p.pos.y, p.pos.z, 0.9, 4, 1.4, 0.3, 0.03);
+      if (p.kind === 'mortar') { if (p.frost) CF.FX.glow(p.pos.x, p.pos.y, p.pos.z, 0.9, 1, 3, 4.5, 0.03); else CF.FX.glow(p.pos.x, p.pos.y, p.pos.z, 0.9, 4, 1.4, 0.3, 0.03); }
     }
     for (const l of this.lines) quad(l.a.x, l.a.y, l.a.z, l.b.x, l.b.y, l.b.z, l.w, l.c, 1);
     this.lines.length = 0;
@@ -704,18 +738,23 @@
     const L = this.list;
     for (let i = 0; i < L.length; i++) {
       const a = L[i]; if (!a.alive || a.T.flying || a.net) continue;
+      const aFix = !!a.T.static;
       for (let j = i + 1; j < L.length; j++) {
         const b = L[j]; if (!b.alive || b.T.flying || b.net) continue;
         const dx = b.body.pos.x - a.body.pos.x, dz = b.body.pos.z - a.body.pos.z, r = a.T.radius + b.T.radius, d2 = dx * dx + dz * dz;
         if (d2 < r * r && d2 > 1e-6 && Math.abs(a.body.pos.y - b.body.pos.y) < 1.5) {
-          const d = Math.sqrt(d2), push = (r - d) * 0.5;
-          a.body.pos.x -= dx / d * push; a.body.pos.z -= dz / d * push; b.body.pos.x += dx / d * push; b.body.pos.z += dz / d * push;
+          const d = Math.sqrt(d2), bFix = !!b.T.static, push = (r - d) * (aFix || bFix ? 1 : 0.5);
+          if (!aFix) { a.body.pos.x -= dx / d * push; a.body.pos.z -= dz / d * push; }
+          if (!bFix) { b.body.pos.x += dx / d * push; b.body.pos.z += dz / d * push; }
         }
       }
       // keep enemies out of the player
       const pp = P.body.pos, dx = pp.x - a.body.pos.x, dz = pp.z - a.body.pos.z, r = a.T.radius + P.body.radius, d2 = dx * dx + dz * dz;
       if (a.boss) continue;
-      if (d2 < r * r && d2 > 1e-6 && Math.abs(pp.y - a.body.pos.y) < 1.6) { const d = Math.sqrt(d2), push = r - d; a.body.pos.x -= dx / d * push; a.body.pos.z -= dz / d * push; }
+      if (d2 < r * r && d2 > 1e-6 && Math.abs(pp.y - a.body.pos.y) < 1.6) {
+        const d = Math.sqrt(d2), push = r - d;
+        if (aFix) { pp.x += dx / d * push; pp.z += dz / d * push; } else { a.body.pos.x -= dx / d * push; a.body.pos.z -= dz / d * push; }
+      }
     }
     this.combatCount = combat;
     this.updateProjectiles(dt, P);

@@ -1,14 +1,28 @@
 'use strict';
-/* Cinderfall — campaign leaderboard (furthest phase reached, then score).
+/* Cinderfall — campaign leaderboard (furthest part reached, then score), per campaign and per drone mode.
    Every run is kept in this browser; when CF.SERVER is set, runs are also sent to the global board. */
 (function (CF) {
   const $ = (id) => document.getElementById(id);
   const KEY = 'cinderfall.leaderboard.v1';
-  const Board = CF.Board = { tab: 'world', world: null, loading: false, error: '' };
+  const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones' };
+  const Board = CF.Board = { tab: 'world', campaign: null, mode: 'all', world: null, loading: false, error: '', req: 0, v2: null };
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
   Board.load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
   Board.save = function (b) { try { localStorage.setItem(KEY, JSON.stringify(b)); } catch (e) { /* storage unavailable */ } };
   const better = (a, b) => a.prog !== b.prog ? a.prog > b.prog : a.score > b.score;
+  /** Runs saved before campaigns and drone modes existed are Cinder Foundry runs; the difficulty label said if drones were off. */
+  const norm = (r) => {
+    if (!r.campaign) r.campaign = 'foundry';
+    if (!r.mode) r.mode = / · No/.test(r.diff || '') ? 'nodrones' : 'drones';
+    if (r.diff) r.diff = String(r.diff).split(' · ')[0];
+    return r;
+  };
+  const localKey = (name, campaign, mode) => name.toLowerCase() + '|' + campaign + '|' + mode;
+  Board.runs = function () {
+    const b = this.load(), out = [];
+    for (const k in b) out.push(Object.assign(norm(b[k]), { _k: k }));
+    return out;
+  };
 
   /** Random id for this browser, so two players who both call themselves "Ghost" keep separate rows. */
   Board.player = function () {
@@ -21,94 +35,137 @@
     return id;
   };
 
-  /** Record the current campaign run. prog: phases cleared (0–5, 5 = mission complete). Keeps each callsign's best run. */
+  /** Record the current campaign run. prog: parts cleared (phases.length = mission complete). Keeps each callsign's best per campaign and mode. */
   Board.record = function (prog, done) {
-    const G = CF.Game, M = CF.Mission;
-    if (!G || G.mode === 'mp' || !G.stats) return;
+    const G = CF.Game, M = CF.Mission, C = CF.campaign();
+    if (!G || G.mode === 'mp' || !G.stats || !C) return;
     const name = (CF.MP && CF.MP.name) || 'Operative';
     const phase = M.phases[Math.min(prog, M.phases.length - 1)];
-    const run = { name, prog, stage: done ? 'Mission complete' : phase.num + ' · ' + phase.title, score: G.score, diff: CF.diffLabel(), time: Math.round(G.stats.time), date: Date.now() };
-    const b = this.load(), key = name.toLowerCase(), prev = b[key];
+    const mode = CF.settings.noDrones ? 'nodrones' : 'drones';
+    const run = { name, campaign: C.id, mode, prog, stage: done ? 'Mission complete' : phase.num + ' · ' + phase.title, score: G.score, diff: CF.diff().label, time: Math.round(G.stats.time), date: Date.now() };
+    const b = this.load(), key = localKey(name, C.id, mode);
+    // fold a pre-campaign entry for this callsign into its new slot
+    const old = b[name.toLowerCase()];
+    if (old) { norm(old); const k = localKey(name, old.campaign, old.mode); if (!b[k] || better(old, b[k])) b[k] = old; delete b[name.toLowerCase()]; }
+    const prev = b[key];
     const isBest = !prev || better(run, prev);
-    if (isBest) { b[key] = run; this.save(b); this.submit(run); }
+    if (isBest) { b[key] = run; this.save(b); this.submit(run); } else this.save(b);
     return isBest;
+  };
+  /** Best local run for a campaign (campaign picker). */
+  Board.bestLocal = function (campaign) {
+    let best = null;
+    for (const r of this.runs()) if (r.campaign === campaign && (!best || better(r, best))) best = r;
+    return best;
   };
 
   // ------------------------------------------------------------ global board
   function request(method, body) {
-    const q = method === 'GET' ? '?player=' + Board.player() + '&name=' + encodeURIComponent(CF.MP.name) : '';
+    const q = method === 'GET' ? '?player=' + Board.player() + '&name=' + encodeURIComponent(CF.MP.name) + '&campaign=' + Board.campaign + '&mode=' + Board.mode : '';
     const ctl = typeof AbortController === 'function' ? new AbortController() : null;
     const timer = ctl && setTimeout(() => ctl.abort(), 10000);
     return fetch(server() + '/scores' + q, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
       .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((d) => adapt(d))
       .finally(() => clearTimeout(timer));
   }
+  /** A server from before campaigns (not yet redeployed) answers without campaign/mode: treat it as the Cinder Foundry board. */
+  function adapt(d) {
+    if (!d || !Array.isArray(d.rows)) return d;
+    if (d.campaign) { Board.v2 = true; return d; }
+    Board.v2 = false;
+    const want = Board.campaign, mode = Board.mode;
+    const rows = want === 'foundry' ? d.rows.map((r) => norm(Object.assign({}, r))).filter((r) => mode === 'all' || r.mode === mode) : [];
+    return { campaign: want, mode, rows, total: rows.length, mine: want === 'foundry' && d.mine && (mode === 'all' || norm(Object.assign({}, d.mine)).mode === mode) ? norm(Object.assign({}, d.mine)) : null, legacy: true };
+  }
+  /** Old servers only understand Cinder Foundry runs, so other campaigns wait until the server is updated. */
+  const canSend = (run) => Board.v2 === true || run.campaign === 'foundry';
   const onScreen = () => CF.Game && CF.Game.screen === 'leaderboard';
+  const viewMatches = (d) => d && d.campaign === Board.campaign && d.mode === Board.mode;
   Board.submit = function (run) {
-    if (!server()) return;
-    request('POST', Object.assign({ player: this.player() }, run))
-      .then((d) => { this.world = d; this.error = ''; if (onScreen()) this.render(); })
-      .catch(() => { /* offline: the run is still on this computer, and the next best run sends again */ });
+    if (!server() || !canSend(run)) return;
+    request('POST', Object.assign({ player: this.player(), view: this.mode }, run))
+      .then((d) => { if (d.campaign === this.campaign && d.mode === this.mode) { this.world = d; this.error = ''; if (onScreen()) this.render(); } this.markSynced(run); })
+      .catch(() => { /* offline: the run is still on this computer, and the leaderboard sends it next time */ });
   };
-  /** Push local bests the server may not have yet (played offline, or before the server existed), then refresh. */
-  Board.sync = function () {
-    const b = this.load(), me = CF.MP.name.toLowerCase();
-    let sent = null;
+  Board.markSynced = function (run) {
+    let sent = {};
     try { sent = JSON.parse(localStorage.getItem('cinderfall.synced') || '{}') || {}; } catch (e) { sent = {}; }
-    const mine = b[me];
-    if (mine && !(sent[me] >= mine.date)) {
-      return request('POST', Object.assign({ player: this.player() }, mine)).then((d) => {
-        sent[me] = mine.date; try { localStorage.setItem('cinderfall.synced', JSON.stringify(sent)); } catch (e) { /* ignore */ }
-        return d;
-      });
-    }
-    return request('GET');
+    sent[localKey(run.name, run.campaign, run.mode)] = run.date;
+    try { localStorage.setItem('cinderfall.synced', JSON.stringify(sent)); } catch (e) { /* ignore */ }
+  };
+  /** Push this callsign's local bests the server may not have yet (offline play, runs from before the server), then refresh. */
+  Board.sync = function () {
+    let sent = {};
+    try { sent = JSON.parse(localStorage.getItem('cinderfall.synced') || '{}') || {}; } catch (e) { sent = {}; }
+    const me = CF.MP.name.toLowerCase();
+    const pending = () => this.runs().filter((r) => r.name.toLowerCase() === me && canSend(r) && !(sent[localKey(r.name, r.campaign, r.mode)] >= r.date) && !(r._k === me && sent[me] >= r.date));
+    const push = () => Promise.all(pending().map((r) => request('POST', Object.assign({ player: this.player() }, r)).then(() => this.markSynced(r)).catch(() => null)));
+    // learn which server version answers before sending anything it might misfile
+    return (this.v2 === null ? request('GET') : Promise.resolve()).then(push).then(() => request('GET'));
   };
   Board.fetch = function () {
-    if (!server() || this.loading) return;
-    this.loading = true; this.error = '';
+    if (!server()) return;
+    const id = ++this.req;
+    this.loading = true; this.error = ''; this.world = null;
     this.sync()
-      .then((d) => { this.world = d; })
-      .catch(() => { this.error = 'Could not reach the leaderboard server. Showing runs from this computer.'; })
-      .finally(() => { this.loading = false; if (onScreen()) this.render(); });
+      .then((d) => { if (id === this.req) this.world = d; })
+      .catch(() => { if (id === this.req) this.error = 'Could not reach the leaderboard server. Showing runs from this computer.'; })
+      .finally(() => { if (id === this.req) { this.loading = false; if (onScreen()) this.render(); } });
   };
 
   // ------------------------------------------------------------ screen
-  Board.open = function () { if (server()) this.fetch(); this.render(); };
+  Board.open = function () {
+    if (!this.campaign) this.campaign = CF.settings.campaign || 'foundry';
+    if (server()) this.fetch();
+    this.render();
+  };
   Board.show = function (tab) { this.tab = tab; this.render(); };
-  function row(el, cells, cls) {
+  Board.setCampaign = function (c) { if (this.campaign === c) return; this.campaign = c; if (server()) this.fetch(); this.render(); };
+  Board.setMode = function (m) { if (this.mode === m) return; this.mode = m; if (server()) this.fetch(); this.render(); };
+  function row(el, cells, cls, mode) {
     const d = document.createElement('div'); d.className = 'lb-row' + (cls || '');
     for (const t of cells) { const s = document.createElement('span'); s.textContent = t; d.appendChild(s); }
-    el.appendChild(d);
+    const m = document.createElement('span');
+    if (mode) { const pill = document.createElement('i'); pill.className = 'lb-mode ' + mode; pill.textContent = MODE_LABEL[mode] || mode; m.appendChild(pill); }
+    else m.textContent = 'Mode';
+    d.appendChild(m); el.appendChild(d);
   }
   const cells = (r, rank) => [String(rank), r.name, r.stage, r.score.toLocaleString('en-US'), r.diff];
-  const cls = (r, me) => (me ? ' me' : '') + (r.prog >= 5 ? ' done' : '');
+  const cls = (r, me) => (me ? ' me' : '') + (r.stage === 'Mission complete' ? ' done' : '');
+  const empty = (el, text) => { const p = document.createElement('p'); p.className = 'lb-empty'; p.textContent = text; el.appendChild(p); };
 
   Board.render = function () {
     const nameEl = $('lbName'); if (nameEl && document.activeElement !== nameEl) nameEl.value = CF.MP.name;
+    if (!this.campaign) this.campaign = CF.settings.campaign || 'foundry';
     const online = !!server(), world = online && this.tab === 'world' && !this.error;
     $('lbTabs').hidden = !online;
     for (const b of document.querySelectorAll('[data-lbtab]')) b.setAttribute('aria-selected', String(b.dataset.lbtab === (online ? this.tab : 'local')));
+    for (const b of document.querySelectorAll('[data-lbcampaign]')) b.setAttribute('aria-selected', String(b.dataset.lbcampaign === this.campaign));
+    for (const b of document.querySelectorAll('[data-lbmode]')) b.setAttribute('aria-pressed', String(b.dataset.lbmode === this.mode));
+    const C = CF.Campaigns && CF.Campaigns[this.campaign];
+    $('lbEyebrow').textContent = (C ? C.name : 'Campaign') + ' · furthest part first, then score';
     const el = $('lbTable'), rank = $('lbRank'), note = $('lbNote');
     el.textContent = ''; rank.textContent = '';
-    row(el, ['#', 'Callsign', 'Furthest', 'Score', 'Difficulty'], ' lb-head');
+    row(el, ['#', 'Callsign', 'Furthest', 'Score', 'Difficulty'], ' lb-head', null);
 
     if (world) {
-      note.textContent = 'Everyone who plays Cinderfall, ranked by furthest phase and then score. Each callsign on each computer keeps its best run.';
-      const d = this.world;
-      if (!d) { const p = document.createElement('p'); p.className = 'lb-empty'; p.textContent = 'Loading the leaderboard…'; el.appendChild(p); return; }
-      if (d.mine) rank.textContent = 'You are #' + d.mine.rank.toLocaleString('en-US') + ' of ' + d.total.toLocaleString('en-US') + ' player' + (d.total === 1 ? '' : 's');
-      else rank.textContent = d.total ? d.total.toLocaleString('en-US') + ' player' + (d.total === 1 ? '' : 's') + ' ranked · finish a run to join them' : '';
-      if (!d.rows.length) { const p = document.createElement('p'); p.className = 'lb-empty'; p.textContent = 'No runs yet. Be the first on the board.'; el.appendChild(p); return; }
-      d.rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.me)));
-      if (d.mine && !d.rows.some((r) => r.me)) { row(el, ['⋯', '', '', '', ''], ' gap'); row(el, cells(d.mine, d.mine.rank), cls(d.mine, true)); }
+      note.textContent = 'Everyone who plays Cinderfall. Each callsign keeps its best run per campaign and per drone mode.';
+      const d = viewMatches(this.world) ? this.world : null;
+      if (!d) { empty(el, 'Loading the leaderboard…'); return; }
+      if (d.mine) rank.textContent = 'You are #' + d.mine.rank.toLocaleString('en-US') + ' of ' + d.total.toLocaleString('en-US') + ' run' + (d.total === 1 ? '' : 's');
+      else rank.textContent = d.total ? d.total.toLocaleString('en-US') + ' run' + (d.total === 1 ? '' : 's') + ' ranked · finish a run to join them' : '';
+      if (!d.rows.length) { empty(el, d.legacy && this.campaign !== 'foundry' ? 'The global board for this campaign opens once the game server is updated. Your runs are saved on this computer until then.' : 'No runs here yet. Be the first on the board.'); return; }
+      d.rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.me), r.mode));
+      if (d.mine && !d.rows.some((r) => r.me)) { row(el, ['⋯', '', '', '', ''], ' gap', null); row(el, cells(d.mine, d.mine.rank), cls(d.mine, true), d.mine.mode); }
       return;
     }
 
-    note.textContent = this.error || 'Runs are saved in this browser. Your best run per callsign is kept.';
-    const b = this.load(), me = CF.MP.name.toLowerCase();
-    const rows = Object.keys(b).map((k) => b[k]).sort((a, c) => (c.prog - a.prog) || (c.score - a.score)).slice(0, 25);
-    if (!rows.length) { const p = document.createElement('p'); p.className = 'lb-empty'; p.textContent = 'No runs yet. Deploy on the campaign and your best run will show up here.'; el.appendChild(p); return; }
-    rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.name.toLowerCase() === me)));
+    note.textContent = this.error || 'Runs are saved in this browser. Your best run per callsign, campaign and drone mode is kept.';
+    const me = CF.MP.name.toLowerCase();
+    const rows = this.runs().filter((r) => r.campaign === this.campaign && (this.mode === 'all' || r.mode === this.mode))
+      .sort((a, c) => (c.prog - a.prog) || (c.score - a.score)).slice(0, 25);
+    if (!rows.length) { empty(el, 'No runs yet. Deploy on this campaign and your best run will show up here.'); return; }
+    rows.forEach((r, i) => row(el, cells(r, i + 1), cls(r, r.name.toLowerCase() === me), r.mode));
   };
 })(window.CF);

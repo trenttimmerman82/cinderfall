@@ -1,6 +1,6 @@
 /* Cinderfall server (Cloudflare Worker).
-   GET  /scores          → global campaign leaderboard (top 100)
-   POST /scores          → submit a run; keeps each player's best; returns the board and your rank
+   GET  /scores          → campaign leaderboard (top 100). ?campaign=foundry|halden&mode=all|drones|nodrones&player=&name=
+   POST /scores          → submit a run {player, name, campaign, mode, prog, score, stage, diff, time}; keeps each player's best per campaign and mode
    GET  /room/<CODE>     → WebSocket relay for a multiplayer room, used when a direct peer-to-peer link is blocked.
                            ?role=host (one per room) or ?role=client&id=<peer id>.
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
@@ -27,22 +27,34 @@ export default {
 // ------------------------------------------------------------ leaderboard
 const clean = (s, n) => String(s || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, n);
 
+const CAMPAIGNS = ['foundry', 'halden'], MODES = ['drones', 'nodrones'];
+const COLS = 'name, campaign, mode, prog, score, stage, diff, time, date';
+
+/** Campaign leaderboard. One row per player (browser id + callsign), campaign and drone mode; each keeps its best run. */
 export class Board extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.sql = ctx.storage.sql;
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS scores (key TEXT PRIMARY KEY, name TEXT, prog INTEGER, score INTEGER, stage TEXT, diff TEXT, time INTEGER, date INTEGER)`);
-    this.sql.exec(`CREATE INDEX IF NOT EXISTS by_rank ON scores (prog DESC, score DESC)`);
+    const sql = this.sql = ctx.storage.sql;
+    sql.exec(`CREATE TABLE IF NOT EXISTS runs (key TEXT, campaign TEXT, mode TEXT, name TEXT, prog INTEGER, score INTEGER, stage TEXT, diff TEXT, time INTEGER, date INTEGER, PRIMARY KEY (key, campaign, mode))`);
+    sql.exec(`CREATE INDEX IF NOT EXISTS runs_rank ON runs (campaign, prog DESC, score DESC)`);
+    // v1 → v2: the old single table only ever held Cinder Foundry runs; its difficulty label said whether drones were off
+    if (sql.exec(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'scores'`).toArray().length) {
+      sql.exec(`INSERT OR IGNORE INTO runs (key, campaign, mode, name, prog, score, stage, diff, time, date)
+        SELECT key, 'foundry', CASE WHEN diff LIKE '% · No%' THEN 'nodrones' ELSE 'drones' END, name, prog, score, stage,
+          CASE WHEN instr(diff, ' · ') > 0 THEN substr(diff, 1, instr(diff, ' · ') - 1) ELSE diff END, time, date FROM scores`);
+      sql.exec('DROP TABLE scores');
+    }
   }
-  /** Top 100 plus the caller's own row and rank. Row keys stay private (they are how a player's best is stored). */
-  board(key) {
-    const rows = this.sql.exec('SELECT key, name, prog, score, stage, diff, time, date FROM scores ORDER BY prog DESC, score DESC, date ASC LIMIT 100').toArray();
-    const out = { rows: rows.map((r) => ({ name: r.name, prog: r.prog, score: r.score, stage: r.stage, diff: r.diff, time: r.time, date: r.date, me: r.key === key })) };
-    out.total = this.sql.exec('SELECT COUNT(*) AS n FROM scores').one().n;
-    const mine = key && this.sql.exec('SELECT name, prog, score, stage, diff, time, date FROM scores WHERE key = ?', key).toArray()[0];
+  /** Top 100 for one campaign (mode 'all' mixes both modes), plus the caller's own best row and rank within that view. */
+  board(key, campaign, mode) {
+    const all = mode === 'all', where = all ? 'campaign = ?' : 'campaign = ? AND mode = ?', args = all ? [campaign] : [campaign, mode];
+    const rows = this.sql.exec(`SELECT key, ${COLS} FROM runs WHERE ${where} ORDER BY prog DESC, score DESC, date ASC LIMIT 100`, ...args).toArray();
+    const out = { campaign, mode, rows: rows.map((r) => { const o = Object.assign({}, r, { me: r.key === key }); delete o.key; return o; }) };
+    out.total = this.sql.exec(`SELECT COUNT(*) AS n FROM runs WHERE ${where}`, ...args).one().n;
+    const mine = key && this.sql.exec(`SELECT ${COLS} FROM runs WHERE key = ? AND ${where} ORDER BY prog DESC, score DESC LIMIT 1`, key, ...args).toArray()[0];
     if (mine) {
-      mine.rank = this.sql.exec('SELECT COUNT(*) AS n FROM scores WHERE prog > ? OR (prog = ? AND score > ?) OR (prog = ? AND score = ? AND date < ?)',
-        mine.prog, mine.prog, mine.score, mine.prog, mine.score, mine.date).one().n + 1;
+      mine.rank = this.sql.exec(`SELECT COUNT(*) AS n FROM runs WHERE ${where} AND (prog > ? OR (prog = ? AND score > ?) OR (prog = ? AND score = ? AND date < ?))`,
+        ...args, mine.prog, mine.prog, mine.score, mine.prog, mine.score, mine.date).one().n + 1;
       mine.me = true; out.mine = mine;
     }
     return out;
@@ -51,19 +63,27 @@ export class Board extends DurableObject {
   async fetch(req) {
     const url = new URL(req.url);
     const keyOf = (player, name) => /^[a-z0-9]{8,40}$/.test(player) ? player + ':' + (clean(name, 16) || 'Operative').toLowerCase() : '';
-    if (req.method === 'GET') return json(this.board(keyOf(url.searchParams.get('player') || '', url.searchParams.get('name'))));
+    const pick = (v, list, def) => (list.includes(v) ? v : def);
+    if (req.method === 'GET') {
+      const q = url.searchParams;
+      return json(this.board(keyOf(q.get('player') || '', q.get('name')), pick(q.get('campaign'), CAMPAIGNS, 'foundry'), pick(q.get('mode'), MODES.concat('all'), 'all')));
+    }
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
     let b; try { b = await req.json(); } catch (e) { return json({ error: 'Bad JSON' }, 400); }
     const name = clean(b.name, 16) || 'Operative', key = keyOf(String(b.player || ''), name);
     const prog = Math.floor(+b.prog), score = Math.floor(+b.score), time = Math.floor(+b.time) || 0;
-    if (!key || !(prog >= 0 && prog <= 5) || !(score >= 0 && score <= 5e6)) return json({ error: 'Invalid run' }, 400);
-    const prev = this.sql.exec('SELECT prog, score FROM scores WHERE key = ?', key).toArray()[0];
+    const campaign = pick(b.campaign, CAMPAIGNS, 'foundry');
+    // clients from before drone modes only sent a difficulty label
+    const mode = pick(b.mode, MODES, / · No/.test(String(b.diff || '')) ? 'nodrones' : 'drones');
+    const diff = clean(String(b.diff || '').split(' · ')[0], 16);
+    if (!key || !(prog >= 0 && prog <= 10) || !(score >= 0 && score <= 5e6)) return json({ error: 'Invalid run' }, 400);
+    const prev = this.sql.exec('SELECT prog, score FROM runs WHERE key = ? AND campaign = ? AND mode = ?', key, campaign, mode).toArray()[0];
     const improved = !prev || prog > prev.prog || (prog === prev.prog && score > prev.score);
     if (improved) {
-      this.sql.exec('INSERT OR REPLACE INTO scores (key, name, prog, score, stage, diff, time, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        key, name, prog, score, clean(b.stage, 40), clean(b.diff, 16), time, Date.now());
+      this.sql.exec('INSERT OR REPLACE INTO runs (key, campaign, mode, name, prog, score, stage, diff, time, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        key, campaign, mode, name, prog, score, clean(b.stage, 40), diff, time, Date.now());
     }
-    return json(Object.assign(this.board(key), { improved }));
+    return json(Object.assign(this.board(key, campaign, pick(b.view, MODES.concat('all'), 'all')), { improved }));
   }
 }
 

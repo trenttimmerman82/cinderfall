@@ -367,7 +367,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .field { display: grid; gap: 6px; }
 .field.callsign { max-width: 360px; margin: 14px 0 4px; }
 .lb-table { display: grid; gap: 1px; margin-top: 14px; max-height: 50vh; overflow: auto; background: var(--line); border: 1px solid var(--line); }
-.lb-row { display: grid; grid-template-columns: 40px 1.2fr 1.5fr 90px 150px; gap: 10px; padding: 8px 12px; background: rgba(16, 13, 30, 0.92); font: 600 15px/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
+.lb-row { display: grid; grid-template-columns: 40px 1.1fr 1.5fr 90px 90px 104px; gap: 10px; padding: 8px 12px; background: rgba(16, 13, 30, 0.92); font: 600 15px/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
 .lb-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-head { font: 500 11px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sodium); }
 .lb-row.me { background: rgba(55, 243, 255, 0.12); }
@@ -440,3 +440,64 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .crosshair .ch, .crosshair .ch-dot { background: var(--ch-color); }
 @media (max-width: 860px) { .set-panels fieldset, .bind-list { grid-template-columns: 1fr; } }
 .crosshair.enemy .ch, .crosshair.enemy .ch-dot { background: var(--ember); }
+
+/* ---------------- Whiteout HUD: warmth, frost edge, countdown */
+.vital-row[hidden] { display: none; }
+.vital-bar.warmth .vital-fill { background: linear-gradient(90deg, #ff9a3c, #ffd27a); box-shadow: 0 0 10px rgba(255, 170, 80, 0.5); }
+.warmth-row.low .vital-fill { background: linear-gradient(90deg, #7fd8ff, #d6f4ff); box-shadow: 0 0 10px rgba(127, 216, 255, 0.7); }
+.warmth-row.low .vital-num { color: #9fe4ff; animation: pulse-cold 0.9s ease-in-out infinite; }
+@keyframes pulse-cold { 50% { opacity: 0.45; } }
+.frost-edge { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s linear;
+  background: radial-gradient(ellipse at center, rgba(200, 235, 255, 0) 45%, rgba(200, 235, 255, 0.25) 70%, rgba(235, 248, 255, 0.85) 100%);
+  box-shadow: inset 0 0 120px rgba(160, 220, 255, 0.55); }
+.countdown { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; pointer-events: none; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.countdown[hidden] { display: none; }
+.countdown span { font: 600 12px/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: #bfe9ff; }
+.countdown b { font: 800 44px/1 var(--f-display); letter-spacing: 0.04em; color: #fff; font-variant-numeric: tabular-nums; }
+.countdown.warn b { color: #ff6a4a; animation: pulse-cold 0.6s ease-in-out infinite; }
+
+/* ---------------- campaign picker */
+.campaign-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.cc-card { position: relative; display: grid; align-content: start; gap: 8px; padding: 0 0 18px; text-align: left; overflow: hidden; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.85); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+.cc-card > span:not(.cc-art) { padding: 0 20px; }
+.cc-card:hover, .cc-card:focus-visible { transform: translateY(-3px); }
+.cc-art { display: block; height: 128px; margin-bottom: 6px; }
+.cc-art { position: relative; overflow: hidden; }
+.cc-art::before, .cc-art::after { content: ''; position: absolute; inset: 0; }
+/* foundry: acid-rain night, a molten glow behind a jagged skyline, neon on the edges */
+.cc-foundry .cc-art { background: radial-gradient(ellipse at 30% 105%, rgba(255, 120, 40, 0.85), transparent 50%), linear-gradient(180deg, #120824 0%, #2a0f3a 55%, #3b1230 100%); box-shadow: inset 0 -2px 0 #ff3cc8; }
+.cc-foundry .cc-art::before { background: #07060d; clip-path: polygon(0 100%, 0 62%, 6% 62%, 6% 40%, 11% 40%, 11% 58%, 17% 58%, 17% 28%, 21% 28%, 21% 50%, 28% 50%, 28% 66%, 34% 66%, 34% 45%, 40% 45%, 40% 20%, 44% 20%, 44% 55%, 52% 55%, 52% 70%, 60% 70%, 60% 36%, 66% 36%, 66% 60%, 72% 60%, 72% 30%, 77% 30%, 77% 52%, 84% 52%, 84% 44%, 90% 44%, 90% 64%, 100% 64%, 100% 100%); }
+.cc-foundry .cc-art::after { background: repeating-linear-gradient(100deg, transparent 0 14px, rgba(160, 200, 255, 0.12) 14px 15px), linear-gradient(90deg, transparent 38%, rgba(255, 60, 200, 0.9) 38% 47%, transparent 47%) 0 72% / 100% 3px no-repeat, linear-gradient(90deg, transparent 60%, rgba(55, 243, 255, 0.9) 60% 67%, transparent 67%) 0 38% / 100% 2px no-repeat; }
+/* whiteout: polar twilight, aurora curtains, a ridge line, then snow */
+.cc-halden .cc-art { background: radial-gradient(ellipse 60% 40% at 72% 18%, rgba(70, 255, 170, 0.55), transparent 70%), radial-gradient(ellipse 45% 35% at 28% 10%, rgba(150, 90, 255, 0.45), transparent 70%),
+  linear-gradient(180deg, #06122a 0%, #1b2f58 45%, #7a6a8a 70%, #d9a58c 82%); box-shadow: inset 0 -2px 0 #7fe3ff; }
+.cc-halden .cc-art::before { background: linear-gradient(180deg, #e8eef6 0%, #9fb0c8 60%, #56647c 100%); clip-path: polygon(0 100%, 0 70%, 8% 58%, 14% 66%, 22% 44%, 30% 60%, 36% 52%, 44% 64%, 52% 38%, 60% 58%, 66% 50%, 74% 62%, 82% 46%, 90% 60%, 100% 54%, 100% 100%); }
+.cc-halden .cc-art::after { background: linear-gradient(180deg, transparent 78%, #eef3fa 78%, #dfe7f1 100%), radial-gradient(circle at 18% 84%, rgba(255, 150, 70, 0.9) 0 3px, transparent 4px), radial-gradient(circle at 84% 86%, rgba(255, 150, 70, 0.8) 0 2px, transparent 3px); }
+.cc-where { font: 500 11px/1.2 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-dim); }
+.cc-name { font: 900 38px/1 var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; }
+.cc-foundry .cc-name { color: #ffd0f2; } .cc-halden .cc-name { color: #d8f4ff; }
+.cc-desc { font: 500 15px/1.45 var(--f-body); color: var(--bone-dim); }
+.cc-meta { font: 600 12px/1.2 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sodium); }
+.cc-halden .cc-meta { color: #8fe8ff; }
+.cc-best { font: 600 13px/1.2 var(--f-body); color: rgba(233, 247, 255, 0.55); }
+.cc-foundry:hover, .cc-foundry.sel { border-color: #ff3cc8; box-shadow: 0 0 24px rgba(255, 60, 200, 0.18); }
+.cc-halden:hover, .cc-halden.sel { border-color: #7fe3ff; box-shadow: 0 0 24px rgba(127, 227, 255, 0.2); }
+@media (max-width: 860px) { .campaign-cards { grid-template-columns: 1fr; } .cc-art { height: 72px; } }
+
+/* ---------------- leaderboard filters and drone-mode labels */
+.lb-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px 20px; align-items: end; margin-top: 8px; }
+.lb-controls .field.callsign { margin: 0; }
+.lb-filter { display: grid; gap: 6px; }
+.lb-filter-label { font: 500 11px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-dim); }
+.seg { display: flex; border: 1px solid var(--line-2); }
+.seg button { padding: 9px 12px; font: 700 14px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-dim); background: rgba(16, 13, 30, 0.8); border-right: 1px solid var(--line-2); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--bone); }
+.seg button[aria-selected="true"], .seg button[aria-pressed="true"] { color: var(--ink, #0b0a14); background: var(--yellow); }
+.seg button[aria-pressed="true"] .lb-mode { background: rgba(0, 0, 0, 0.25); color: #fff; border-color: transparent; }
+.lb-mode { display: inline-block; padding: 3px 7px; font: 700 11px/1 var(--f-mono); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; white-space: nowrap; }
+.lb-mode.drones { color: #7fe3ff; border-color: rgba(127, 227, 255, 0.5); background: rgba(127, 227, 255, 0.08); }
+.lb-mode.drones::before { content: '◆ '; }
+.lb-mode.nodrones { color: #d5cfe6; border-color: rgba(213, 207, 230, 0.35); background: rgba(213, 207, 230, 0.06); }
+.lb-mode.nodrones::before { content: '◇ '; }
+@media (max-width: 860px) { .lb-controls { grid-template-columns: 1fr; } .lb-row { grid-template-columns: 30px 1fr 1fr 70px 0 90px; } .lb-row span:nth-child(5) { display: none; } }

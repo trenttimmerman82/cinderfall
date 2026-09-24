@@ -9,7 +9,7 @@
     const ids = ['hud', 'compassStrip', 'compassObj', 'compassHeading', 'objPanel', 'objPhase', 'objText', 'objMeter', 'objFill', 'objCount', 'scoreNum',
       'worldMarker', 'wmLabel', 'wmDist', 'crosshair', 'hitmarker', 'dmgRing', 'popups', 'dmgNumbers', 'killfeed', 'armorFill', 'armorNum', 'healthFill',
       'healthGhost', 'healthNum', 'ammoMag', 'ammoRes', 'weaponName', 'weaponSlots', 'grenades', 'streak', 'interact', 'interactFill', 'interactText', 'hint', 'radio',
-      'radioWho', 'radioLine', 'bossBar', 'bossFill', 'bossStage', 'scope', 'scopeRead', 'phaseCard', 'pcNum', 'pcTitle', 'pcSub', 'fps', 'flash'];
+      'radioWho', 'radioLine', 'bossBar', 'bossFill', 'bossStage', 'scope', 'scopeRead', 'phaseCard', 'pcNum', 'pcTitle', 'pcSub', 'fps', 'flash', 'warmthRow', 'warmthFill', 'warmthNum', 'countdown', 'cdLabel', 'cdTime', 'frostEdge', 'bossName'];
     for (const id of ids) this.el[id] = $(id);
     this.vitals = document.querySelector('.vitals');
     this.buildCompass();
@@ -208,6 +208,30 @@
     const w = Math.round(Math.max(0, Math.min(1, frac)) * 100);
     if (this.last.stkW !== w) { el.lastChild.firstChild.style.width = w + '%'; this.last.stkW = w; }
   };
+  /** Warmth meter (Whiteout). null hides it. */
+  H.setWarmth = function (v) {
+    const show = v != null;
+    if (this.last.wShow !== show) { this.el.warmthRow.hidden = !show; this.last.wShow = show; }
+    if (!show) return;
+    const w = Math.ceil(v);
+    if (this.last.warm !== w) {
+      this.el.warmthFill.style.width = w + '%'; this.el.warmthNum.textContent = w;
+      this.el.warmthRow.classList.toggle('low', w < 30); this.last.warm = w;
+    }
+  };
+  H.frost = function (v) {
+    const o = (Math.round(v * 50) / 50).toFixed(2);
+    if (this.last.frost !== o) { this.el.frostEdge.style.opacity = o; this.last.frost = o; }
+  };
+  /** Mission countdown. secs null hides it. */
+  H.countdown = function (label, secs) {
+    if (secs == null) { if (!this.el.countdown.hidden) this.el.countdown.hidden = true; this.last.cd = null; return; }
+    this.el.countdown.hidden = false;
+    const t = CF.U.fmtTime(Math.max(0, Math.ceil(secs)));
+    if (this.last.cd !== t) { this.el.cdTime.textContent = t; this.el.countdown.classList.toggle('warn', secs < 20); this.last.cd = t; }
+    if (this.last.cdl !== label) { this.el.cdLabel.textContent = label; this.last.cdl = label; }
+  };
+  H.setBossName = function (n) { this.el.bossName.textContent = n; };
   H.setScore = function (s) { const t = s.toLocaleString('en-US'); if (this.last.sc !== t) { this.el.scoreNum.textContent = t; this.last.sc = t; } };
 
   // ------------------------------------------------------------ prompts, radio, cards
@@ -280,6 +304,7 @@
     for (const a of this.dmgArcs) a.t = 0;
     this.hurtV = 0; this.suppressV = 0; this.flashV = 0; this.last = {};
     this.bossBar(false); this.interact(null); this.clearRadio(); this.el.scope.hidden = true; this.el.phaseCard.hidden = true;
+    this.setWarmth(null); this.frost(0); this.countdown(null, null);
   };
 
   H.update = function (dt, cam, P) {

@@ -73,11 +73,12 @@
     if (!booting) { this.state = 'loading'; progress(0, ''); this.showScreen('loading'); CF.HUD.show(false); }
     prog(0.05, 'Loading ' + def.name); await U.nextFrame(); await U.nextFrame();
     if (this.scene) {
+      if (CF.MapHalden) CF.MapHalden.dispose();
       CF.Enemies.clear(); CF.FX.reset(); CF.FX.clearDecals();
       CF.Weapons.clearLive(); CF.Streak.clear();
       L.dispose();
     }
-    CF.Neon.reset();
+    CF.Neon.reset(); CF.Frost.clear();
     const th = def.theme, q = CF.bootQuality, r = CF.Post.renderer;
     const scene = this.scene = new THREE.Scene();
     const fog = new THREE.Color(th.fog[0], th.fog[1], th.fog[2]);
@@ -114,6 +115,7 @@
     this.rain = rc ? new CF.Neon.Rain(scene, rc, { roofs: th.rain.roofs, bright: th.rainBright, len: 0.6 }) : null;
     this.traffic = th.traffic && th.traffic.count ? new CF.Neon.Traffic(scene, th.traffic.count, th.traffic) : null;
     CF.Post.setState(th.post);
+    CF.Frost.setup(this, th);
     for (const p of L.pickups) this.makePickupMesh(p);
     this.mapId = id; this.mapDef = def; this.inside = false;
     prog(0.85, 'Compiling shaders'); await U.nextFrame();
@@ -125,14 +127,16 @@
 
   /** Compile every shader up front so the first fight does not hitch. */
   G.warmup = function (def) {
+    const id = def.id;
     const r = CF.Post.renderer, cam = this.camera;
     const s = L.points.start || { x: 0, y: 0, z: 0 };
     cam.position.set(s.x, s.y + 3, s.z + 8); cam.lookAt(s.x, s.y + 1.5, s.z - 4); cam.updateMatrixWorld();
     const temps = [];
     const put = (o, dx, dz) => { o.position.set(s.x + dx, s.y + 0.6, s.z + dz); this.scene.add(o); temps.push(o); };
     if (def.campaign) {
-      ['sentry', 'stalker', 'hornet', 'juggernaut'].forEach((t, i) => CF.Enemies.spawn(t, -4 + i * 2.6, 24, { yaw: 0 }));
-      const boss = new CF.Boss(0, 0, 14); boss.root.position.set(0, 0, 12); temps.push(boss.root);
+      def.enemies.forEach((t, i) => CF.Enemies.spawn(t, s.x - 4 + i * 2.6, s.z - 6, { yaw: 0, y: s.y }));
+      const BossClass = id === 'halden' ? CF.HeartBoss : CF.Boss;
+      if (BossClass) { const boss = new BossClass(s.x, s.y, s.z - 14); boss.root.position.set(s.x, s.y, s.z - 16); temps.push(boss.root); if (boss.extra) temps.push(...boss.extra); }
       const rocket = new THREE.Mesh(CF.Enemies.rocketGeo, CF.Enemies.rocketMat); put(rocket, 1, -3);
     }
     if (CF.MP) put(CF.MP.makeModel(), -1, -3);
@@ -155,6 +159,8 @@
     if (!this.audioOn) return;
     if (this.lava) { this.lava.stop(); this.lava = null; }
     if (this.mapId === 'foundry') { this.lava = A.loop('lava', { x: 0, y: 0.5, z: -30 }); if (this.lava) this.lava.set(0.6, 1); }
+    if (CF.Frost.th && !CF.Frost.wind) { CF.Frost.wind = A.loop('blizzard'); }
+    A.setAmbience(this.mapDef && this.mapDef.theme.frost ? 'polar' : 'industrial');
     const wet = this.mapDef && this.mapDef.theme.rain && this.mapDef.theme.rain.count;
     if (wet && !this.rainSnd) { this.rainSnd = A.loop('rain'); if (this.rainSnd) this.rainSnd.set(0.16, 2); }
     else if (!wet && this.rainSnd) { this.rainSnd.stop(); this.rainSnd = null; }
@@ -167,11 +173,12 @@
   };
   G.bindUI = function () {
     document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-act], [data-diff], [data-map], [data-mode], [data-loadout]');
+      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-map], [data-mode], [data-loadout]');
       if (!b || b.disabled) return;
       this.initAudio();
       A.play('uiClick', null, { ui: true });
       if (b.dataset.diff) { CF.settings.difficulty = b.dataset.diff; CF.saveSettings(); this.startMission(); return; }
+      if (b.dataset.campaign) { CF.settings.campaign = b.dataset.campaign; CF.saveSettings(); CF.Music.setTheme(CF.campaign().music); this.act('deploy'); return; }
       if (b.dataset.map) { this.mpSel.map = b.dataset.map; this.renderMpPick(); return; }
       if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
@@ -203,7 +210,7 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { if (e.code === 'Escape') e.target.blur(); return; }
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
-      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'mp' || this.screen === 'leaderboard')) this.back();
+      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard')) this.back();
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
@@ -225,7 +232,7 @@
   };
   G.act = function (a) {
     switch (a) {
-      case 'deploy': this.backTo = 'main'; $('diffName').value = CF.MP.name; $('diffNoDrones').checked = CF.settings.noDrones; this.showScreen('difficulty'); break;
+      case 'deploy': this.backTo = 'campaign'; $('diffCampaign').textContent = CF.campaign().name; $('diffName').value = CF.MP.name; $('diffNoDrones').checked = CF.settings.noDrones; this.showScreen('difficulty'); break;
       case 'multiplayer': this.openMpScreen(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
@@ -239,7 +246,17 @@
       case 'resume': this.resume(); break;
       case 'restart': this.restoreCheckpoint(); break;
       case 'quit': if (this.mode !== 'mp' && (this.state === 'paused' || this.state === 'dead')) CF.Board.record(CF.Mission.idx); this.toMenu(); break;
+      case 'campaigns': this.backTo = 'main'; this.renderCampaigns(); this.showScreen('campaign'); break;
       case 'replay': this.startMission(); break;
+    }
+  };
+  /** Campaign picker: one card per campaign with its best local run. */
+  G.renderCampaigns = function () {
+    const el = $('campaignCards'); if (!el) return;
+    for (const b of el.querySelectorAll('[data-campaign]')) {
+      const id = b.dataset.campaign, best = CF.Board.bestLocal(id);
+      b.classList.toggle('sel', id === CF.settings.campaign);
+      b.querySelector('.cc-best').textContent = best ? 'Your best · ' + best.stage + ' · ' + best.score.toLocaleString('en-US') : 'Not played yet';
     }
   };
   G.back = function () {
@@ -283,12 +300,14 @@
     for (const [id, key] of SELECTS) $(id).addEventListener('change', (e) => { S[key] = e.target.value; changed(); });
     for (const b of document.querySelectorAll('[data-settab]')) b.addEventListener('click', () => this.settingsTab(b.dataset.settab));
     for (const b of document.querySelectorAll('[data-lbtab]')) b.addEventListener('click', () => CF.Board.show(b.dataset.lbtab));
+    for (const b of document.querySelectorAll('[data-lbcampaign]')) b.addEventListener('click', () => CF.Board.setCampaign(b.dataset.lbcampaign));
+    for (const b of document.querySelectorAll('[data-lbmode]')) b.addEventListener('click', () => CF.Board.setMode(b.dataset.lbmode));
     $('bindReset').addEventListener('click', () => { this.stopCapture(); CF.Keys.reset(); $('bindNote').textContent = 'Key bindings restored to defaults.'; });
     $('settingsReset').addEventListener('click', () => {
       this.stopCapture();
-      const binds = CF.Keys.binds, diff = S.difficulty;
+      const binds = CF.Keys.binds, diff = S.difficulty, camp = S.campaign, nd = S.noDrones;
       for (const k in CF.DEFAULTS) S[k] = CF.DEFAULTS[k];
-      S.difficulty = diff; CF.Keys.binds = binds;
+      S.difficulty = diff; S.campaign = camp; S.noDrones = nd; CF.Keys.binds = binds;
       changed(); this.syncSettingsUI();
     });
     CF.onBindsChanged = () => { this.renderBinds(); this.applyKeyLabels(); };
@@ -363,6 +382,9 @@
     CF.Input.active = false; CF.Input.exitLock(); CF.Input.freeLook = false; CF.Input.clearAll();
     CF.Enemies.clear(); CF.FX.reset(); CF.HUD.reset(); CF.HUD.show(false);
     this.stopHold(); this.pending.length = 0;
+    CF.Frost.reset(); CF.Frost.setStorm(0.1); CF.Player.chillT = 0;
+    if (CF.MapHalden && CF.MapHalden.skua && this.mapId === 'halden') CF.MapHalden.skuaSet('parked');
+    if (CF.campaign()) CF.Music.setTheme(CF.campaign().music);
     $('relock').hidden = true;
     this.showScreen('main');
     A.setPaused(false);
@@ -375,11 +397,14 @@
   };
   G.startMission = async function (noLock) {
     this.initAudio(); A.resume();
-    if (this.mapId !== 'foundry') {
-      // grab the mouse while we still have the click, then build the foundry
+    const C = CF.campaign();
+    CF.Mission = C.mission;
+    if (this.mapId !== C.map) {
+      // grab the mouse while we still have the click, then build the campaign map
       if (!noLock && !CF.Input.freeLook) CF.Input.requestLock();
-      await this.loadMap('foundry');
+      await this.loadMap(C.map);
     }
+    CF.Music.setTheme(C.music);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
     this.newGame();
     this.showScreen(null);
@@ -391,6 +416,7 @@
   };
   G.newGame = function () {
     this.resetLevel();
+    if (CF.Mission.resetWorld) CF.Mission.resetWorld();
     CF.Enemies.clear(); CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset();
     this.stats = newStats(); this.score = 0; CF.HUD.setScore(0);
     this.pending.length = 0; this.lastKill = -99; this.multi = 0;
@@ -528,7 +554,9 @@
     let g = acc * 100 * 0.35 + hsr * 100 * 0.25 + Math.max(0, 30 - st.deaths * 8) + (st.time < 900 ? 20 : st.time < 1500 ? 12 : 5) + (dKey === 'elite' ? 10 : dKey === 'recruit' ? -6 : 0) - (CF.settings.noDrones ? 4 : 0);
     const rank = g >= 72 ? 'S' : g >= 58 ? 'A' : g >= 44 ? 'B' : g >= 30 ? 'C' : 'D';
     let best = 0;
-    try { best = +localStorage.getItem('cinderfall.best.' + dKey) || 0; if (this.score > best) { localStorage.setItem('cinderfall.best.' + dKey, String(this.score)); } } catch (e) { /* storage unavailable */ }
+    const C = CF.campaign(), bestKey = 'cinderfall.best.' + (C.id === 'foundry' ? '' : C.id + '.') + dKey;
+    try { best = +localStorage.getItem(bestKey) || 0; if (this.score > best) { localStorage.setItem(bestKey, String(this.score)); } } catch (e) { /* storage unavailable */ }
+    $('winWhere').textContent = C.secured;
     const newBest = this.score > best;
     const rows = [
       ['Score', this.score.toLocaleString('en-US') + (newBest ? ' · new best' : '')], ['Time', U.fmtTime(st.time)],
@@ -542,7 +570,7 @@
       dt.textContent = k; dd.textContent = v; d.append(dt, dd); list.appendChild(d);
     }
     $('gradeVal').textContent = rank;
-    CF.Board.record(5, true);
+    CF.Board.record(CF.Mission.phases.length, true);
     this.showScreen('win');
   };
 
@@ -583,7 +611,7 @@
     o = o || {};
     const R = o.radius || 5, D = o.damage || 100, src = o.source || 'player';
     const at = new THREE.Vector3(pos.x, pos.y, pos.z);
-    if (!o.noFx) CF.FX.explosion(at, o.scale || R / 5.5);
+    if (!o.noFx) { if (o.frost) CF.FX.frostBurst(at, o.scale || R / 5.5); else CF.FX.explosion(at, o.scale || R / 5.5); }
     for (const e of CF.Enemies.list.slice()) {
       if (!e.alive || e.spawnT < 1) continue;
       if (e.boss) { e.explosionDamage(at, R, D); continue; }
@@ -737,7 +765,7 @@
       if (!it.enabled) continue;
       const dx = it.pos.x - P.body.pos.x, dz = it.pos.z - P.body.pos.z, d = Math.hypot(dx, dz);
       if (d > it.radius || Math.abs(it.pos.y - P.body.pos.y) > 1.6) continue;
-      const f = it.face || [0, 1];
+      const f = it.face || [0, 0];
       const tx = it.pos.x - f[0] * 1.2 - P.body.pos.x, tz = it.pos.z - f[1] * 1.2 - P.body.pos.z, tl = Math.hypot(tx, tz) || 1;
       if ((tx * _f.x + tz * _f.z) / tl < 0.3) continue;
       if (d < bd) { bd = d; best = it; }
@@ -762,6 +790,8 @@
     } else if (it.type === 'uplink') {
       it.enabled = false; A.play('breakerOn', it.pos, { ref: 6 });
       CF.Mission.onUplinkStart(it);
+    } else if (it.type === 'task') {
+      CF.Mission.onTask(it);
     } else if (it.type === 'ammo') {
       if (CF.Weapons.resupply()) { A.play('ammo', null, { ui: true }); CF.HUD.popup('Resupplied', 0, ''); it.cooldown = it.cooldownMax; this.setLamp(it.lamp, 'amber'); }
       else CF.HUD.hint('Ammunition already full');
@@ -797,6 +827,7 @@
   G.updateAtmos = function (dt, cam) {
     if (this.rain) this.rain.update(dt, CF.time, cam.position);
     if (this.traffic) this.traffic.update(dt);
+    if (CF.Frost.th) CF.Frost.update(this, dt, dt);
   };
   G.updateGame = function (dt, raw) {
     const P = CF.Player, cam = this.camera, playing = this.state === 'playing', mp = this.mode === 'mp';
@@ -821,7 +852,7 @@
     this.updateMoon(mp && this.mpLobby ? cam.position : P.body.pos);
     A.update(raw, cam);
     const p = P.body.pos;
-    const inside = this.mapId === 'foundry' && ((p.x > -29.2 && p.x < 29.2 && p.z > -41.2 && p.z < -8.8) || (p.x > 42 && p.x < 54 && p.z > 8 && p.z < 20) || (p.x > -54 && p.x < -42 && p.z > 4 && p.z < 16));
+    const inside = !!(this.mapDef.inside && this.mapDef.inside(p));
     if (inside !== this.inside) { this.inside = inside; A.setRoom(inside ? 0.65 : 0.25); if (this.rainSnd) this.rainSnd.set(inside ? 0.05 : 0.16, 0.5); }
     cam.getWorldDirection(_f);
     const wh = W.raycast(cam.position.x, cam.position.y, cam.position.z, _f.x, _f.y, _f.z, 150);

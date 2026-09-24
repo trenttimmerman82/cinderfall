@@ -5,6 +5,8 @@
   const OW = 'Overwatch', WD = 'Warden';
   const find = (id) => L.interactables.find((i) => i.id === id);
   const MS = CF.Mission = { idx: 0, phase: null, t: 0, s: {}, spawner: null, breakersDone: [], said: {} };
+  CF.Missions = CF.Missions || {};
+  CF.Missions.foundry = MS;
 
   // Weapons are earned: you start with the M7 and P-11, and each objective releases another one.
   const UNLOCKS = [
@@ -312,7 +314,7 @@
     const alive = CF.Enemies.alive((e) => !e.boss);
     if (alive >= s.maxAlive || s.remaining <= 0) return;
     const n = Math.min(Math.random() < 0.45 ? 2 : 1, s.maxAlive - alive, s.remaining);
-    const pool = CF.noDrones() ? s.pool.filter((t) => t !== 'hornet') : s.pool;
+    const pool = CF.noDrones() ? s.pool.filter((t) => !CF.Enemies.types[t].drone) : s.pool;
     for (let i = 0; i < n; i++) { this.spawnAt(U.choice(pool), s.zones); s.remaining--; }
   };
 

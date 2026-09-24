@@ -50,7 +50,7 @@ window.CF = window.CF || {};
   const DEFAULTS = {
     sens: 1.0, adsSens: 0.8, invertY: false,
     fov: 90, quality: 'high', shake: 1.0, showFps: false, dmgNumbers: true,
-    master: 0.8, music: 0.55, sfx: 0.9, difficulty: 'veteran', noDrones: false,
+    master: 0.8, music: 0.55, sfx: 0.9, difficulty: 'veteran', noDrones: false, campaign: 'foundry',
     toggleCrouch: false, toggleSprint: false, aimMode: 'hold', viewBob: 1.0, crosshair: 'white', brightness: 1.0, grain: true
   };
   const KEY = 'cinderfall.settings.v1';
@@ -77,6 +77,8 @@ window.CF = window.CF || {};
   CF.diff = () => CF.DIFF[CF.settings.difficulty] || CF.DIFF.veteran;
   /** No drones: no enemy Hornet drones in the campaign. Your kill-streak drone is unaffected. */
   CF.noDrones = () => !!CF.settings.noDrones && !(CF.Game && CF.Game.mode === 'mp');
+  /** The campaign chosen on the campaign screen (registry lives in mission-halden.js). */
+  CF.campaign = () => (CF.Campaigns && (CF.Campaigns[CF.settings.campaign] || CF.Campaigns.foundry)) || null;
   CF.diffLabel = () => CF.diff().label + (CF.settings.noDrones ? ' · No drones' : '');
 
   // ---------------------------------------------------------------- key bindings
