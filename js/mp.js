@@ -57,10 +57,9 @@
   MP.saveName = function (n) { MP.name = (String(n || '').replace(/[<>]/g, '').trim().slice(0, 16)) || 'Operative'; try { localStorage.setItem('cinderfall.callsign', MP.name); } catch (e) { /* ignore */ } };
   MP.setLoadout = function (k) { if (!LOADOUTS[k] && !SNIPER[k]) return; MP.nextLoadout = k; try { localStorage.setItem('cinderfall.loadout', k); } catch (e) { /* ignore */ } };
   MP.isHost = () => MP.role === 'host';
-  // Callsign "Scott" plays with perks: double health, 50% more damage and aim assist that locks on while aiming.
-  const SCOTT = { health: 200, damage: 1.5 };
+  // Callsign "Scott" gets aim assist that locks on while aiming (normal health and damage).
   MP.isScott = () => MP.active && MP.name.trim().toLowerCase() === 'scott';
-  MP.maxHealth = () => (MP.isScott() ? SCOTT.health : 100);
+  MP.maxHealth = () => 100;
   /** Team deathmatch rules: TDM itself, and Sniper Valley. */
   MP.tdm = () => MP.mode === 'tdm' || MP.mode === 'sniper';
   /** Modes with sides: the team deathmatches, and Prop Hunt's Hunters vs Props. */
@@ -230,7 +229,7 @@
       const part = info.part; let mult = part ? part.mult : 1; const tag = part ? part.tag : 'body';
       const def = info.weapon ? CF.Weapons.defs[info.weapon] : null;
       if (tag === 'head' && def) mult = def.head * (part.mult / 2);
-      let dmg = amount * mult * (def ? def.pvp || 1 : 1) * (MP.isScott() ? SCOTT.damage : 1) * CF.PH.damageMul(this);
+      let dmg = amount * mult * (def ? def.pvp || 1 : 1) * CF.PH.damageMul(this);
       if (MP.mode === 'revolver' && info.weapon === 'revolver') dmg = 999; // one shot, one kill
       MP.sendHit(this.id, dmg, tag === 'head', info.weapon || info.wid || (info.explosive ? 'frag' : 'melee'));
       if (info.point) CF.FX.botHit(info.point, info.normal || new THREE.Vector3(0, 1, 0), tag === 'head');
