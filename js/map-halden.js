@@ -64,7 +64,7 @@
   }
   /** Weatherhaven shelter: a half-cylinder tent along X. */
   function tent(cx, cz, len, r, mat) {
-    const g = new THREE.CylinderGeometry(r, r, len, 18, 1, true, 0, PI); g.rotateZ(PI / 2); g.rotateX(-PI / 2);
+    const g = new THREE.CylinderGeometry(r, r, len, 18, 1, true, 0, PI); g.rotateZ(PI / 2);
     L.addGeo(mat || 'panelOrange', g, L.mat4(cx, 0, cz, 0, 0, 0, 1, 1, 1));
     const cap = new THREE.CircleGeometry(r, 18, 0, PI); cap.rotateZ(0);
     for (const s of [-1, 1]) { const m = L.mat4(cx + s * len / 2, 0, cz, 0, s > 0 ? PI / 2 : -PI / 2, 0, 1, 1, 1); L.addGeo('panelWhite', cap, m); }
