@@ -91,7 +91,8 @@ window.CF = window.CF || {};
     { id: 'left', label: 'Strafe left', canon: 'KeyA', def: ['KeyA', 'ArrowLeft'] },
     { id: 'right', label: 'Strafe right', canon: 'KeyD', def: ['KeyD', 'ArrowRight'] },
     { id: 'jump', label: 'Jump · mantle', canon: 'Space', def: ['Space', null] },
-    { id: 'crouch', label: 'Crouch · slide', canon: 'KeyC', def: ['KeyC', 'ControlLeft'] },
+    { id: 'crouch', label: 'Crouch · slide', canon: 'KeyC', def: ['KeyC', null] },
+    { id: 'lean', label: 'Lean (hold, then A / D)', canon: 'ControlLeft', def: ['ControlLeft', null] },
     { id: 'sprint', label: 'Sprint · steady scope', canon: 'ShiftLeft', def: ['ShiftLeft', null] },
     { id: 'aim', label: 'Aim · scope toggle (keyboard)', canon: 'KeyF', def: ['KeyQ', 'Tab'] },
     { id: 'reload', label: 'Reload', canon: 'KeyR', def: ['KeyR', null] },
@@ -115,6 +116,8 @@ window.CF = window.CF || {};
   Keys.load = function () {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(BIND_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+    // saves from before leaning had L Ctrl on crouch: it moves to lean
+    if (!saved.lean && Array.isArray(saved.crouch)) saved.crouch = saved.crouch.map((c) => (c === 'ControlLeft' ? null : c));
     for (const a of ACTIONS) {
       const b = Array.isArray(saved[a.id]) ? saved[a.id] : a.def;
       this.binds[a.id] = [0, 1].map((i) => (typeof b[i] === 'string' && !RESERVED.has(b[i]) ? b[i] : null));

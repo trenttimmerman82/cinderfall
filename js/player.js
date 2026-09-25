@@ -3,6 +3,7 @@
 (function (CF) {
   const U = CF.U, W = CF.World, A = CF.Audio;
   const STAND = 1.8, CROUCH = 1.15, EYE_STAND = 1.64, EYE_CROUCH = 1.0, EYE_SLIDE = 0.82;
+  const LEAN = 0.42; // how far a full lean moves the eye sideways (m)
 
   const P = CF.Player = {
     body: { pos: new THREE.Vector3(), vel: new THREE.Vector3(), radius: 0.38, height: STAND, stepHeight: 0.55, grounded: false, stepped: 0 },
@@ -11,7 +12,7 @@
     sprinting: false, sprintT: 0, sprintOut: 0, crouching: false, crouchT: 0, sliding: false, slideT: 0, slideTime: 0,
     mantling: false, mantleT: 0, mantleFrom: new THREE.Vector3(), mantleTo: new THREE.Vector3(),
     bobPhase: 0, bobAmp: 0, moveFrac: 0, stepDist: 0, eyeOff: 0, eye: EYE_STAND,
-    trauma: 0, shakeT: 0, fovKick: 0, tilt: 0, coyote: 0, jumpBuf: 0, airPeak: 0, hazardT: 0, hurtSndT: 0, heartT: 0,
+    trauma: 0, shakeT: 0, fovKick: 0, tilt: 0, lean: 0, leanReach: 0, coyote: 0, jumpBuf: 0, airPeak: 0, hazardT: 0, hurtSndT: 0, heartT: 0,
     flinch: 0, camera: null, time: 0
   };
 
@@ -26,7 +27,7 @@
     this.health = state && state.health != null ? state.health : this.maxHealth;
     this.armor = state && state.armor != null ? state.armor : 0;
     this.sprinting = false; this.sprintT = 0; this.crouching = false; this.crouchT = 0; this.sliding = false; this.slideT = 0;
-    this.mantling = false; this.trauma = 0; this.eyeOff = 0; this.eye = EYE_STAND; this.lastHurt = -99; this.flinch = 0;
+    this.mantling = false; this.lean = 0; this.leanReach = 0; this.trauma = 0; this.eyeOff = 0; this.eye = EYE_STAND; this.lastHurt = -99; this.flinch = 0;
     this.updateCamera(0);
     CF.HUD.setVitals(this.health, this.armor, this.maxHealth);
   };
@@ -134,6 +135,10 @@
       fwd = (inp.down('KeyW') || inp.down('ArrowUp') ? 1 : 0) - (inp.down('KeyS') || inp.down('ArrowDown') ? 1 : 0);
       side = (inp.down('KeyD') || inp.down('ArrowRight') ? 1 : 0) - (inp.down('KeyA') || inp.down('ArrowLeft') ? 1 : 0);
     }
+    // lean: hold the lean key (Ctrl) and A/D peeks instead of strafing; not while sprinting or sliding
+    const leaning = live && inp.down('ControlLeft') && !this.sprinting && !this.sliding;
+    this.lean = U.damp(this.lean, leaning ? side : 0, 10, dt);
+    if (leaning) side = 0;
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     _wish.set(-sy * fwd + cy * side, 0, -cy * fwd - sy * side);
     const wl = _wish.length(); if (wl > 0) _wish.divideScalar(wl);
@@ -276,11 +281,20 @@
     const bobK = st.viewBob != null ? st.viewBob : 1;
     const bobY = Math.abs(Math.cos(this.bobPhase)) * 0.028 * this.bobAmp * (1 - WPN.adsE * 0.8) * bobK;
     const bobX = Math.sin(this.bobPhase) * 0.018 * this.bobAmp * (1 - WPN.adsE * 0.8) * bobK;
-    cam.position.set(b.pos.x, b.pos.y + this.eye + this.eyeOff - bobY, b.pos.z);
-    cam.position.x += Math.cos(this.yaw) * bobX; cam.position.z -= Math.sin(this.yaw) * bobX;
+    if (dead) this.lean = U.damp(this.lean, 0, 10, dt);
+    // lean: shift the eye sideways, stopping short of walls
+    const ey = b.pos.y + this.eye + this.eyeOff, rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
+    let reach = 0;
+    if (Math.abs(this.lean) > 0.01) {
+      const sgn = Math.sign(this.lean);
+      for (const f of [1, 0.66, 0.33]) { const d = LEAN * f + 0.2; if (CF.World.segmentClear(b.pos.x, ey, b.pos.z, b.pos.x + rx * d * sgn, ey, b.pos.z + rz * d * sgn)) { reach = f; break; } }
+    }
+    this.leanReach = U.damp(this.leanReach, reach, 14, dt);
+    const lo = this.lean * this.leanReach * LEAN;
+    cam.position.set(b.pos.x + rx * (lo + bobX), ey - bobY - Math.abs(lo) * 0.15, b.pos.z + rz * (lo + bobX));
     if (this.mantling) { cam.position.y -= Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.12; }
     WPN.scopeSway(_sway);
-    _e.set(this.pitch + this.recoilP + ny * 0.035 + this.flinch * 0.02 + _sway.y, this.yaw + this.recoilY + nx * 0.035 - _sway.x, this.tilt + nr * 0.04 + (this.mantling ? Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.06 : 0));
+    _e.set(this.pitch + this.recoilP + ny * 0.035 + this.flinch * 0.02 + _sway.y, this.yaw + this.recoilY + nx * 0.035 - _sway.x, this.tilt - this.lean * this.leanReach * 0.21 + nr * 0.04 + (this.mantling ? Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.06 : 0));
     cam.quaternion.setFromEuler(_e);
     const base = st.fov + this.sprintT * 6 + this.slideT * 8;
     const adsMul = WPN.cur ? U.lerp(1, WPN.cur.def.adsFov, WPN.adsE) : 1;

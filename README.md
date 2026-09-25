@@ -67,6 +67,12 @@ loadouts, but for the first 45 seconds of the hunt Props take only 35% damage. A
 Hunters win by finding every Prop within 5 minutes; Props win if anyone is still hiding when time runs out. No
 kill-streak drones or RC-XD. Maps register their hiding spots through `CF.PH.place` / `CF.PH.mark` (`js/prophunt.js`).
 
+**Capture the Flag** is Voltage vs Ronin with a flag standing at each team's spawn. Run over the enemy flag to
+take it, then bring it back to your own base ring while your flag is at home to score. A carrier who dies drops the
+flag where they fell; a teammate who touches their own dropped flag sends it home, and it returns on its own after
+25 seconds. First to 3 captures in 10 minutes. Kills count on the scoreboard but not toward the team score. Flag
+rules live in `js/ctf.js`; the host decides every take, return and capture.
+
 **Zombies** (2+ players, best on Neon Market) puts everyone on one team against waves of infected: Husks (clawing
 Sentry frames), Crawlers, Blight drones from wave 3 and Brutes every fifth wave. Each wave is bigger and tougher;
 count, health and damage also scale with the number of players (`CF.ZM.scale` in `js/zombies.js`). An 18-second
@@ -143,6 +149,7 @@ To try it locally, run `npx wrangler dev` in `server/` and open the game with `?
 | Shift | Sprint · steady the scope |
 | Space | Jump · climb ledges |
 | C | Crouch · slide while sprinting |
+| Ctrl + A / D | Lean left / right (hold) |
 | R | Reload |
 | E | Interact (hold) · Prop Hunt: disguise as the object in front of you · co-op: revive a downed teammate (hold) |
 | G | Throw grenade |

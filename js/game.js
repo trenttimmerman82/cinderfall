@@ -927,7 +927,7 @@
     if (playing) this.stats.time += dt;
     if ((mp || CF.Coop.campaign()) && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
     else P.update(dt);
-    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); CF.ZM.update(dt); }
+    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); CF.ZM.update(dt); CF.CTF.update(dt); }
     if (CF.MP.active) CF.Coop.update(dt); // co-op: enemy sync, downed and revives
     const armed = !CF.RC.driving && !CF.PH.unarmed() && !CF.PH.blind && CF.Coop.armed(); // Prop Hunt: Props carry nothing, Hunters wait blindfolded; co-op: no shooting while down
     if (mp && playing && P.alive && armed) CF.MP.autoAim(dt);
@@ -1085,7 +1085,7 @@
     this.pending.length = 0; this.godMode = false; this.slow = null; this.timeScale = 1;
     this.resetPickups(); this.stopHold();
     CF.Player.alive = false; CF.Player.frozen = false;
-    CF.RC.setup(); CF.PH.setup();
+    CF.RC.setup(); CF.PH.setup(); CF.CTF.setup();
     this.mpLobby = true; this.deathT = 0; this.menuT = 0;
     $('mpBar').hidden = false; $('mpDead').hidden = true;
     CF.Post.setState({ fade: 1, low: 0, hurt: 0, suppress: 0 });
@@ -1222,7 +1222,7 @@
   };
   G.leaveMultiplayer = function (reason) {
     this.mode = 'campaign'; this.mpLobby = false;
-    CF.RC.clear(); CF.PH.clear();
+    CF.RC.clear(); CF.PH.clear(); CF.CTF.clear();
     document.body.classList.remove('mp', 'mp-revolver', 'mp-prophunt', 'mp-sniper', 'mp-zombies', 'coop-downed', 'coop');
     CF.Coop.reset();
     $('mpBar').hidden = true; $('mpDead').hidden = true; $('aimName').hidden = true;
