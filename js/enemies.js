@@ -407,9 +407,15 @@
       if (this.state === 'idle' || this.state === 'patrol') { this.state = 'hunt'; this.spotT = CF.time; }
       this.orbitA += dt * 0.35 * this.orbitDir;
       if (Math.random() < dt * 0.15) this.orbitDir *= -1;
-      const r = this.canSee ? 12 : 7;
-      _v.set(ppos.x + Math.cos(this.orbitA) * r, ppos.y + this.hover, ppos.z + Math.sin(this.orbitA) * r);
-      _v.y = Math.min(_v.y, ppos.y + 9);
+      this.flyT = (this.flyT || 0) - dt;
+      if (this.flyT <= 0) { this.flyT = U.rand(0.2, 0.3); this.planFlight(P); }
+      _v.set(ppos.x + Math.cos(this.orbitA) * this.flyR, this.flyY, ppos.z + Math.sin(this.orbitA) * this.flyR);
+      if (!this.flyDirect) {
+        // a wall stands between the drone and its orbit point: go around it low along the ground flow field, never over it
+        const gy = W.groundHeight(b.pos.x, b.pos.y, b.pos.z) + 1.6;
+        if (W.flowDir(b.pos.x, b.pos.z, _flow)) _v.set(b.pos.x + _flow.x * 4, gy, b.pos.z + _flow.z * 4);
+        else _v.y = Math.min(_v.y, b.pos.y);
+      }
       _dir.subVectors(_v, b.pos);
       const l = _dir.length();
       if (l > 0.01) _dir.divideScalar(l);
@@ -422,7 +428,8 @@
         const h = W.raycast(b.pos.x, b.pos.y, b.pos.z, _v2.x, _v2.y, _v2.z, vl * dt + 0.9);
         if (h) {
           const vn = b.vel.x * h.nx + b.vel.y * h.ny + b.vel.z * h.nz;
-          b.vel.x -= vn * h.nx * 1.2; b.vel.y -= vn * h.ny * 1.2 - 1.5 * dt * 10; b.vel.z -= vn * h.nz * 1.2;
+          // slide along walls rather than climbing them; only lift off floors and roofs below
+          b.vel.x -= vn * h.nx * 1.2; b.vel.y -= vn * h.ny * 1.2 - (h.ny > 0.5 ? 15 * dt : 0); b.vel.z -= vn * h.nz * 1.2;
         }
       }
       b.pos.addScaledVector(b.vel, dt);
@@ -432,6 +439,24 @@
       const dist = b.pos.distanceTo(ppos);
       if (this.reactT <= 0 && this.staggerT <= 0) this.shootLogic(dt, P, dist);
       this.pose(dt, vl);
+    }
+
+    /** Orbit point with a clear line to the player (so a drone never hovers or fires over a wall), kept under any roof
+     *  over the player, and whether the drone can fly straight to it. */
+    planFlight(P) {
+      const b = this.body, pp = P.body.pos, r0 = this.canSee ? 12 : 7;
+      P.chestPos(_pc);
+      const up = W.raycast(_pc.x, _pc.y, _pc.z, 0, 1, 0, 12);
+      this.flyY = Math.max(_pc.y + 0.3, Math.min(pp.y + this.hover, pp.y + 9, up ? up.y - 0.8 : Infinity));
+      this.flyR = 0;
+      search: for (const rk of [1, 0.6, 0.35]) {
+        for (let k = 0; k < 9; k++) {
+          const a = this.orbitA + (k & 1 ? 1 : -1) * ((k + 1) >> 1) * 0.45, r = r0 * rk;
+          if (W.segmentClear(_pc.x, _pc.y, _pc.z, pp.x + Math.cos(a) * r, this.flyY, pp.z + Math.sin(a) * r)) { this.orbitA = a; this.flyR = r; break search; }
+        }
+      }
+      const tx = pp.x + Math.cos(this.orbitA) * this.flyR, tz = pp.z + Math.sin(this.orbitA) * this.flyR;
+      this.flyDirect = W.segmentClear(b.pos.x, b.pos.y, b.pos.z, tx, this.flyY, tz);
     }
 
     pose(dt, speed) {
@@ -725,7 +750,7 @@
     this.flowT -= dt;
     if (this.flowT <= 0) {
       this.flowT = 0.3;
-      if (this.list.some((e) => e.alive && !e.T.flying && (e.state === 'hunt' || e.state === 'combat' || e.state === 'alert'))) W.computeFlow(P.body.pos.x, P.body.pos.z);
+      if (this.list.some((e) => e.alive && (e.state === 'hunt' || e.state === 'combat' || e.state === 'alert'))) W.computeFlow(P.body.pos.x, P.body.pos.z);
     }
     let combat = 0;
     for (let i = this.list.length - 1; i >= 0; i--) {
