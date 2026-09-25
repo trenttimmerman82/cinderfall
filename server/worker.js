@@ -31,11 +31,8 @@ export default {
 };
 
 // ------------------------------------------------------------ names
-// Callsigns are public on the board: slurs are replaced. Letters are folded (1→i, 0→o, 3→e …) so spacing and digits don't dodge it.
-const BLOCK = ['nigg', 'nigga', 'niger', 'faggot', 'fagot', 'retard', 'kike', 'spic', 'chink', 'beaner', 'wetback', 'tranny', 'coon', 'gook', 'raghead', 'towelhead', 'kyke', 'dyke'];
-const fold = (s) => s.toLowerCase().replace(/[1!|]/g, 'i').replace(/0/g, 'o').replace(/3/g, 'e').replace(/4|@/g, 'a').replace(/5|\$/g, 's').replace(/7/g, 't').replace(/[^a-z]/g, '');
 const clean = (s, n) => String(s || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, n);
-const cleanName = (s) => { const n = clean(s, 16) || 'Operative'; const f = fold(n); return BLOCK.some((w) => f.includes(w)) ? 'Operative' : n; };
+const cleanName = (s) => clean(s, 16) || 'Operative';
 
 // ------------------------------------------------------------ economy (the game's js/skins.js mirrors the catalog for visuals)
 const CAMPAIGNS = ['foundry', 'halden'], MODES = ['drones', 'nodrones'];
