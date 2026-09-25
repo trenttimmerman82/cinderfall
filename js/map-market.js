@@ -118,6 +118,34 @@
     for (const p of [[7.2, -7.2, -1, 0, 'cyan'], [-7.2, 7.2, 1, 0, 'magenta'], [7.2, -24, -1, 0, 'violet'], [-7.2, 24, 1, 0, 'violet'], [24, 7.2, 0, -1, 'cyan'], [-24, -7.2, 0, 1, 'magenta']]) K.lampPost(p[0], p[1], p[2], p[3], { color: p[4] });
     for (const a of [[-23.5, -30], [23.5, 30], [-30, 23.5], [30, -23.5], [-23.5, 16], [23.5, -16], [16, 23.5], [-16, -23.5]]) L.lamp(a[0], 4.5, a[1], { color: N.HEX[COLS[Math.floor(rnd() * 5)]], intensity: 1.6, distance: 10, pool: true, poolSize: 6, poolStrength: 0.45 });
 
+    // street clutter: vending machines, neon menu boards, bins, drums and boxes (Prop Hunt hiding spots; cover in every mode).
+    // Sidewalks are 1.4 m wide and 0.15 m high; nothing goes where it would close an alley below 1.8 m.
+    const P = (kind, x, z, ry, y) => CF.PH.place(kind, x, y || 0, z, ry || 0), S = 0.15, Q = Math.PI / 2;
+    // north and south streets (mirror images)
+    for (const s of [-1, 1]) {
+      P('vending', s * 7.2, s * 21, s * Q, S); P('vending', s * 7.2, s * 27, s * Q, S);
+      P('bin', s * 4.6, s * 14); P('bin', s * 7.3, s * 33.5, 0, S);
+      P('menuSign', s * 4.4, s * 32.6, s > 0 ? Math.PI : 0);
+      P('barrel', s * 3.8, s * 23.4); P('drum', s * 3.2, s * 24.3);
+      P('boxStack', -s * 4.4, s * 12.2, 0.2); P('box', -s * 4.9, s * 13.3, -0.3);
+      P('crateSmall', -s * 3.9, s * 17.5); P('stool', -s * 4.9, s * 29.5);
+    }
+    // east and west streets
+    for (const s of [-1, 1]) {
+      P('vending', s * 19.5, 7.3, 0, S); P('vending', s * 19.5, -7.3, Math.PI, S);
+      P('bin', s * 17, -7.3, 0, S); P('bin', s * 17.8, 7.3, 0, S);
+      P('crate', s * 28.5, 4.6); P('crateSmall', s * 29.8, 4.9, 0.25);
+      P('menuSign', s * 11, 4.4, 0.3 * s); P('boxStack', s * 16, 4.9, -0.15);
+    }
+    P('drum', -33.2, 5.4); P('barrel', -32.4, 5.9); P('crateSmall', -34.6, 5.3, 0.4);
+    P('stool', -24.8, 1.7); P('stool', -23.2, 1.7); // at the noodle kiosk
+    P('boxStack', -29.5, -4.6); P('drum', 16.2, -4.4);
+    // plaza
+    P('bin', 3.4, -6); P('bin', -3.4, 6); P('menuSign', -2.9, -3.1, Math.PI * 0.75); P('boxStack', 2.9, 3.2, -0.5);
+    // alleys: against the walls, a 2 m passage left open
+    P('barrel', -22.4, -18.5); P('barrel', 22.4, 18.5); P('bin', 18.5, -22.4); P('boxStack', -18.5, 22.5);
+    P('crateSmall', -24.5, 31.2); P('drum', 24.6, -31.4); P('box', 27.2, 22.5, 0.3); P('box', -27.2, -22.5, -0.3);
+
     // spawns [x, y, z]
     const ffa = [[0, 0, -36], [0, 0, 36], [-36, 0, 0], [36, 0, 0], [-23.5, 0, -34], [23.5, 0, -34], [-23.5, 0, 34], [23.5, 0, 34], [-34, 0, -23.5], [34, 0, -23.5], [-34, 0, 23.5], [34, 0, 23.5], [-6.8, 4.5, -34], [6.8, 4.5, 34]];
     L.spawns.ffa = ffa;

@@ -338,10 +338,11 @@
     for (let i = 1; i <= n; i++) { const k = i / n, x = a[0] + (b[0] - a[0]) * k, z = a[2] + (b[2] - a[2]) * k, y = a[1] + (b[1] - a[1]) * k - Math.sin(k * Math.PI) * (sag || 0.6); L.pipe('rubber', px, py, pz, x, y, z, 0.022); px = x; py = y; pz = z; }
   }
   function streetLamp(x, z) { L.cyl('paintDark', x, 1.9, z, 0.07, 3.8, 0, 0, true); deco(x - 0.2, 3.8, z - 0.2, x + 0.2, 4.3, z + 0.2, 'glassDay'); put('paintDark', geo('cone'), x, 4.45, z, 0.32, 0.3, 0.32); sph('lampWarm', x, 4.0, z, 0.1); solid(x - 0.1, 0, z - 0.1, x + 0.1, 4.3, z + 0.1, 'metal'); }
-  function hydrant(x, z) { L.cyl('paintRed', x, 0.4, z, 0.16, 0.8, 0, 0, true); sph('paintRed', x, 0.8, z, 0.17, 0.14, 0.17); L.cyl('chrome', x, 0.55, z, 0.07, 0.5, 0, Math.PI / 2, true); solid(x - 0.2, 0, z - 0.2, x + 0.2, 0.9, z + 0.2); }
-  function trashCan(x, z) { L.cyl('paintGrey', x, 0.5, z, 0.32, 1.0, 0, 0, true); sph('paintGrey', x, 1.0, z, 0.34, 0.1, 0.34); solid(x - 0.32, 0, z - 0.32, x + 0.32, 1.05, z + 0.32, 'metal'); }
-  function mailbox(x, z) { deco(x - 0.05, 0, z - 0.05, x + 0.05, 1.05, z + 0.05, 'wood'); L.cyl('paintGrey', x, 1.18, z, 0.16, 0.45, Math.PI / 2, 0, true); deco(x + 0.12, 1.2, z - 0.1, x + 0.15, 1.45, z - 0.05, 'paintRed'); solid(x - 0.2, 0, z - 0.25, x + 0.2, 1.35, z + 0.25); }
-  function tires(x, z, n) { for (let i = 0; i < n; i++) L.cyl('rubber', x, 0.12 + i * 0.23, z, 0.38, 0.22, 0, 0, true); solid(x - 0.38, 0, z - 0.38, x + 0.38, n * 0.23, z + 0.38); }
+  // (street furniture small enough to hide as in Prop Hunt registers itself with CF.PH)
+  function hydrant(x, z) { L.cyl('paintRed', x, 0.4, z, 0.16, 0.8, 0, 0, true); sph('paintRed', x, 0.8, z, 0.17, 0.14, 0.17); L.cyl('chrome', x, 0.55, z, 0.07, 0.5, 0, Math.PI / 2, true); solid(x - 0.2, 0, z - 0.2, x + 0.2, 0.9, z + 0.2); CF.PH.mark('hydrant', x, 0, z); }
+  function trashCan(x, z) { L.cyl('paintGrey', x, 0.5, z, 0.32, 1.0, 0, 0, true); sph('paintGrey', x, 1.0, z, 0.34, 0.1, 0.34); solid(x - 0.32, 0, z - 0.32, x + 0.32, 1.05, z + 0.32, 'metal'); CF.PH.mark('bin', x, 0, z); }
+  function mailbox(x, z) { deco(x - 0.05, 0, z - 0.05, x + 0.05, 1.05, z + 0.05, 'wood'); L.cyl('paintGrey', x, 1.18, z, 0.16, 0.45, Math.PI / 2, 0, true); deco(x + 0.12, 1.2, z - 0.1, x + 0.15, 1.45, z - 0.05, 'paintRed'); solid(x - 0.2, 0, z - 0.25, x + 0.2, 1.35, z + 0.25); CF.PH.mark('mailbox', x, 0, z); }
+  function tires(x, z, n) { for (let i = 0; i < n; i++) L.cyl('rubber', x, 0.12 + i * 0.23, z, 0.38, 0.22, 0, 0, true); solid(x - 0.38, 0, z - 0.38, x + 0.38, n * 0.23, z + 0.38); if (n === 3) CF.PH.mark('tires', x, 0, z); }
   function woodpile(x0, z0, x1, z1, h) { for (let y = 0.1; y < h; y += 0.2) for (let x = x0 + 0.1; x < x1; x += 0.2) L.cyl('bark', x + (y * 7 % 0.1), y, (z0 + z1) / 2, 0.1, z1 - z0, Math.PI / 2, 0, true); solid(x0, 0, z0, x1, h, z1); }
   function picketX(x0, x1, z) {
     for (let x = x0; x <= x1; x += 0.17) { deco(x - 0.04, 0, z - 0.02, x + 0.04, 0.85, z + 0.02, 'fence'); put('fence', geo('cone'), x, 0.9, z, 0.057, 0.1, 0.03, Math.PI / 4); }
@@ -387,7 +388,7 @@
     else if (head === 'z-') hb(x0, z0 - 0.02, x1, z0 + 0.1); else hb(x0, z1 - 0.1, x1, z1 + 0.02);
   }
   function table(x0, z0, x1, z1, y) { L.box(x0, y + 0.72, z0, x1, y + 0.78, z1, 'wood', { noCol: true }); for (const [x, z] of [[x0 + 0.08, z0 + 0.08], [x1 - 0.08, z0 + 0.08], [x0 + 0.08, z1 - 0.08], [x1 - 0.08, z1 - 0.08]]) deco(x - 0.04, y, z - 0.04, x + 0.04, y + 0.72, z + 0.04, 'wood'); solid(x0, y, z0, x1, y + 0.78, z1); }
-  function chair(x, z, y) { deco(x - 0.22, y + 0.42, z - 0.22, x + 0.22, y + 0.47, z + 0.22, 'wood'); deco(x - 0.22, y + 0.47, z + 0.17, x + 0.22, y + 0.95, z + 0.22, 'wood'); for (const [dx, dz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) deco(x + dx - 0.02, y, z + dz - 0.02, x + dx + 0.02, y + 0.42, z + dz + 0.02, 'wood'); solid(x - 0.23, y, z - 0.23, x + 0.23, y + 0.95, z + 0.23); }
+  function chair(x, z, y) { deco(x - 0.22, y + 0.42, z - 0.22, x + 0.22, y + 0.47, z + 0.22, 'wood'); deco(x - 0.22, y + 0.47, z + 0.17, x + 0.22, y + 0.95, z + 0.22, 'wood'); for (const [dx, dz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) deco(x + dx - 0.02, y, z + dz - 0.02, x + dx + 0.02, y + 0.42, z + dz + 0.02, 'wood'); solid(x - 0.23, y, z - 0.23, x + 0.23, y + 0.95, z + 0.23); CF.PH.mark('chair', x, y, z); }
 
   // ------------------------------------------------------------ the yellow house (north side, faces the cul-de-sac to the south)
   function yellowHouse() {
@@ -715,6 +716,21 @@
       fragmentShader: 'varying vec2 vP; vec3 hue(float t){ return clamp(abs(mod(t * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); } void main(){ float t = (length(vP) - 190.0) / 32.0; float edge = smoothstep(0.0, 0.15, t) * smoothstep(1.0, 0.85, t); float fade = smoothstep(0.0, 60.0, vP.y); gl_FragColor = vec4(hue(0.8 - t * 0.8) * 0.22 * edge * fade, 1.0); }'
     }));
     rb.position.set(-330, -40, -60); rb.rotation.y = Math.PI / 2; rb.renderOrder = -5; L.scene.add(rb);
+
+    // yard and street clutter (Prop Hunt hiding spots; cover in every mode)
+    const P = (kind, x, z, ry, y) => CF.PH.place(kind, x, y || 0, z, ry || 0);
+    // moving day: boxes, a chair and a potted plant unloaded behind the moving truck
+    P('boxStack', -10.9, -5.2, 0.1); P('box', -10.2, -3.6, -0.2); P('box', -11.6, -3.9, 0.4); P('chair', -8.4, -7.8, 2.6); P('planter', -12.5, -2.6);
+    // yellow house: porch, back yard, east side
+    P('planter', -3.9, -17.4, 0, 0.22); P('planter', -1.5, -17.4, 0, 0.22);
+    P('grill', -4, -33.5); P('cooler', -6.5, -34.4, 0.3); P('chair', -2.6, -34.8, Math.PI); P('bin', -8.4, -32.4); P('planter', -0.4, -37.9);
+    P('bin', 16.6, -28); P('bin', 16.6, -27.3); P('boxStack', 12.5, -31, -0.2); P('cooler', 9.3, -34.2, 1.2);
+    // green house: west yard cookout, back patio, east side
+    P('grill', -12, 29); P('cooler', -13.4, 29.8, -0.4); P('chair', -14.8, 27.8, Math.PI / 2); P('bin', -18.3, 31.5); P('bin', -18.3, 30.8); P('planter', -8.2, 21); P('tires', -17.8, 24.5);
+    P('cooler', 0.8, 33.4, 0.2, 0.07); P('grill', 4.5, 33.4); P('planter', -5.5, 34.4, 0, 0.07);
+    P('bin', 16.6, 26); P('boxStack', 14.3, 30.3, 0.3);
+    // the roadblock
+    P('drum', 16.4, 4.6); P('crateSmall', 13.4, -1.2, 0.2);
 
     // spawns [x, y, z] and pickups
     const north = [[-15.5, 0.02, -40], [-6, 0.02, -41], [5, 0.02, -41.5], [15, 0.02, -34], [-16, 0.02, -34]];

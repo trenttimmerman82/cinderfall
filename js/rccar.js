@@ -78,11 +78,11 @@
   RC.shieldModel = shieldModel;
 
   // ------------------------------------------------------------ lifecycle
-  /** Called when a multiplayer map is ready. Only Nuketown has the chest, and not in Revolver One-Shot. */
+  /** Called when a multiplayer map is ready. Only Nuketown has the chest, and not in Revolver One-Shot or Prop Hunt. */
   RC.setup = function () {
     RC.clear();
     const L = CF.Level, p = L.points.rcChest;
-    if (!p || MP().mode === 'revolver') return;
+    if (!p || MP().mode === 'revolver' || MP().mode === 'prophunt') return;
     const mesh = chestModel(); mesh.position.set(p.x, p.y, p.z); mesh.rotation.y = p.yaw || 0; CF.Game.scene.add(mesh);
     const col = W.add(p.x - 0.62, p.y, p.z - 0.62, p.x + 0.62, p.y + 0.62, p.z + 0.62, { surf: 'metal' });
     const lamp = L.lamp(p.x, p.y + 1.4, p.z, { color: 0xffc040, intensity: 2, distance: 9, pool: false, pulse: 3, prio: 2 });

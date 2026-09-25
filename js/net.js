@@ -8,7 +8,7 @@
    The relay is a WebSocket, which is always reliable, so fast messages there just take the normal path. */
 (function (CF) {
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const PREFIX = 'cinderfall-v4-'; // bump when the wire format changes so old and new builds don't meet
+  const PREFIX = 'cinderfall-v5-'; // bump when the wire format changes so old and new builds don't meet
   const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }] };
   const OPTS = { debug: 0, config: ICE };
   const DIRECT_WAIT = 8000; // how long a join tries peer-to-peer before switching to the relay

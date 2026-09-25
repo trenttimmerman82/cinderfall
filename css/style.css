@@ -553,7 +553,6 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .lb-crown { margin-right: 5px; font-style: normal; color: #ffe27a; text-shadow: 0 0 8px rgba(255, 226, 122, 0.8); }
 
 /* ---------------- multiplayer: Revolver One-Shot, RC-XD */
-.card-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .card-revolver b::before { content: '⌖ '; color: var(--ember); }
 .card-revolver.sel { border-color: var(--ember); background: linear-gradient(135deg, rgba(255, 61, 90, 0.16), rgba(252, 238, 10, 0.06)); box-shadow: 0 0 18px rgba(255, 61, 90, 0.2); }
 .card-revolver.sel b { color: var(--ember); }
@@ -564,7 +563,20 @@ body.mp-revolver #screen-mpmenu [data-lo-grid], body.mp-revolver .md-lo, body.mp
 body.mp-revolver .revolver-note { display: grid; }
 body.mp-revolver .mpb-mode { color: var(--ember); }
 body.mp-revolver .mp-bar { border-left-color: var(--ember); }
-@media (max-width: 860px) { .card-row.three { grid-template-columns: 1fr; } }
+/* Prop Hunt */
+.card-prophunt b::before { content: '▣ '; color: #4dff9a; }
+.card-prophunt.sel { border-color: #4dff9a; background: linear-gradient(135deg, rgba(77, 255, 154, 0.14), rgba(255, 138, 42, 0.06)); box-shadow: 0 0 18px rgba(77, 255, 154, 0.18); }
+.card-prophunt.sel b { color: #4dff9a; }
+.ph-note { display: none; gap: 6px; padding: 14px 16px; border: 1px solid #4dff9a; background: rgba(77, 255, 154, 0.07); }
+.ph-note b { font: 800 22px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: #4dff9a; }
+.ph-note span { font: 500 14px/1.45 var(--f-body); color: var(--bone-dim); }
+.ph-note em { font-style: normal; font-weight: 700; color: var(--bone); }
+body.mp-prophunt .ph-note { display: grid; }
+body.mp-prophunt .mpb-mode { color: #4dff9a; }
+body.mp-prophunt .mp-bar { border-left-color: #4dff9a; }
+.board.ph .sb-row { grid-template-columns: 1fr 72px 56px; }
+body.ph-prop #screen-mpmenu [data-lo-grid], body.ph-prop .md-lo, body.ph-prop .md-lo-label, body.ph-prop .weapon-panel, body.ph-prop .grenades, body.ph-prop .streak { display: none !important; }
+body.ph-disguised .crosshair, body.ph-disguised .hitmarker { display: none; }
 
 .rc-hud { position: absolute; inset: 0; pointer-events: none; }
 .rc-cam { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 20, 10, 0.55) 100%), repeating-linear-gradient(0deg, rgba(120, 255, 170, 0.035) 0 1px, transparent 1px 3px); }

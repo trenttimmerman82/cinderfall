@@ -13,8 +13,8 @@ It is set in a rain-soaked neon city.
   music, weather and weapon progression.
 - Both campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
-- **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin) or **Revolver One-Shot**
-  (revolvers only, every hit kills) on **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
+- **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
+  (revolvers only, every hit kills) or **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) on **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -54,6 +54,15 @@ resolution and, in multiplayer, each player's link type, ping and bandwidth.
 
 **Revolver One-Shot** replaces the loadouts with the KF-44 revolver: six rounds, 2.5 s reload, every hit kills, first to
 15 kills in 6 minutes. Players are shielded for 2.5 s after spawning or until they fire. No grenades, pickups, drones or RC-XD.
+
+**Prop Hunt** needs two or more players. Ten seconds after the second player joins, about a third of the room become
+**Hunters** and the rest **Props**; roles rotate every round. Props get a 15-second head start while the Hunters are
+blindfolded. A Prop carries no weapons: walk up to a crate, barrel, trash can, chair, vending machine or other small
+object and press **E** to become it (a chase camera follows you; **E** again drops it). You move slowly while
+disguised; sprinting or getting shot blows your cover, and you can't hide again for 4 seconds. Hunters keep their
+loadouts, but for the first 45 seconds of the hunt Props take only 35% damage. A found Prop joins the Hunters.
+Hunters win by finding every Prop within 5 minutes; Props win if anyone is still hiding when time runs out. No
+kill-streak drones or RC-XD. Maps register their hiding spots through `CF.PH.place` / `CF.PH.mark` (`js/prophunt.js`).
 
 **RC-XD (Nuketown):** hold **E** at the chest between the school bus and the moving truck, then press **T** to drive.
 **W/S** drive, **A/D** steer, the mouse swings the camera, **click or T** detonates (7 m blast). It also explodes after
@@ -109,7 +118,7 @@ To try it locally, run `npx wrangler dev` in `server/` and open the game with `?
 | Space | Jump · climb ledges |
 | C | Crouch · slide while sprinting |
 | R | Reload |
-| E | Interact (hold) |
+| E | Interact (hold) · Prop Hunt: disguise as the object in front of you |
 | G | Throw grenade |
 | T | Drive / detonate the RC-XD (Nuketown) |
 | V | Melee |

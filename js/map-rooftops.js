@@ -6,7 +6,7 @@
   const BOTTOM = -60;
 
   MR.build = function () {
-    const K = CF.Map.kit, rnd = U.mulberry32(909);
+    const K = CF.Map.kit, PH = CF.PH, rnd = U.mulberry32(909);
     // street far below: dark wet asphalt with neon lane lines and traffic glow
     L.box(-200, BOTTOM - 2, -200, 200, BOTTOM, 200, 'asphalt', { surf: 'concrete', ao: false });
     for (let i = -4; i <= 4; i++) { N.strip(-200, BOTTOM + 0.02, i * 44 - 0.3, 200, BOTTOM + 0.08, i * 44 + 0.3, i % 2 ? 'cyan' : 'magenta'); N.strip(i * 44 - 0.3, BOTTOM + 0.02, -200, i * 44 + 0.3, BOTTOM + 0.08, 200, 'violet'); }
@@ -34,7 +34,7 @@
       N.strip(x0 - 0.05, top - 1.2, z0 - 0.06, x1 + 0.05, top - 1.0, z0 - 0.02, color);
       N.strip(x0 - 0.05, top - 1.2, z1 + 0.02, x1 + 0.05, top - 1.0, z1 + 0.06, color);
     };
-    const ac = (x, y, z, alongX) => { const lx = alongX ? 1.1 : 0.7, lz = alongX ? 0.7 : 1.1; L.box(x - lx, y, z - lz, x + lx, y + 1.25, z + lz, 'paintGrey'); L.cyl('steel', x, y + 1.3, z, 0.45, 0.08); };
+    const ac = (x, y, z, alongX) => { const lx = alongX ? 1.1 : 0.7, lz = alongX ? 0.7 : 1.1; L.box(x - lx, y, z - lz, x + lx, y + 1.25, z + lz, 'paintGrey'); L.cyl('steel', x, y + 1.3, z, 0.45, 0.08); PH.mark('ac', x, y, z, alongX ? 0 : Math.PI / 2); };
     const tank = (x, y, z, r, h) => { L.cyl('paintDark', x, y + 0.8 + h / 2, z, r, h); for (const a of [0, 1.57, 3.14, 4.71]) L.box(x + Math.cos(a) * r * 0.7 - 0.1, y, z + Math.sin(a) * r * 0.7 - 0.1, x + Math.cos(a) * r * 0.7 + 0.1, y + 0.8, z + Math.sin(a) * r * 0.7 + 0.1, 'steel', { noCol: true }); W.addCyl(x, z, r, y, y + 0.8 + h, { surf: 'metal' }); };
     const hut = (x0, z0, x1, z1, y, h) => { L.box(x0, y, z0, x1, y + h, z1, 'wall'); L.box(x0 - 0.2, y + h, z0 - 0.2, x1 + 0.2, y + h + 0.2, z1 + 0.2, 'paintDark', { nav: false }); };
     const railing = (x0, z0, x1, z1, y) => L.box(x0, y, z0, x1, y + 1.05, z1, 'steel', { shoot: false });
@@ -84,6 +84,15 @@
     L.box(-26, -1.55, 14, -24, -1.25, 20, 'metalFloor', { surf: 'metal' });
     L.box(-24, -1.9, 18, -14, -1.6, 20, 'metalFloor', { surf: 'metal' }); railing(-26.1, 14, -26, 20, -1.25); railing(-24, 20, -14, 20.1, -1.6); railing(-24, 14, -23.9, 18, -1.25); railing(-24, 17.9, -14, 18, -1.6);
     for (const s of [[14, -20, 26, -18, 2.7, 'cyan'], [-24, 18, -14, 20, -1.9, 'yellow']]) N.strip(s[0], s[4] - 0.08, s[1] - 0.04, s[2], s[4], s[1] + 0.04, s[5]);
+
+    // rooftop clutter: vents, generators, drums, crates and boxes (Prop Hunt hiding spots; cover in every mode).
+    // Kept off the helipad, the stair landings and the parapet gaps.
+    const P = (kind, x, y, z, ry) => PH.place(kind, x, y, z, ry || 0);
+    P('generator', -5, 0, 7.5); P('vent', 3.5, 0, -7.5); P('boxStack', 4.8, 0, -8.8, 0.2); P('crate', 10.3, 0, 8.5); P('barrel', -10.8, 0, -8.7);                 // A
+    P('generator', 4.5, 3, -32); P('vent', -8.5, 3, -26.5); P('crateSmall', 12.6, 3, -30.5); P('barrel', -8.6, 3, -17.4); P('boxStack', 6, 3, -18.2, -0.3); P('drum', 12.8, 3, -26.6); // B
+    P('vent', -11.5, -2, 22); P('crate', 8.3, -2, 32.3, 0.15); P('barrel', -1.2, -2, 32.6); P('drum', -0.4, -2, 33.1); P('generator', 0.5, -2, 23.5); P('boxStack', -6.5, -2, 32.8); // C
+    P('vent', 32.3, 1.5, -12.3); P('crate', 19.8, 1.5, -12.4); P('barrel', 25.8, 1.5, 10.7); P('boxStack', 27.3, 1.5, 10.6, 0.25); P('generator', 32.4, 1.5, 4.5, Math.PI / 2); P('drum', 19.4, 1.5, 9.6); // D
+    P('stool', -25.1, -1, -9.1); P('stool', -22.9, -1, 8.9); P('stool', -26.9, -1, 10.9); P('crate', -19.4, -1, -10.6); P('barrel', -32.8, -1, 2); P('drum', -32.9, -1, -2.8); P('boxStack', -19.3, -1, 6.5); P('vent', -33, -1, -10.8); // E
 
     // spawns [x, y, z] and pickups
     const ffa = [[-8, 0, -2], [8, 0, 2], [-4, 3, -30], [10, 3, -24], [-12.5, -2, 32.5], [6, -2, 19], [30, 1.5, -4], [22, 1.5, 9], [-30, -1, -9], [-22, -1, 11]];

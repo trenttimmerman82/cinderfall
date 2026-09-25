@@ -22,6 +22,7 @@
     W.add(x - s / 2, y, z - s / 2, x + s / 2, y + s, z + s / 2, { surf: 'metal' });
     L.propBox('crate', x, y, z, s, s, s, 0);
     if (y < 0.05) L.blob(x, z, s + 0.7, s + 0.7);
+    if (s === 1.2 || s === 1) CF.PH.mark(s === 1 ? 'crateSmall' : 'crate', x, y, z); // Prop Hunt can copy it
   }
   function barrier(x, z, alongX) {
     const lx = alongX ? 2 : 0.6, lz = alongX ? 0.6 : 2, ix = alongX ? 0 : 0.16, iz = alongX ? 0.16 : 0;

@@ -21,7 +21,7 @@
   L.init = function (scene, renderer) {
     this.scene = scene; this.renderer = renderer;
     this.batches = {}; this.lamps = []; this.pool = []; this.animated = []; this.interactables = []; this.doors = {};
-    this.barrels = []; this.pickups = []; this.spawns = {}; this.points = {}; this.hazards = []; this.emitters = []; this.cones = [];
+    this.barrels = []; this.pickups = []; this.hideSpots = []; this.spawns = {}; this.points = {}; this.hazards = []; this.emitters = []; this.cones = [];
     this.poolGeo = { pos: [], uv: [], col: [], idx: [] };
     this.blobGeo = { pos: [], uv: [], idx: [] };
     this.relightT = 0; this.finished = false; this.killY = null;
@@ -210,6 +210,7 @@
     else if (kind === 'cylLo') g = new THREE.CylinderGeometry(1, 1, 1, 10, 1);
     else if (kind === 'box') g = new THREE.BoxGeometry(1, 1, 1);
     else if (kind === 'sphere') g = new THREE.SphereGeometry(1, 16, 10);
+    else if (kind === 'cone') g = new THREE.ConeGeometry(1, 1, 16);
     else if (kind === 'torus') g = new THREE.TorusGeometry(1, 0.08, 6, 24);
     GEO[kind] = g; return g;
   };
