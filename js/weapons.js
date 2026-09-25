@@ -634,8 +634,8 @@
     }
     const k = this.stateT / this.reloadDur;
     if (d.cylinder) { // swing the cylinder out, dump the brass, speedloader in, snap it shut
-      const out = U.easeInOut(U.seg(k, 0.08, 0.2)) * (1 - U.easeInOut(U.seg(k, 0.8, 0.9)));
-      if (P.cylArm) P.cylArm.rotation.z = out * 1.25;
+      const swing = U.easeInOut(U.seg(k, 0.08, 0.2)) * (1 - U.easeInOut(U.seg(k, 0.8, 0.9)));
+      if (P.cylArm) P.cylArm.rotation.z = swing * 1.25;
       const load = U.seg(k, 0.42, d.magInAt);
       if (P.mag) { P.mag.visible = k > 0.36 && k < d.magInAt + 0.04; P.mag.position.set(-0.05 + load * 0.034, 0.02 + (1 - load) * -0.12, -0.035); }
       if (P.handL) { const w = U.pulse(k, 0.3, 0.8); P.handL.position.set(P.handLHome.x - 0.02 * w, P.handLHome.y + 0.02 * w, P.handLHome.z - 0.05 * w); }
