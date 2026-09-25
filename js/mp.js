@@ -121,6 +121,7 @@
       this.T = { height: 1.85, radius: 0.4, flying: false, name: info.name, score: 100 };
       this.body = { pos: new THREE.Vector3(0, -50, 0), vel: new THREE.Vector3() };
       this.tp = new THREE.Vector3(); this.yaw = 0; this.tyaw = 0; this.pitch = 0; this.crouch = 0; this.tc = 0; this.w = 0;
+      this.snaps = []; this.lastK = -1; this.off = null; // position buffer for smoothing (see sample())
       this.phase = 0; this.speed = 0; this.stepD = 0; this.deadT = 0; this.lastFired = -99;
       this.tag = nameTag(info.name, this.css); this.root.add(this.tag);
       this.shield = CF.RC.shieldModel(); this.shield.material = this.shield.material.clone(); this.shield.visible = false; this.root.add(this.shield);
@@ -144,13 +145,51 @@
     cacheHits() { for (const h of this.m.hit) h.obj.localToWorld(h.w.copy(h.off)); }
     becomeAware() {}
     applyState(s) {
+      // updates can arrive out of order on the fast channel: keep only ones newer than the last
+      const k = +s.k;
+      if (k >= 0) {
+        if (k <= this.lastK && this.lastK - k < 60000) return; // (a big jump back means the sender reloaded the page)
+        this.lastK = k;
+        // sender's clock → ours: the smallest (arrival - sent) seen, relaxing slowly so it follows route changes
+        const now = performance.now(), gap = now - k;
+        this.off = this.off == null || Math.abs(gap - this.off) > 5000 ? gap : Math.min(gap, this.off + 0.5);
+      }
       this.tp.set(s.p[0], s.p[1], s.p[2]); this.tyaw = s.y; this.pitch = s.x; this.tc = s.c ? 1 : 0; this.w = s.w || 0;
       this.driving = !!s.d; this.protect = !!s.s;
       const wid = W_IDX[s.w || 0] || 'carbine';
       if (this.armedW !== wid) { this.armedW = wid; CF.Skins.arm(this.m, wid, this.finish || null); }
       this.shield.visible = (this.driving || this.protect) && !this.dead;
-      if (s.a && this.dead) { this.dead = false; this.alive = true; this.body.pos.copy(this.tp); this.yaw = s.y; this.root.visible = true; this.root.rotation.set(0, s.y, 0); this.deadT = 0; }
+      if (s.a && this.dead) { this.dead = false; this.alive = true; this.body.pos.copy(this.tp); this.snaps.length = 0; this.yaw = s.y; this.root.visible = true; this.root.rotation.set(0, s.y, 0); this.deadT = 0; }
       else if (!s.a && !this.dead) this.die();
+      // buffer it last, so a respawn above (which clears the buffer) keeps this first update of the new life
+      if (k >= 0) {
+        const snaps = this.snaps, last = snaps[snaps.length - 1];
+        if (last && (Math.abs(last.x - s.p[0]) + Math.abs(last.z - s.p[2]) > 6 || Math.abs(last.y - s.p[1]) > 6)) snaps.length = 0; // teleported (respawn)
+        snaps.push({ t: k + this.off, x: s.p[0], y: s.p[1], z: s.p[2], yaw: s.y, pitch: s.x });
+        if (snaps.length > 12) snaps.shift();
+      } else this.snaps.length = 0; // no timestamp: fall back to easing toward the newest position
+    }
+    /** Place the player where they were CF.NET.interp ms ago, blending the two updates around that moment.
+        If updates stop arriving, keep them moving on their last heading for a moment, then hold. */
+    sample() {
+      const s = this.snaps;
+      if (!s.length) return false;
+      const t = performance.now() - CF.NET.interp, b = this.body.pos;
+      while (s.length > 2 && s[1].t <= t) s.shift(); // drop updates we've moved past, keeping two to extrapolate from
+      const last = s[s.length - 1];
+      if (t >= last.t) { // behind on updates: extrapolate from the last two, at most 150 ms, then hold
+        const p = s.length >= 2 ? s[s.length - 2] : null, span = p ? last.t - p.t : 0;
+        const k = p && span > 0 && span < 300 ? Math.min(t - last.t, 150) / span : 0;
+        b.set(last.x + (p ? (last.x - p.x) * k : 0), last.y + (p ? (last.y - p.y) * k : 0), last.z + (p ? (last.z - p.z) * k : 0));
+        this.yaw = last.yaw; this.pitch = last.pitch;
+        return true;
+      }
+      const a = s[0];
+      if (t <= a.t) { b.set(a.x, a.y, a.z); this.yaw = a.yaw; this.pitch = a.pitch; return true; } // buffer still filling
+      const c = s[1], k = (t - a.t) / Math.max(1, c.t - a.t);
+      b.set(a.x + (c.x - a.x) * k, a.y + (c.y - a.y) * k, a.z + (c.z - a.z) * k);
+      this.yaw = a.yaw + U.wrapAngle(c.yaw - a.yaw) * k; this.pitch = a.pitch + (c.pitch - a.pitch) * k;
+      return true;
     }
     die() {
       if (this.dead) return;
@@ -194,11 +233,13 @@
         return;
       }
       const ox = b.pos.x, oz = b.pos.z;
-      b.pos.x = U.damp(b.pos.x, this.tp.x, 16, dt); b.pos.y = U.damp(b.pos.y, this.tp.y, 16, dt); b.pos.z = U.damp(b.pos.z, this.tp.z, 16, dt);
-      if (b.pos.distanceToSquared(this.tp) > 25) b.pos.copy(this.tp);
+      if (!this.sample()) {
+        b.pos.x = U.damp(b.pos.x, this.tp.x, 16, dt); b.pos.y = U.damp(b.pos.y, this.tp.y, 16, dt); b.pos.z = U.damp(b.pos.z, this.tp.z, 16, dt);
+        if (b.pos.distanceToSquared(this.tp) > 25) b.pos.copy(this.tp);
+        this.yaw += U.wrapAngle(this.tyaw - this.yaw) * Math.min(1, dt * 16);
+      }
       const d = Math.hypot(b.pos.x - ox, b.pos.z - oz);
       this.speed = U.damp(this.speed, d / Math.max(dt, 1e-3), 8, dt);
-      this.yaw += U.wrapAngle(this.tyaw - this.yaw) * Math.min(1, dt * 16);
       this.crouch = U.damp(this.crouch, this.tc, 12, dt);
       const amp = U.clamp(this.speed / 5, 0, 1.4);
       this.phase += dt * this.speed * 1.5;
@@ -226,6 +267,7 @@
   MP.reset = function () {
     for (const id in MP.remotes) MP.remotes[id].remove();
     MP.remotes = {}; MP.players = {}; MP.teamScores = [0, 0]; MP.ended = false; MP.lastHit = null; MP.colorIdx = 0;
+    MP.ping = 0; MP.pingT = 0;
   };
   MP.leave = function (reason) {
     const was = MP.active;
@@ -266,6 +308,10 @@
   MP.post = function (msg) {
     if (MP.role === 'host') MP.onHostMsg(MP.myId, msg, true); else CF.Net.send(msg);
   };
+  /** For updates where only the newest matters (positions): may arrive out of order or not at all. */
+  MP.postFast = function (msg) {
+    if (MP.role === 'host') MP.onHostMsg(MP.myId, msg, true); else CF.Net.sendFast(msg);
+  };
   MP.sendHit = function (to, dmg, head, w) {
     const P = CF.Player.body.pos;
     MP.post({ t: 'hit', to, dmg: Math.round(dmg * 10) / 10, head: head ? 1 : 0, w, from: [+P.x.toFixed(2), +P.y.toFixed(2), +P.z.toFixed(2)] });
@@ -276,7 +322,7 @@
   MP.onNade = function (pos, vel) { if (MP.active) MP.post({ t: 'nade', p: rv(pos), v: rv(vel) }); };
   MP.sendState = function () {
     const P = CF.Player, b = P.body.pos;
-    MP.post({ t: 'st', p: [+b.x.toFixed(2), +b.y.toFixed(2), +b.z.toFixed(2)], y: +P.yaw.toFixed(3), x: +P.pitch.toFixed(3), c: P.crouching ? 1 : 0, w: Math.max(0, W_IDX.indexOf(CF.Weapons.curId)), a: P.alive && CF.Game.state !== 'mpdead' ? 1 : 0, d: CF.RC.driving ? 1 : 0, s: MP.protectedNow() ? 1 : 0 });
+    MP.postFast({ t: 'st', k: Math.round(performance.now()), p: [+b.x.toFixed(2), +b.y.toFixed(2), +b.z.toFixed(2)], y: +P.yaw.toFixed(3), x: +P.pitch.toFixed(3), c: P.crouching ? 1 : 0, w: Math.max(0, W_IDX.indexOf(CF.Weapons.curId)), a: P.alive && CF.Game.state !== 'mpdead' ? 1 : 0, d: CF.RC.driving ? 1 : 0, s: MP.protectedNow() ? 1 : 0 });
   };
 
   // ------------------------------------------------------------ host side
@@ -295,12 +341,13 @@
         CF.HUD.killfeed(MP.players[from].name + ' joined', '');
         return;
       }
-      case 'st': if (!pl) return; if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcast(msg, from); return;
+      case 'st': if (!pl) return; if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcastFast(msg, from); return;
+      case 'ping': if (pl) { pl.ping = +msg.r || 0; CF.Net.sendToFast(from, { t: 'pong', c: msg.c }); } return;
       case 'hit': if (MP.ended) return; msg.by = from; if (msg.to === MP.myId) MP.applyHit(msg); else CF.Net.sendTo(msg.to, msg); return;
       case 'died': { if (MP.ended) return; const k = { t: 'kill', killer: msg.killer, victim: from, w: msg.w, head: msg.head }; MP.recordKill(k); CF.Net.broadcast(k); return; }
       case 'fx': case 'boom': case 'nade': msg.id = from; CF.Net.broadcast(msg, from); if (!local) MP.showFx(msg); return;
       case 'chest': if (msg.op === 'take' && !MP.ended) CF.RC.hostTake(from); return;
-      case 'rc': msg.id = from; CF.Net.broadcast(msg, from); if (!local) CF.RC.onRemoteState(from, msg); return;
+      case 'rc': msg.id = from; CF.Net.broadcastFast(msg, from); if (!local) CF.RC.onRemoteState(from, msg); return;
       case 'rcend': msg.id = from; CF.Net.broadcast(msg, from); if (!local) CF.RC.onRemoteEnd(from, msg); CF.RC.hostEnded(from); return;
       case 'rchit': msg.by = from; if (msg.to === MP.myId) CF.RC.hit(+msg.dmg || 0); else CF.Net.sendTo(msg.to, msg); return;
     }
@@ -329,6 +376,7 @@
       case 'join': MP.players[msg.id] = msg.p; MP.addRemote(msg.id, msg.p); CF.HUD.killfeed(msg.p.name + ' joined', ''); return;
       case 'leave': { const pl = MP.players[msg.id]; delete MP.players[msg.id]; if (MP.remotes[msg.id]) { MP.remotes[msg.id].remove(); delete MP.remotes[msg.id]; } CF.RC.dropRemote(msg.id); if (pl) CF.HUD.killfeed(pl.name + ' left', ''); return; }
       case 'st': { const r = MP.remotes[msg.id]; if (r) r.applyState(msg); return; }
+      case 'pong': { const rtt = performance.now() - (+msg.c || 0); if (rtt >= 0 && rtt < 10000) MP.ping = MP.ping ? Math.round(MP.ping * 0.7 + rtt * 0.3) : Math.round(rtt); return; }
       case 'hit': MP.applyHit(msg); return;
       case 'kill': MP.recordKill(msg); return;
       case 'fx': case 'boom': case 'nade': MP.showFx(msg); return;
@@ -443,6 +491,8 @@
     if (!MP.active) return;
     MP.sendT -= dt;
     if (MP.sendT <= 0) { MP.sendT = 0.05; MP.sendState(); }
+    // clients measure their round trip to the host every 2 s and report it, so the host's overlay can list everyone's ping
+    if (MP.role === 'client') { MP.pingT = (MP.pingT || 0) - dt; if (MP.pingT <= 0) { MP.pingT = 2; CF.Net.sendFast({ t: 'ping', c: Math.round(performance.now()), r: MP.ping || 0 }); } }
     if (MP.isHost() && !MP.ended) {
       MP.timeLeft = Math.max(0, MP.timeLeft - dt);
       MP.tickT -= dt;

@@ -6,6 +6,9 @@
    GET  /profile?pub=    → another player's verified cosmetics { pub, equip, champion } (multiplayer uses it so skins can't be faked)
    POST /profile         → {op, token, ...}: new | get | restore(code) | equip(slot, skin) | progress(save) | runStart(campaign, diff, mode) |
                            runPhase(run, phase) | open(crate). Coins, skins and crate rolls live here, never in the browser.
+   POST /feedback        → {op, ...}: send(name, cat, text, rating?, pub?, ctx?) from any player (rate-limited per address);
+                           list(key, filter?) | done(key, id, done) | remove(key, id) for the developer. key is the FEEDBACK_KEY secret
+                           (set it with `npx wrangler secret put FEEDBACK_KEY`); without it nobody can read feedback.
    GET  /room/<CODE>     → WebSocket relay for a multiplayer room, used when a direct peer-to-peer link is blocked.
                            ?role=host (one per room) or ?role=client&id=<peer id>.
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
@@ -19,7 +22,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    if (url.pathname === '/scores' || url.pathname === '/profile') return env.BOARD.get(env.BOARD.idFromName('global')).fetch(req);
+    if (url.pathname === '/scores' || url.pathname === '/profile' || url.pathname === '/feedback') return env.BOARD.get(env.BOARD.idFromName('global')).fetch(req);
     const room = url.pathname.match(/^\/room\/([A-Z0-9]{5})$/);
     if (room) {
       if (req.headers.get('Upgrade') !== 'websocket') return json({ error: 'Expected a WebSocket' }, 426);
@@ -66,6 +69,17 @@ const rnd01 = () => { const b = new Uint32Array(1); crypto.getRandomValues(b); r
 const today = () => new Date().toISOString().slice(0, 10);
 const parse = (s, d) => { try { const v = JSON.parse(s); return v == null ? d : v; } catch (e) { return d; } };
 
+// feedback: what players can file it under, how long a message can be, how many one address can send per window, how many are kept
+const FB_CATS = ['bug', 'gameplay', 'performance', 'idea', 'other'];
+const FB_MAX = 2000, FB_WINDOW = 10 * 60e3, FB_PER_WINDOW = 5, FB_KEEP = 5000;
+/** Compare secrets by their hashes, so the time taken doesn't reveal how much of a guess was right. */
+async function sameSecret(a, b) {
+  const h = async (s) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+  const x = await h(a), y = await h(b);
+  let d = 0; for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  return d === 0;
+}
+
 const COLS = 'name, campaign, mode, prog, score, stage, diff, time, date';
 
 /** Leaderboard, player profiles (coins, skins, cloud saves) and campaign runs. One global instance. */
@@ -87,6 +101,7 @@ export class Board extends DurableObject {
     const cols = sql.exec(`PRAGMA table_info(runs)`).toArray().map((c) => c.name);
     if (!cols.includes('prof')) sql.exec(`ALTER TABLE runs ADD COLUMN prof TEXT`);
     sql.exec(`CREATE TABLE IF NOT EXISTS profiles (token TEXT PRIMARY KEY, pub TEXT UNIQUE, code TEXT UNIQUE, coins INTEGER, skins TEXT, equip TEXT, progress TEXT, day TEXT, earned INTEGER, created INTEGER, updated INTEGER)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, name TEXT, cat TEXT, rating INTEGER, text TEXT, pub TEXT, ctx TEXT, src TEXT, done INTEGER DEFAULT 0)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS camps (id TEXT PRIMARY KEY, token TEXT, campaign TEXT, diff TEXT, mode TEXT, phases INTEGER, started INTEGER, last INTEGER)`);
   }
 
@@ -265,9 +280,49 @@ export class Board extends DurableObject {
     return json({ error: 'Unknown op' }, 400);
   }
 
+  // ---------------------------------------------------------- feedback
+  async feedback(req) {
+    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+    let b; try { b = await req.json(); } catch (e) { return json({ error: 'Bad JSON' }, 400); }
+    const op = String(b.op || ''), now = Date.now();
+    if (op === 'send') {
+      const text = String(b.text || '').replace(/\u0000/g, '').trim().slice(0, FB_MAX);
+      if (text.length < 3) return json({ error: 'Write a little more first.' }, 400);
+      // a hashed address, only to stop one person flooding the inbox
+      const ip = req.headers.get('CF-Connecting-IP') || '';
+      const src = ip ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cf-fb|' + ip)))].slice(0, 8).map((x) => x.toString(16).padStart(2, '0')).join('') : '';
+      if (src && this.sql.exec('SELECT COUNT(*) AS n FROM feedback WHERE src = ? AND date > ?', src, now - FB_WINDOW).one().n >= FB_PER_WINDOW) {
+        return json({ error: 'Thanks! You have sent a lot of feedback in the last few minutes; try again a little later.' }, 429);
+      }
+      const rating = Math.floor(+b.rating), cat = FB_CATS.includes(b.cat) ? b.cat : 'other';
+      const pub = /^[a-z0-9]{12}$/.test(b.pub || '') ? b.pub : null;
+      const ctx = b.ctx && typeof b.ctx === 'object' ? JSON.stringify(b.ctx).slice(0, 600) : '{}';
+      this.sql.exec('INSERT INTO feedback (date, name, cat, rating, text, pub, ctx, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        now, cleanName(b.name), cat, rating >= 1 && rating <= 5 ? rating : null, text, pub, ctx, src);
+      this.sql.exec('DELETE FROM feedback WHERE id <= (SELECT id FROM feedback ORDER BY id DESC LIMIT 1 OFFSET ?)', FB_KEEP);
+      return json({ ok: true });
+    }
+    // everything else is for the developer
+    const key = this.env && this.env.FEEDBACK_KEY;
+    if (!key) return json({ error: 'Reading feedback is not set up on the server yet (FEEDBACK_KEY secret).' }, 503);
+    if (!(await sameSecret(String(b.key || ''), String(key)))) return json({ error: 'Wrong developer key.' }, 403);
+    if (op === 'list') {
+      const f = b.filter === 'open' ? 'WHERE done = 0' : b.filter === 'done' ? 'WHERE done = 1' : '';
+      const rows = this.sql.exec(`SELECT id, date, name, cat, rating, text, ctx, done FROM feedback ${f} ORDER BY id DESC LIMIT 300`).toArray()
+        .map((r) => Object.assign(r, { ctx: parse(r.ctx, {}), done: !!r.done }));
+      const counts = this.sql.exec('SELECT cat, COUNT(*) AS n, SUM(done = 0) AS open, AVG(rating) AS avg FROM feedback GROUP BY cat').toArray();
+      const all = this.sql.exec('SELECT COUNT(*) AS n, SUM(done = 0) AS open, AVG(rating) AS avg FROM feedback').one();
+      return json({ rows, counts, total: all.n, open: all.open || 0, avg: all.avg });
+    }
+    if (op === 'done') { this.sql.exec('UPDATE feedback SET done = ? WHERE id = ?', b.done ? 1 : 0, Math.floor(+b.id)); return json({ ok: true }); }
+    if (op === 'remove') { this.sql.exec('DELETE FROM feedback WHERE id = ?', Math.floor(+b.id)); return json({ ok: true }); }
+    return json({ error: 'Unknown op' }, 400);
+  }
+
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname === '/profile') return this.prof(req, url);
+    if (url.pathname === '/feedback') return this.feedback(req);
     return this.scores(req, url);
   }
 }

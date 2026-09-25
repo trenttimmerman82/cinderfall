@@ -5,3 +5,9 @@
 window.CF = window.CF || {};
 window.CF.SERVER = 'https://cinderfall.trenttimmerman.workers.dev';
 try { const q = new URLSearchParams(location.search).get('server'); if (q !== null && (q === '' || /^https?:\/\/[^\s]+$/.test(q))) window.CF.SERVER = q; } catch (e) { /* old browser */ }
+
+/* Multiplayer smoothing. Other players are drawn this many milliseconds in the past, so there are always two position
+   updates to blend between (updates arrive every 50 ms). Higher is smoother on bad connections; lower means a player who
+   just ducked behind cover can be hit for less time. ?interp=80 in the page address overrides it for testing (0–250). */
+window.CF.NET = { interp: 100 };
+try { const q = new URLSearchParams(location.search).get('interp'); if (q !== null && q !== '' && +q >= 0 && +q <= 250) window.CF.NET.interp = +q; } catch (e) { /* old browser */ }

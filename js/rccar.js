@@ -223,7 +223,7 @@
     RC.hud(d);
     // everyone else sees it
     RC.sendT -= dt;
-    if (RC.sendT <= 0) { RC.sendT = 0.05; MP().post({ t: 'rc', p: [+b.pos.x.toFixed(2), +b.pos.y.toFixed(2), +b.pos.z.toFixed(2)], y: +d.yaw.toFixed(3), f: Math.ceil(d.fuse) }); }
+    if (RC.sendT <= 0) { RC.sendT = 0.05; MP().postFast({ t: 'rc', p: [+b.pos.x.toFixed(2), +b.pos.y.toFixed(2), +b.pos.z.toFixed(2)], y: +d.yaw.toFixed(3), f: Math.ceil(d.fuse) }); }
   };
 
   /** The car is done. boom: it explodes (on demand, fuse, crash, shot to pieces); otherwise it just fizzles (fell, owner died). */

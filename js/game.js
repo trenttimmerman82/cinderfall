@@ -226,11 +226,11 @@
     };
     window.addEventListener('keydown', (e) => {
       if (e.code !== 'Escape' && e.code !== 'KeyP') return;
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { if (e.code === 'Escape') e.target.blur(); return; }
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) { if (e.code === 'Escape') e.target.blur(); return; }
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
       else if (e.code === 'Escape' && !$('crateOpen').hidden) { if (!CF.Locker.spinning) CF.Locker.closeCrate(); }
-      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard' || this.screen === 'locker')) this.back();
+      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard' || this.screen === 'locker' || this.screen === 'feedback')) this.back();
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
@@ -262,6 +262,7 @@
       case 'mpagain': CF.MP.hostRestart(); break;
       case 'settings': this.backTo = this.screen; this.syncSettingsUI(); this.settingsTab('controls'); this.showScreen('settings'); break;
       case 'manual': this.backTo = this.screen; this.showScreen('manual'); break;
+      case 'feedback': this.backTo = 'main'; this.showScreen('feedback'); CF.Feedback.open(); break;
       case 'leaderboard': this.backTo = this.screen; CF.Board.open(); this.showScreen('leaderboard'); break;
       case 'locker': this.backTo = this.screen === 'locker' ? 'main' : this.screen; this.showScreen('locker'); CF.Locker.open(); break;
       case 'back': this.back(); break;
@@ -965,12 +966,14 @@
     }
     const dt = Math.min(raw, 0.05) * this.timeScale, st = this.state;
     if (window.innerWidth !== this.vw || window.innerHeight !== this.vh) { this.vw = window.innerWidth; this.vh = window.innerHeight; this.onResize(); }
+    CF.Perf.begin();
     try {
       const mpSt = st === 'mpdead' || st === 'mpmenu' || st === 'mpend';
       if (st === 'loading') { A.update(raw, this.camera); CF.Input.endFrame(); return; }
       if (st === 'menu') this.updateMenu(raw);
       else if (st === 'playing' || st === 'dying' || st === 'victory' || mpSt) this.updateGame(dt, raw);
       else A.update(raw, this.camera);
+      CF.Perf.mid();
       const cam = this.camera;
       if (cam.fov !== this.lastFov) { this.lastFov = cam.fov; CF.FX.resize(CF.Post.H, cam.fov); }
       const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving;
@@ -980,6 +983,7 @@
     } catch (e) {
       if (!this.errOnce) { this.errOnce = true; console.error(e); }
     }
+    CF.Perf.end(raw);
     this.fpsN++; this.fpsT += raw;
     if (this.fpsT >= 0.5) { CF.HUD.fps(Math.round(this.fpsN / this.fpsT)); this.fpsN = 0; this.fpsT = 0; }
     CF.Input.endFrame();

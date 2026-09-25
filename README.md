@@ -36,6 +36,13 @@ school/office Wi-Fi blocks it, they switch to the relay on the Cinderfall server
 The relay works on any network that can open ordinary websites. The host's browser runs the scoreboard and passes everyone's
 moves along, so the host should have the best connection.
 
+Direct links send positions on a separate fast channel that never re-sends lost packets, so one dropped packet can't
+hold up the newer ones. Other players are drawn 100 ms in the past so their movement can be blended smoothly between
+updates. That delay is `CF.NET.interp` in `js/config.js`; `?interp=60` in the page address tries another value.
+
+**Performance overlay:** press **F3** in game to see frame time (game logic vs. rendering), draw calls, render
+resolution and, in multiplayer, each player's link type, ping and bandwidth.
+
 | Loadout | Weapons | Perk |
 | --- | --- | --- |
 | Assault | M7 carbine + P-11 pistol | — |
@@ -51,6 +58,17 @@ moves along, so the host should have the best connection.
 **RC-XD (Nuketown):** hold **E** at the chest between the school bus and the moving truck, then press **T** to drive.
 **W/S** drive, **A/D** steer, the mouse swings the camera, **click or T** detonates (7 m blast). It also explodes after
 20 seconds, on a hard crash, or when enemies shoot it apart. The chest restocks 75 seconds after the car is gone.
+
+## Feedback
+
+Players send feedback from the **Feedback** button at the top of the main menu (topic, optional 1–5 rating, message;
+the game adds build, browser, screen size and graphics quality). It is stored on the game server, limited to 5
+messages per player every 10 minutes. To read it, pick a developer key and store it on the server:
+
+    cd server && npx wrangler secret put FEEDBACK_KEY
+
+Then open **Feedback → Developer inbox** in the game and enter the same key. You can filter open/done messages,
+mark them done or delete them. Without the secret nobody can read feedback.
 
 ## Coins, crates and saves
 
@@ -68,7 +86,7 @@ moves along, so the host should have the best connection.
 ## Game server (leaderboard, profiles and multiplayer relay)
 
 `server/` is a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) that stores the global campaign leaderboard,
-player profiles (coins, skins, cloud saves) and relays multiplayer traffic when a direct connection is blocked. It fits in
+player profiles (coins, skins, cloud saves), player feedback, and relays multiplayer traffic when a direct connection is blocked. It fits in
 Cloudflare's free plan. Without it the game still works: the leaderboard, coins and skins stay on each computer and multiplayer
 is peer-to-peer only. After changing `server/worker.js`, run `npx wrangler deploy` in `server/` again.
 

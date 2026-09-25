@@ -154,7 +154,7 @@
   </section>
 
   <section class="screen main" id="screen-main" hidden>
-    <div class="main-coins"><button class="coin-chip" data-act="locker" title="Coins · open the locker and shop"><span data-coins>0</span></button></div>
+    <div class="main-coins"><button class="fb-chip-btn" data-act="feedback" title="Report a bug or tell us what to change">Feedback</button><button class="coin-chip" data-act="locker" title="Coins · open the locker and shop"><span data-coins>0</span></button></div>
     <div class="main-col">
       <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
@@ -392,6 +392,40 @@
     </div>
   </section>
 
+  <section class="screen panel-screen" id="screen-feedback" hidden>
+    <div class="panel narrow-ish">
+      <header class="panel-head"><span class="eyebrow">Straight to the developer</span><h2>Feedback</h2></header>
+      <div class="set-tabs" role="tablist" aria-label="Feedback">
+        <button role="tab" data-fbtab="send" aria-selected="true">Send feedback</button>
+        <button role="tab" data-fbtab="read" aria-selected="false">Developer inbox</button>
+      </div>
+      <div class="fb-pane" id="fbSend">
+        <p class="panel-copy">Found a bug, something feels off, or have an idea? Tell us. Every message is read.</p>
+        <div class="lb-filter" role="group" aria-label="Topic">
+          <span class="lb-filter-label">Topic</span>
+          <div class="seg fb-cats"><button data-fbcat="bug" aria-pressed="true">Bug</button><button data-fbcat="gameplay" aria-pressed="false">Gameplay</button><button data-fbcat="performance" aria-pressed="false">Lag / FPS</button><button data-fbcat="idea" aria-pressed="false">Idea</button><button data-fbcat="other" aria-pressed="false">Other</button></div>
+        </div>
+        <div class="lb-filter" role="group" aria-label="Rating">
+          <span class="lb-filter-label">How much are you enjoying Cinderfall? (optional)</span>
+          <div class="seg fb-rate"><button data-fbrate="1" aria-pressed="false">1</button><button data-fbrate="2" aria-pressed="false">2</button><button data-fbrate="3" aria-pressed="false">3</button><button data-fbrate="4" aria-pressed="false">4</button><button data-fbrate="5" aria-pressed="false">5</button></div>
+        </div>
+        <label class="field"><span>Your message</span><textarea id="fbText" maxlength="2000" rows="6" spellcheck="true" placeholder="What happened, or what would you change? For bugs, say what you were doing and on which map."></textarea></label>
+        <div class="fb-row"><label class="field fb-name"><span>Callsign (optional)</span><input id="fbName" maxlength="16" autocomplete="off" spellcheck="false"></label><span class="fb-count" id="fbCount">0 / 2000</span></div>
+        <div class="fb-row"><button class="btn" id="fbSubmit">Send feedback</button><p class="fb-status" id="fbStatus" aria-live="polite"></p></div>
+      </div>
+      <div class="fb-pane" id="fbRead" hidden>
+        <p class="panel-copy">Only you can read these: enter the developer key you set on the server (FEEDBACK_KEY). This browser remembers it.</p>
+        <div class="fb-row"><label class="field fb-key"><span>Developer key</span><input id="fbKey" type="password" autocomplete="off" spellcheck="false"></label>
+          <div class="seg fb-filter"><button data-fbfilter="open" aria-pressed="true">Open</button><button data-fbfilter="done" aria-pressed="false">Done</button><button data-fbfilter="all" aria-pressed="false">All</button></div>
+          <button class="btn-ghost" id="fbLoad">Load</button></div>
+        <p class="fb-status" id="fbReadStatus" aria-live="polite"></p>
+        <div class="fb-summary" id="fbSummary"></div>
+        <div class="fb-list" id="fbList"></div>
+      </div>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
   <section class="screen locker-screen" id="screen-locker" hidden>
     <div class="lk-panel">
       <header class="lk-head">
@@ -569,6 +603,8 @@
 <script src="js/profile.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/locker.js"></script>
+<script src="js/perf.js"></script>
+<script src="js/feedback.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

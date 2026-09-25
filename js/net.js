@@ -2,14 +2,22 @@
 /* Cinderfall — networking. Star topology: the host relays between clients.
    Players first try a direct peer-to-peer link (PeerJS / WebRTC). When a router or school/office Wi-Fi blocks
    that, they fall back to the Cinderfall server's WebSocket relay (server/worker.js), which works on any
-   network that can open ordinary web pages. A room can mix direct and relayed players. */
+   network that can open ordinary web pages. A room can mix direct and relayed players.
+   Direct links carry two channels: PeerJS's reliable, ordered one for events (hits, kills, joins) and a "fast" one
+   (unordered, never re-sent) for position updates, so one lost packet doesn't hold back the newer ones behind it.
+   The relay is a WebSocket, which is always reliable, so fast messages there just take the normal path. */
 (function (CF) {
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const PREFIX = 'cinderfall-v3-'; // bump when the wire format changes so old and new builds don't meet
+  const PREFIX = 'cinderfall-v4-'; // bump when the wire format changes so old and new builds don't meet
   const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }] };
   const OPTS = { debug: 0, config: ICE };
   const DIRECT_WAIT = 8000; // how long a join tries peer-to-peer before switching to the relay
+  const FAST_ID = 1000; // SCTP stream id of the fast channel; both ends open it with this id, so no extra handshake is needed
   const Net = CF.Net = { peer: null, conns: {}, host: null, role: null, code: '', myId: '', relay: null, onMsg: null, onLeave: null, onDrop: null };
+  /** Traffic counters for the debug overlay. Bytes are only measured while it's open (on), since that means stringifying. */
+  const stats = Net.stats = { on: false, inN: 0, outN: 0, inB: 0, outB: 0 };
+  const countOut = (msg, str) => { stats.outN++; if (stats.on) stats.outB += (str || JSON.stringify(msg)).length; };
+  const countIn = (msg, str) => { stats.inN++; if (stats.on) stats.inB += (str || JSON.stringify(msg)).length; };
 
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
   Net.hasRelay = () => !!server() && typeof window.WebSocket === 'function';
@@ -28,9 +36,24 @@
   };
 
   function wire(conn, fromId) {
-    conn.on('data', (d) => { if (Net.onMsg && d && typeof d === 'object') Net.onMsg(fromId || conn.peer, d); });
+    conn.on('data', (d) => { if (d && typeof d === 'object') { countIn(d); if (Net.onMsg) Net.onMsg(fromId || conn.peer, d); } });
   }
-  function parse(e) { try { const m = JSON.parse(e.data); return m && typeof m === 'object' ? m : null; } catch (err) { return null; } }
+  function parse(e) { try { const m = JSON.parse(e.data); if (m && typeof m === 'object') { countIn(m, e.data); return m; } return null; } catch (err) { return null; } }
+  /** Open the fast channel on a direct link (both ends call this once the link is open). */
+  function openFast(conn, fromId) {
+    const pc = conn.peerConnection;
+    if (!pc || typeof pc.createDataChannel !== 'function') return;
+    let ch;
+    try { ch = pc.createDataChannel('cf-fast', { negotiated: true, id: FAST_ID, ordered: false, maxRetransmits: 0 }); } catch (e) { return; }
+    ch.onmessage = (e) => { const m = parse(e); if (m && Net.onMsg) Net.onMsg(fromId || conn.peer, m); };
+    conn.fast = ch;
+  }
+  /** Send on the fast channel when it's open, otherwise on the normal one. */
+  function sendFast(c, msg) {
+    const ch = c.fast;
+    if (ch && ch.readyState === 'open') { const str = JSON.stringify(msg); try { ch.send(str); countOut(msg, str); return; } catch (e) { /* buffer full or closing: fall back */ } }
+    if (c.open) { c.send(msg); countOut(msg); }
+  }
 
   // ------------------------------------------------------------ host
   /** Host side of the relay: relayed players show up in Net.conns next to direct ones. */
@@ -76,7 +99,7 @@
       peer.on('connection', (conn) => {
         conn.on('open', () => {
           if (Net.conns[conn.peer]) { conn.close(); return; } // already here through the relay
-          Net.conns[conn.peer] = conn;
+          Net.conns[conn.peer] = conn; openFast(conn);
         });
         wire(conn);
         conn.on('close', () => { if (Net.conns[conn.peer] === conn) { delete Net.conns[conn.peer]; if (Net.onLeave) Net.onLeave(conn.peer); } });
@@ -135,7 +158,7 @@
       timer = setTimeout(() => viaRelay(blocked), Net.hasRelay() ? DIRECT_WAIT : 25000);
       conn.on('open', () => {
         if (done || relaying) { conn.close(); return; }
-        finish(); Net.peer = peer; Net.role = 'client'; Net.code = code; Net.host = conn; onReady();
+        finish(); Net.peer = peer; Net.role = 'client'; Net.code = code; Net.host = conn; openFast(conn, 'host'); onReady();
       });
       wire(conn, 'host');
       conn.on('error', () => viaRelay(blocked));
@@ -147,13 +170,29 @@
     });
   };
 
-  Net.send = function (msg) { const c = Net.host; if (c && c.open) c.send(msg); };
-  Net.sendTo = function (id, msg) { const c = Net.conns[id]; if (c && c.open) c.send(msg); };
+  Net.send = function (msg) { const c = Net.host; if (c && c.open) { c.send(msg); countOut(msg); } };
+  Net.sendTo = function (id, msg) { const c = Net.conns[id]; if (c && c.open) { c.send(msg); countOut(msg); } };
   Net.broadcast = function (msg, except) {
     let relayed = false;
-    for (const id in Net.conns) { if (id === except) continue; const c = Net.conns[id]; if (c.relay) relayed = true; else if (c.open) c.send(msg); }
+    for (const id in Net.conns) { if (id === except) continue; const c = Net.conns[id]; if (c.relay) relayed = true; else if (c.open) { c.send(msg); countOut(msg); } }
     const ws = Net.relay;
-    if (relayed && ws && ws.readyState === 1) ws.send(JSON.stringify({ b: 1, x: except || null, d: msg }));
+    if (relayed && ws && ws.readyState === 1) { const str = JSON.stringify({ b: 1, x: except || null, d: msg }); ws.send(str); countOut(msg, str); }
+  };
+  /** Fast versions for messages where only the newest one matters (positions). A lost one is simply skipped. */
+  Net.sendFast = function (msg) { const c = Net.host; if (c) sendFast(c, msg); };
+  Net.sendToFast = function (id, msg) { const c = Net.conns[id]; if (c) sendFast(c, msg); };
+  Net.broadcastFast = function (msg, except) {
+    let relayed = false;
+    for (const id in Net.conns) { if (id === except) continue; const c = Net.conns[id]; if (c.relay) relayed = true; else sendFast(c, msg); }
+    const ws = Net.relay;
+    if (relayed && ws && ws.readyState === 1) { const str = JSON.stringify({ b: 1, x: except || null, d: msg }); ws.send(str); countOut(msg, str); }
+  };
+  /** How this browser is linked: 'direct', 'direct+fast' (fast channel open), 'relay', or a mix on the host. */
+  Net.linkInfo = function () {
+    const kind = (c) => (c.relay ? 'relay' : c.fast && c.fast.readyState === 'open' ? 'direct+fast' : 'direct');
+    if (Net.role === 'client') return Net.host ? kind(Net.host) : '—';
+    const out = {}; for (const id in Net.conns) out[id] = kind(Net.conns[id]);
+    return out;
   };
   Net.close = function () {
     const ws = Net.relay; Net.relay = null;
