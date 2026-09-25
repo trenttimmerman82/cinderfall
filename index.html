@@ -378,7 +378,7 @@
         </div>
         <div class="lb-filter" role="group" aria-label="Drone mode">
           <span class="lb-filter-label">Drone mode</span>
-          <div class="seg"><button data-lbmode="all" aria-pressed="true">All</button><button data-lbmode="drones" aria-pressed="false"><i class="lb-mode drones">Drones</i></button><button data-lbmode="nodrones" aria-pressed="false"><i class="lb-mode nodrones">No drones</i></button></div>
+          <div class="seg"><button data-lbmode="all" aria-pressed="true">All</button><button data-lbmode="drones" aria-pressed="false"><i class="lb-mode drones">Drones</i></button><button data-lbmode="nodrones" aria-pressed="false"><i class="lb-mode nodrones">No drones</i></button><button data-lbmode="coop" aria-pressed="false"><i class="lb-mode coop">Co-op</i></button></div>
         </div>
       </div>
       <div class="set-tabs lb-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard" hidden>
@@ -494,17 +494,26 @@
         <div class="mp-col">
           <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>
           <h3 class="mp-h">Host a match</h3>
-          <div class="card-row">
+          <div class="card-row" id="mpCampRow" hidden>
+            <button class="card" data-map="foundry"><b>Cinder Foundry</b><span>Co-op: the whole campaign for two. Clear the yard, restore power, hold the uplink, take down the Warden.</span></button>
+            <button class="card" data-map="halden"><b>Whiteout</b><span>Co-op: Halden Deep for two. Find Varga, restore comms, cross the whiteout, kill the Rime Heart, outrun the ice.</span></button>
+          </div>
+          <div class="card-row" id="mpMapRow">
             <button class="card" data-map="market"><b>Neon Market</b><span>Tight streets, alleys and balconies around a holographic plaza.</span></button>
             <button class="card" data-map="rooftops"><b>Skyline</b><span>Five rooftops, stairways and catwalks, 60 metres above the street.</span></button>
             <button class="card" data-map="nuketown"><b>Nuketown</b><span>Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac. An RC-XD chest waits in the middle.</span></button>
+            <button class="card card-sniper" data-map="sniper"><b>Sniper Valley</b><span>Two teams, two rooftops, a 60 m drop between them. Rail rifles only; team deathmatch, first to 25.</span></button>
           </div>
           <div class="card-row">
             <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
             <button class="card" data-mode="tdm"><b>Team deathmatch</b><span>Voltage vs Ronin. First team to 40 kills, 10 minutes.</span></button>
             <button class="card card-revolver" data-mode="revolver"><b>Revolver One-Shot</b><span>Six-shot revolvers only. Every hit kills. First to 15, 6 minutes. Best on Nuketown or Neon Market.</span></button>
             <button class="card card-prophunt" data-mode="prophunt"><b>Prop Hunt</b><span>Props get 15 s to disguise as crates, barrels and chairs; Hunters have 5 minutes to find them all. 2+ players.</span></button>
+            <button class="card card-zombies" data-mode="zombies"><b>Zombies</b><span>Co-op survival against growing waves of infected. Revive downed teammates. 2+ players; best on Neon Market.</span></button>
+            <button class="card card-coop" data-mode="coop"><b>Co-op Campaign</b><span>Two players through Cinder Foundry or Whiteout, sharing every objective. Revive each other when down.</span></button>
           </div>
+          <p class="mp-mode-note" id="mpModeNote" hidden>Sniper Valley plays its own mode: team deathmatch with rail-rifle loadouts only.</p>
+          <p class="mp-mode-note" id="mpCoopNote" hidden></p>
           <button class="btn" data-act="mphost">Host match</button>
         </div>
         <div class="mp-col">
@@ -582,6 +591,7 @@
 <script src="js/map-market.js"></script>
 <script src="js/map-rooftops.js"></script>
 <script src="js/map-nuketown.js"></script>
+<script src="js/map-sniper.js"></script>
 <script src="js/map-halden.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/viewmodels.js"></script>
@@ -600,6 +610,9 @@
 <script src="js/mp.js"></script>
 <script src="js/rccar.js"></script>
 <script src="js/prophunt.js"></script>
+<script src="js/coop.js"></script>
+<script src="js/zombies.js"></script>
+<script src="js/coop-campaign.js"></script>
 <script src="js/streak.js"></script>
 <script src="js/board.js"></script>
 <script src="js/skins.js"></script>

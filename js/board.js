@@ -4,9 +4,9 @@
 (function (CF) {
   const $ = (id) => document.getElementById(id);
   const KEY = 'cinderfall.leaderboard.v1';
-  const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones' };
+  const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones', coop: 'Co-op' };
   const TOP = 10; // rows shown per board; your own rank is always shown too
-  const Board = CF.Board = { tab: 'world', campaign: null, mode: 'all', world: null, loading: false, error: '', req: 0, v2: null };
+  const Board = CF.Board = { tab: 'world', campaign: null, mode: 'all', world: null, loading: false, error: '', req: 0, v2: null, coopOk: null };
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
   Board.load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
   Board.save = function (b) { try { localStorage.setItem(KEY, JSON.stringify(b)); } catch (e) { /* storage unavailable */ } };
@@ -40,9 +40,12 @@
   Board.record = function (prog, done) {
     const G = CF.Game, M = CF.Mission, C = CF.campaign();
     if (!G || G.mode === 'mp' || !G.stats || !C) return;
-    const name = (CF.MP && CF.MP.name) || 'Operative';
+    // co-op: one entry per team, recorded by the host, under both callsigns on the Co-op board
+    const coop = CF.Coop && CF.Coop.campaign();
+    if (coop && !CF.MP.isHost()) return;
+    const name = coop ? Object.values(CF.MP.players).map((p) => p.name).sort().join(' + ').slice(0, 40) : (CF.MP && CF.MP.name) || 'Operative';
     const phase = M.phases[Math.min(prog, M.phases.length - 1)];
-    const mode = CF.settings.noDrones ? 'nodrones' : 'drones';
+    const mode = coop ? 'coop' : CF.settings.noDrones ? 'nodrones' : 'drones';
     const run = { name, campaign: C.id, mode, prog, stage: done ? 'Mission complete' : phase.num + ' · ' + phase.title, score: G.score, diff: CF.diff().label, time: Math.round(G.stats.time), date: Date.now() };
     const b = this.load(), key = localKey(name, C.id, mode);
     // fold a pre-campaign entry for this callsign into its new slot
@@ -73,20 +76,20 @@
   /** A server from before campaigns (not yet redeployed) answers without campaign/mode: treat it as the Cinder Foundry board. */
   function adapt(d) {
     if (!d || !Array.isArray(d.rows)) return d;
-    if (d.campaign) { Board.v2 = true; return d; }
+    if (d.campaign) { Board.v2 = true; Board.coopOk = Array.isArray(d.modes) && d.modes.includes('coop'); return d; }
     Board.v2 = false;
     const want = Board.campaign, mode = Board.mode;
     const rows = want === 'foundry' ? d.rows.map((r) => norm(Object.assign({}, r))).filter((r) => mode === 'all' || r.mode === mode) : [];
     return { campaign: want, mode, rows, total: rows.length, mine: want === 'foundry' && d.mine && (mode === 'all' || norm(Object.assign({}, d.mine)).mode === mode) ? norm(Object.assign({}, d.mine)) : null, legacy: true };
   }
   /** Old servers only understand Cinder Foundry runs, so other campaigns wait until the server is updated. */
-  const canSend = (run) => Board.v2 === true || run.campaign === 'foundry';
+  const canSend = (run) => (run.mode === 'coop' ? Board.coopOk === true : Board.v2 === true || run.campaign === 'foundry'); // co-op needs a server that knows the Co-op board
   const onScreen = () => CF.Game && CF.Game.screen === 'leaderboard';
   const viewMatches = (d) => d && d.campaign === Board.campaign && d.mode === Board.mode;
   Board.submit = function (run) {
     if (!server()) return;
     // learn which server version answers before sending a run it might misfile (old servers only know the foundry)
-    if (this.v2 === null && run.campaign !== 'foundry') { request('GET').then(() => { if (this.v2) this.submit(run); }).catch(() => {}); return; }
+    if ((this.v2 === null && run.campaign !== 'foundry') || (run.mode === 'coop' && this.coopOk == null)) { request('GET').then(() => { if (canSend(run)) this.submit(run); }).catch(() => {}); return; }
     if (!canSend(run)) return;
     // the profile token and server-tracked run let the server check a #1 before it awards the Champion skins
     const G = CF.Game, auth = { token: CF.Profile.token() || undefined, run: (G && CF.Profile.runId(G.runKey)) || undefined, limit: TOP };
@@ -188,7 +191,7 @@
 
     note.textContent = this.error || 'Runs are saved in this browser. Your best run per callsign, campaign and drone mode is kept.';
     const me = CF.MP.name.toLowerCase();
-    const all = this.runs().filter((r) => r.campaign === this.campaign && (this.mode === 'all' || r.mode === this.mode))
+    const all = this.runs().filter((r) => r.campaign === this.campaign && (this.mode === 'all' ? r.mode !== 'coop' : r.mode === this.mode))
       .sort((a, c) => (c.prog - a.prog) || (c.score - a.score));
     if (!all.length) { empty(el, 'No runs yet. Deploy on this campaign and your best run will show up here.'); return; }
     const mi = all.findIndex((r) => r.name.toLowerCase() === me);

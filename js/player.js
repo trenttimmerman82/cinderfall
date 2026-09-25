@@ -43,6 +43,7 @@
   P.shake = function (amount) { this.trauma = Math.min(1, this.trauma + amount * CF.settings.shake); };
 
   P.damage = function (amount, from, source, kind) {
+    if (CF.Coop && CF.Coop.downed) return; // co-op: already down, waiting for a revive
     if (!this.alive || CF.Game.godMode || (CF.RC && CF.RC.driving)) return; // standing shielded while driving the RC car
     if (CF.Game.mode !== 'mp') amount *= CF.diff().dmg;
     let absorbed = 0;
@@ -64,6 +65,7 @@
     CF.HUD.setVitals(this.health, this.armor);
   };
   P.die = function (source) {
+    if (CF.Coop && CF.Coop.intercept(source)) return; // co-op: go down instead, a teammate can revive you
     this.alive = false; this.deathT = 0; this.killer = source;
     this.sprinting = false; this.sliding = false;
     CF.Game.onPlayerDeath(source);

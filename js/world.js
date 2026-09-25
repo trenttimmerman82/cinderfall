@@ -380,12 +380,15 @@
     return j;
   }
 
-  /** Dijkstra from target over the heightfield; dist[] then acts as a flow field. */
-  W.computeFlow = function (tx, tz) {
+  /** Dijkstra from target over the heightfield; dist[] then acts as a flow field. more: extra targets [[x, z], ...]
+      (co-op: every standing player is a goal, so enemies head for whoever is nearest). */
+  W.computeFlow = function (tx, tz, more) {
     const nav = this.nav; if (!nav) return false;
     const start = this.nearestMainCell(tx, tz, 10);
     nav.dist.fill(Infinity);
-    if (start < 0) return false;
+    const extra = [];
+    if (more) for (const m of more) { const c = this.nearestMainCell(m[0], m[1], 10); if (c >= 0) extra.push(c); }
+    if (start < 0 && !extra.length) return false;
     const HI = nav.heapI, HP = nav.heapP, w = nav.w;
     let n = 0;
     const push = (i, p) => {
@@ -407,7 +410,8 @@
       }
       return top;
     };
-    nav.dist[start] = 0; push(start, 0);
+    if (start >= 0) { nav.dist[start] = 0; push(start, 0); }
+    for (const c of extra) if (nav.dist[c] !== 0) { nav.dist[c] = 0; push(c, 0); }
     while (n > 0 && n < HI.length - 8) {
       const d0 = HP[0], i = pop();
       if (d0 > nav.dist[i]) continue;

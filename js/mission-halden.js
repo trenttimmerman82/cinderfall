@@ -170,8 +170,7 @@
       },
       update() {
         if (this.s.stage === 'rig' && this.s.doneT == null) {
-          const P = hp().body.pos;
-          if (P.z < -41 && P.x > 20) { this.s.doneT = 1; this.spawner = null; say('rigReached', [[VG, 'You made it. Do not come to drill control, they are right outside the door. Listen to me instead.']]); }
+          if (CF.CoopCampaign.any((P) => P.z < -41 && P.x > 20)) { this.s.doneT = 1; this.spawner = null; say('rigReached', [[VG, 'You made it. Do not come to drill control, they are right outside the door. Listen to me instead.']]); }
         }
       }
     },
@@ -231,12 +230,13 @@
         say('heart', [[VG, 'The Hollow is past the flats. Take the ramp down. Once you are in, there is no easy way back out.']]);
       },
       update() {
-        const s = this.s, P = hp().body.pos;
-        if (s.stage === 'approach' && P.x < -21.5 && P.y < -3) {
+        const s = this.s, inHollow = (P) => P.x < -21.5 && P.y < -3;
+        if (s.stage === 'approach' && CF.CoopCampaign.any(inHollow)) {
           s.stage = 'fight'; this.spawner = null;
+          CF.CoopCampaign.gather(inHollow); // co-op: the ice wall is about to close, bring the partner down
           L.closeDoor('hollowGate'); A.play('iceWall', L.doors.hollowGate.mesh.position, { ref: 14 }); hp().shake(0.35);
           CF.FX.iceBits(-20, -4, -60, 14, 6, 0.12);
-          for (const e of CF.Enemies.list.slice()) if (e.alive && !e.boss) e.remove();
+          for (const e of CF.Enemies.list.slice()) if (e.alive && !e.boss && !e.net) e.remove();
           const hpnt = L.points.heart;
           s.boss = new CF.HeartBoss(hpnt.x, hpnt.y, hpnt.z);
           CF.Enemies.list.push(s.boss);
@@ -284,16 +284,16 @@
           s.skua = true; MH().skuaSet('arrive');
           say('skuaIn', [[SK, 'I have the doctor aboard. Skua inbound to the landing zone, forty seconds!']]);
         }
-        const pad = L.points.pad, onPad = Math.hypot(P.body.pos.x - pad.x, P.body.pos.z - pad.z) < 6.5 && P.body.pos.y < 2;
+        const pad = L.points.pad, onPad = CF.CoopCampaign.any((Q) => Math.hypot(Q.x - pad.x, Q.z - pad.z) < 6.5 && Q.y < 2); // co-op: either player
         const landed = MH().skua.state === 'landed';
         if (onPad && !landed) CF.HUD.hint(s.skua ? 'Hold the pad · Skua is landing' : 'Hold the pad', false);
-        if (onPad && landed && P.alive) {
+        if (onPad && landed) {
           s.won = true; this.spawner = null; CF.HUD.countdown(null, null);
           say('win', [[SK, 'Got you. Wheels up.'], [VG, 'Thank you. Nothing is coming back up out of that hole.']]);
           CF.Game.victory();
           return;
         }
-        if (s.time <= 0 && P.alive) { CF.HUD.countdown(null, null); P.damage(999, null, 'The ice shelf gave way'); }
+        if (s.time <= 0 && !s.gone) { s.gone = true; CF.HUD.countdown(null, null); CF.CoopCampaign.killAll('The ice shelf gave way'); }
       },
       exit() { CF.HUD.countdown(null, null); }
     }
@@ -415,7 +415,7 @@
     for (const c of cands) {
       const y = W.navHeight(c[0], c[1]); if (isNaN(y)) continue;
       const d = Math.hypot(c[0] - P.body.pos.x, c[1] - P.body.pos.z);
-      if (d < 13) continue;
+      if (d < 13 || CF.CoopCampaign.nearestDist(c[0], c[1]) < 13) continue;
       const hidden = !W.segmentClear(eye.x, eye.y, eye.z, c[0], y + 1.2, c[1]);
       const score = (hidden ? 30 : 0) - Math.abs(d - 28) * 0.6 + Math.random() * 14;
       if (score > bs) { bs = score; best = c; }

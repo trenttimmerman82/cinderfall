@@ -122,9 +122,9 @@
       update(dt) {
         const s = this.s;
         if (!s.active) return;
-        const P = CF.Player.body.pos, U2 = L.points.uplink;
-        const inRange = Math.hypot(P.x - U2.x, P.z - U2.z) < 9 && Math.abs(P.y - U2.y) < 3;
-        if (inRange && CF.Player.alive) s.progress = Math.min(1, s.progress + dt / s.dur);
+        const U2 = L.points.uplink, CC = CF.CoopCampaign;
+        const inRange = CC.any((P) => Math.hypot(P.x - U2.x, P.z - U2.z) < 9 && Math.abs(P.y - U2.y) < 3); // co-op: either player holds it
+        if (inRange) s.progress = Math.min(1, s.progress + dt / s.dur);
         else CF.HUD.hint('Get back to the uplink · upload paused', true);
         CF.HUD.setProgress(s.progress, (inRange ? 'Uploading · ' : 'Paused · ') + Math.floor(s.progress * 100) + '%');
         if (s.hum) { s.hum.set(inRange ? 0.16 : 0.04); s.hum.pitch(70 + s.progress * 90); }
@@ -157,11 +157,12 @@
         CF.HUD.phaseCard('Phase 04', 'The Warden', 'Its shoulder cores feed the shielding. Break them, then burn out the core.');
       },
       update() {
-        const s = this.s, P = CF.Player.body.pos;
-        if (s.stage === 'approach' && P.z < -26.2 && P.x < -35.5 && P.x > -63) {
+        const s = this.s, inArena = (P) => P.z < -26.2 && P.x < -35.5 && P.x > -63;
+        if (s.stage === 'approach' && CF.CoopCampaign.any(inArena)) {
           s.stage = 'fight'; this.spawner = null;
+          CF.CoopCampaign.gather(inArena); // co-op: the gate is about to shut, bring the partner in
           L.closeDoor('arenaGate'); A.play('door', L.doors.arenaGate.mesh.position, { ref: 12 }); CF.Player.shake(0.3);
-          for (const e of CF.Enemies.list.slice()) if (e.alive && !e.boss) e.remove();
+          for (const e of CF.Enemies.list.slice()) if (e.alive && !e.boss && !e.net) e.remove();
           const bp = L.points.boss;
           s.boss = new CF.Boss(bp.x, bp.y, bp.z);
           CF.Enemies.list.push(s.boss);
@@ -189,8 +190,8 @@
         say('exfil', [[OW, 'The Warden is offline. Evac is inbound. Get to the landing pad.']]);
       },
       update(dt) {
-        const s = this.s, P = CF.Player.body.pos, E = L.points.evac;
-        const onPad = Math.hypot(P.x - E.x, P.z - E.z) < 4.5;
+        const s = this.s, E = L.points.evac;
+        const onPad = CF.CoopCampaign.any((P) => Math.hypot(P.x - E.x, P.z - E.z) < 4.5);
         if (s.stage === 'reach' && onPad) {
           s.stage = 'hold';
           this.spawner = { t: 1.5, interval: [2.5, 4.5], maxAlive: 5, zones: ['arena'], pool: ['hornet', 'hornet', 'stalker', 'sentry'], remaining: 14 };
@@ -198,7 +199,7 @@
           say('hold', [[OW, 'Stragglers are converging on you. Twenty seconds. Hold the pad.']]);
         }
         if (s.stage === 'hold') {
-          if (onPad && CF.Player.alive) s.hold -= dt; else CF.HUD.hint('Get back on the landing pad', true);
+          if (onPad) s.hold -= dt; else CF.HUD.hint('Get back on the landing pad', true);
           CF.HUD.setProgress(1 - s.hold / 20, 'Evac in ' + Math.max(0, Math.ceil(s.hold)) + ' s');
           if (s.hold <= 0) {
             s.stage = 'done'; this.spawner = null;
@@ -298,7 +299,7 @@
     for (const c of cands) {
       const y = W.navHeight(c[0], c[1]); if (isNaN(y)) continue;
       const d = Math.hypot(c[0] - P.body.pos.x, c[1] - P.body.pos.z);
-      if (d < 13) continue;
+      if (d < 13 || CF.CoopCampaign.nearestDist(c[0], c[1]) < 13) continue;
       const hidden = !W.segmentClear(eye.x, eye.y, eye.z, c[0], y + 1.2, c[1]);
       const score = (hidden ? 30 : 0) - Math.abs(d - 30) * 0.6 + Math.random() * 14;
       if (score > bs) { bs = score; best = c; }
@@ -320,6 +321,13 @@
   };
 
   MS.saveState = function () { return { breakers: this.breakersDone.slice() }; };
+  /** Co-op partner: put breakers, doors and the uplink screen into the state that belongs to phase idx. */
+  MS.syncWorld = function (idx, st) {
+    this.breakersDone = st.breakers.slice();
+    for (const id of ['breakerA', 'breakerB', 'breakerC']) setBreaker(find(id), this.breakersDone.includes(id));
+    setDoors(idx >= 2, idx >= 3, false);
+    const it = find('uplink'); if (idx > 2) { it.screen.material = L.mats.screenOn; CF.Game.setLamp(it.lamp, 'green'); }
+  };
   MS.restore = function (state, idx) {
     this.breakersDone = state.breakers.slice();
     this.enter(idx, true);

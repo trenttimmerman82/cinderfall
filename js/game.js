@@ -185,6 +185,7 @@
       });
     }
   };
+  G.newStats = newStats;
   G.showScreen = function (id) {
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== 'screen-' + id;
     this.screen = id;
@@ -257,7 +258,7 @@
       case 'multiplayer': this.openMpScreen(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
-      case 'mpresume': this.mpResume(); break;
+      case 'mpresume': if (CF.Coop.campaign()) CF.CoopCampaign.deploy(); else this.mpResume(); break;
       case 'mpleave': CF.MP.leave(); break;
       case 'mpagain': CF.MP.hostRestart(); break;
       case 'settings': this.backTo = this.screen; this.syncSettingsUI(); this.settingsTab('controls'); this.showScreen('settings'); break;
@@ -472,10 +473,12 @@
     if (noLock) CF.Input.freeLook = true;
     else if (!CF.Input.freeLook && !CF.Input.locked) CF.Input.requestLock();
   };
-  G.newGame = function (save) {
+  G.newGame = function (save, coop) {
     const C = CF.campaign();
-    // every run is tracked (coins per cleared part); a continued run keeps its original run
-    if (save && save.run) { CF.Profile.adoptRun(save.run, { campaign: C.id, diff: save.diff, mode: save.noDrones ? 'nodrones' : 'drones', runId: save.runId, claimed: save.claimed }); this.runKey = save.run; }
+    // every run is tracked (coins per cleared part); a continued run keeps its original run. Co-op runs are not
+    // (no coins, and they never touch the solo save).
+    if (coop) this.runKey = null;
+    else if (save && save.run) { CF.Profile.adoptRun(save.run, { campaign: C.id, diff: save.diff, mode: save.noDrones ? 'nodrones' : 'drones', runId: save.runId, claimed: save.claimed }); this.runKey = save.run; }
     else { this.runKey = CF.Profile.runStart(C.id, CF.settings.difficulty, CF.settings.noDrones ? 'nodrones' : 'drones'); if (CF.Progress.get(C.id)) CF.Progress.clear(C.id); }
     this.runCoins = 0; this.runClaimed = save ? save.claimed || 0 : 0;
     this.resetLevel();
@@ -529,7 +532,7 @@
     };
     if (!silent) CF.HUD.killfeed('Checkpoint reached', '');
     // every checkpoint after the start of a run is saved, so closing the tab loses nothing
-    if (!noStore && this.mode !== 'mp' && CF.campaign()) {
+    if (!noStore && this.mode !== 'mp' && CF.campaign() && !CF.Coop.campaign()) {
       CF.Progress.store(CF.campaign().id, this.cp, { run: this.runKey, runId: CF.Profile.runId(this.runKey), stats: this.stats, claimed: this.runClaimed });
     }
   };
@@ -563,6 +566,7 @@
 
   G.pause = function () {
     if (this.state !== 'playing') return;
+    if (CF.CoopCampaign.openMenu()) return; // co-op: the other player keeps playing, so the game doesn't stop
     this.state = 'paused';
     A.setPaused(true); CF.Input.clearAll(); CF.Input.active = false;
     const ph = CF.Mission.phase;
@@ -611,14 +615,15 @@
   G.victory = function () {
     if (this.state !== 'playing') return;
     this.phaseDone(CF.Mission.phases.length - 1);
-    CF.Progress.clear(CF.campaign().id);
+    if (!CF.Coop.campaign()) CF.Progress.clear(CF.campaign().id);
+    if (CF.CoopCampaign.host()) CF.Net.broadcast({ t: 'cc', k: 'ev', f: 'win', a: [] });
     this.state = 'victory'; this.winT = 0; this.winShown = false;
     this.godMode = true; CF.Player.frozen = true;
     CF.Mission.spawner = null;
     CF.Music.sting('victory'); CF.Music.setIntensity(0.1);
     CF.HUD.flash(0.5); CF.HUD.interact(null); this.stopHold();
     CF.FX.flashLight(CF.Player.body.pos.clone().add(new THREE.Vector3(0, 9, 0)), 0xe8f0ff, 30, 40, 3);
-    for (const e of CF.Enemies.list) if (e.alive && !e.boss) { e.noScore = true; this.later(U.rand(0.1, 1.4), () => { if (e.alive) { e.hp = 0; e.die({}); } }); }
+    for (const e of CF.Enemies.list) if (e.alive && !e.boss && !e.net) { e.noScore = true; this.later(U.rand(0.1, 1.4), () => { if (e.alive) { e.hp = 0; e.die({}); } }); }
   };
   G.showWin = function () {
     this.winShown = true;
@@ -665,6 +670,11 @@
   // ------------------------------------------------------------ combat hooks
   G.onEnemyKilled = function (e, info, head) {
     if (e.noScore) return;
+    if (CF.Coop.hostSim() && CF.Coop.creditKill(e, info, head)) { // a partner's kill: they get the points, loot still drops
+      const r = Math.random(); if (r < 0.38) this.drop('ammo', e); else if (r < 0.5) this.drop('armor', e, { amount: 20 });
+      if (this.mode !== 'mp') CF.Mission.onKill(e);
+      return;
+    }
     const st = this.stats; st.kills++; if (head) st.headshots++;
     const pts = this.pts((e.T.score || 100) + (head ? 50 : 0));
     this.addScore(pts);
@@ -716,6 +726,7 @@
       P.shake(U.clamp(1 - d / (R * 4), 0, 1) * (o.shake || 0.8));
       if (d < R * 2) A.concuss(0.25 * (1 - d / (R * 2)));
     }
+    if (src === 'enemy' && CF.Coop.hostSim()) CF.Coop.splash(at, R, D, o.killer);
     CF.Enemies.noise(at, 50);
   };
   G.damageBarrel = function (b, dmg) {
@@ -764,6 +775,7 @@
     const p = L.addPickup(type, c.x, y, c.z, data || {});
     p.dropped = true; p.expire = 30;
     this.makePickupMesh(p);
+    CF.Coop.onDrop(type, p.pos, data);
   };
   G.collect = function (p) {
     const P = CF.Player, WP = CF.Weapons;
@@ -806,7 +818,7 @@
       if (this.collect(p)) {
         p.alive = false; p.mesh.visible = false;
         if (p.dropped) { this.scene.remove(p.mesh); L.pickups.splice(i, 1); }
-        else if (this.mode === 'mp' && CF.MP.mode !== 'revolver') p.respawn = 20;
+        else if (this.mode === 'mp' && CF.MP.mode !== 'revolver' && CF.MP.mode !== 'zombies') p.respawn = 20; // Zombies restocks at each break
       }
     }
     if (this.mode === 'mp') {
@@ -862,6 +874,7 @@
     }
   };
   G.useInteract = function (it) {
+    if (CF.CoopCampaign.forward(it)) return; // co-op partner: the host carries out objectives
     if (it.type === 'breaker') {
       it.done = true; it.enabled = false; it.screen.material = L.mats.screenOn; this.setLamp(it.lamp, 'green');
       A.play('breakerOn', it.pos, { ref: 6 }); CF.Player.shake(0.12);
@@ -912,20 +925,23 @@
     const P = CF.Player, cam = this.camera, playing = this.state === 'playing', mp = this.mode === 'mp';
     CF.time += dt;
     if (playing) this.stats.time += dt;
-    if (mp && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
+    if ((mp || CF.Coop.campaign()) && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
     else P.update(dt);
-    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); }
-    const armed = !CF.RC.driving && !CF.PH.unarmed() && !CF.PH.blind; // Prop Hunt: Props carry nothing, Hunters wait blindfolded
+    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); CF.ZM.update(dt); }
+    if (CF.MP.active) CF.Coop.update(dt); // co-op: enemy sync, downed and revives
+    const armed = !CF.RC.driving && !CF.PH.unarmed() && !CF.PH.blind && CF.Coop.armed(); // Prop Hunt: Props carry nothing, Hunters wait blindfolded; co-op: no shooting while down
     if (mp && playing && P.alive && armed) CF.MP.autoAim(dt);
     if (P.alive && playing && armed) CF.Weapons.update(dt, P);
     else if (P.alive) CF.Weapons.animate(dt, P);
     else { CF.Weapons.updateGrenades(dt); CF.Weapons.updateProjectiles(dt); }
     CF.Streak.update(dt, playing && P.alive);
     CF.Enemies.update(dt, P);
-    if (playing && !mp) CF.Mission.update(dt);
+    const coopMenu = CF.Coop.campaign() && this.state === 'mpmenu' && !this.mpLobby; // co-op: the mission runs on while the host is in the menu
+    if ((playing || coopMenu) && !mp && !CF.CoopCampaign.mirror()) CF.Mission.update(dt);
     if (mp) { CF.MP.update(dt); this.mpUpdate(dt, raw); }
+    else if (CF.MP.active) { CF.MP.update(dt); CF.CoopCampaign.update(dt); } // co-op campaign
     this.updatePending(dt);
-    if (playing && !mp) this.updateInteract(dt);
+    if (playing && !mp && !CF.Coop.prompting) this.updateInteract(dt);
     this.updatePickups(dt);
     L.update(dt, CF.time, cam.position);
     CF.FX.update(dt, cam.position);
@@ -979,7 +995,7 @@
       CF.Perf.mid();
       const cam = this.camera;
       if (cam.fov !== this.lastFov) { this.lastFov = cam.fov; CF.FX.resize(CF.Post.H, cam.fov); }
-      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving && !CF.PH.unarmed();
+      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving && !CF.PH.unarmed() && CF.Coop.armed();
       if (st === 'menu' && this.screen === 'locker' && CF.Locker.active) CF.Locker.render(raw);
       else CF.Post.render(this.scene, cam, showVM ? this.vmScene : null, this.vmCam);
       if (st === 'playing' || st === 'menu' || mpSt) CF.Post.adapt(raw);
@@ -1005,15 +1021,27 @@
     this.showScreen('mp');
   };
   G.renderMpPick = function () {
+    // Sniper Valley is its own mode (team deathmatch, rail rifles only), so the mode cards step aside for it
+    // Co-op Campaign swaps the map cards for the two campaigns
+    const coop = this.mpSel.mode === 'coop', camp = (m) => m === 'foundry' || m === 'halden';
+    if (coop && !camp(this.mpSel.map)) this.mpSel.map = CF.settings.campaign || 'foundry';
+    if (!coop && camp(this.mpSel.map)) this.mpSel.map = 'market';
+    $('mpCampRow').hidden = !coop; $('mpMapRow').hidden = coop;
+    const cn = $('mpCoopNote'); cn.hidden = !coop;
+    if (coop) cn.textContent = 'Difficulty: ' + CF.diff().label + (CF.settings.noDrones ? ' · no drones' : '') + ' (from the campaign screen). Enemies get 1.4× health for the second gun. Co-op runs go on their own leaderboard; no coins, and your solo save is untouched.';
+    const sniper = this.mpSel.map === 'sniper';
     for (const b of document.querySelectorAll('[data-map]')) b.classList.toggle('sel', b.dataset.map === this.mpSel.map);
-    for (const b of document.querySelectorAll('[data-mode]')) b.classList.toggle('sel', b.dataset.mode === this.mpSel.mode);
+    for (const b of document.querySelectorAll('[data-mode]')) { b.classList.toggle('sel', !sniper && b.dataset.mode === this.mpSel.mode); b.disabled = sniper; }
+    const note = $('mpModeNote'); if (note) note.hidden = !sniper;
   };
   G.renderLoadouts = function () {
     const M = MPM();
+    const keys = M.loKeys(), defs = M.loDefs();
     for (const grid of document.querySelectorAll('[data-lo-grid]')) {
-      if (!grid.childElementCount) {
-        M.LO_KEYS.forEach((k, i) => {
-          const lo = M.LOADOUTS[k], b = document.createElement('button');
+      if (grid.dataset.set !== keys.join()) {
+        grid.dataset.set = keys.join(); grid.textContent = '';
+        keys.forEach((k, i) => {
+          const lo = defs[k], b = document.createElement('button');
           b.className = 'lo-card'; b.dataset.loadout = k;
           const n = document.createElement('span'); n.className = 'lo-name'; n.textContent = lo.label;
           const kb = document.createElement('kbd'); kb.textContent = String(i + 1);
@@ -1026,7 +1054,7 @@
     const md = $('mdLo');
     if (md) {
       md.textContent = '';
-      M.LO_KEYS.forEach((k, i) => { const s = document.createElement('span'); s.className = k === M.nextLoadout ? 'sel' : ''; s.textContent = (i + 1) + ' ' + M.LOADOUTS[k].label; md.appendChild(s); });
+      keys.forEach((k, i) => { const s = document.createElement('span'); s.className = k === M.nextLoadout ? 'sel' : ''; s.textContent = (i + 1) + ' ' + defs[k].label; md.appendChild(s); });
     }
   };
   G.mpBusy = function (on) { for (const b of document.querySelectorAll('[data-act="mphost"], [data-act="mpjoin"]')) b.disabled = on; };
@@ -1036,7 +1064,7 @@
     if (!CF.Net.available()) { M.status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true); return; }
     if (!host && CF.Net.cleanCode($('mpCode').value).length !== 5) { M.status('Enter the 5-character room code your friend sees on their screen.', true); $('mpCode').focus(); return; }
     this.mpBusy(true);
-    if (host) M.host(this.mpSel.map, this.mpSel.mode); else M.join($('mpCode').value);
+    if (host) M.host(this.mpSel.map, this.mpSel.map === 'sniper' ? 'sniper' : this.mpSel.mode); else M.join($('mpCode').value);
   };
   /** Called once the map is built: show the lobby so the Deploy click can capture the mouse. */
   G.enterMultiplayer = function () {
@@ -1045,6 +1073,11 @@
     document.body.classList.add('mp');
     document.body.classList.toggle('mp-revolver', M.mode === 'revolver');
     document.body.classList.toggle('mp-prophunt', M.mode === 'prophunt');
+    document.body.classList.toggle('mp-sniper', M.mode === 'sniper');
+    document.body.classList.toggle('mp-zombies', M.mode === 'zombies');
+    if (M.mode === 'zombies' && !W.nav) W.buildNav(); // the infected path-find; multiplayer maps don't build this by default
+    CF.Coop.reset();
+    if (!M.loDefs()[M.nextLoadout]) M.nextLoadout = M.loKeys()[0]; // e.g. Assault picked, but Sniper Valley only offers rail kits
     this.initAudio(); A.resume(); A.setPaused(false);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
     CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset(); CF.HUD.objTarget = null; CF.HUD.bossBar(false);
@@ -1090,12 +1123,12 @@
     if (M.ended) { this.mpMatchEnd(M.winnerText()); return; }
     this.showScreen(null); CF.HUD.show(true);
     CF.Input.active = true; CF.Input.clearAll();
-    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN)) { this.mpLobby = false; this.mpSpawn(); }
+    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN && !(M.mode === 'zombies' && !CF.ZM.canRespawn()))) { this.mpLobby = false; this.mpSpawn(); }
     else this.state = CF.Player.alive ? 'playing' : 'mpdead';
     if (!CF.Input.freeLook) CF.Input.requestLock();
   };
   G.mpSpawn = function () {
-    CF.PH.drop();
+    CF.PH.drop(); CF.Coop.standUp();
     const M = MPM(), P = CF.Player, lo = M.loadoutFor(M.nextLoadout);
     M.loadout = M.nextLoadout;
     const s = M.pickSpawn();
@@ -1142,11 +1175,11 @@
     if (this.state === 'mpdead') {
       this.deathT += raw;
       CF.Post.setState({ fade: Math.max(0.35, 1 - this.deathT * 0.25) });
-      if (M.mode !== 'revolver' && !CF.PH.unarmed()) for (let i = 0; i < M.LO_KEYS.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(M.LO_KEYS[i]); this.renderLoadouts(); }
-      const left = Math.max(0, RESPAWN - this.deathT);
-      const txt = M.ended ? 'Match over' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
+      if (M.mode !== 'revolver' && !CF.PH.unarmed()) { const keys = M.loKeys(); for (let i = 0; i < keys.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(keys[i]); this.renderLoadouts(); } }
+      const left = Math.max(0, RESPAWN - this.deathT), wait = M.mode === 'zombies' && !CF.ZM.canRespawn();
+      const txt = M.ended ? 'Match over' : wait ? 'Back in at the next break' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
       if (this.ui.md !== txt) { $('mdTimer').textContent = txt; this.ui.md = txt; }
-      if (left <= 0 && !M.ended) this.mpSpawn();
+      if (left <= 0 && !M.ended && !wait) this.mpSpawn();
     } else if (this.state === 'mpmenu' && !CF.Player.alive) this.deathT += raw;
     if (this.state === 'playing' && M.protectedNow() && !CF.RC.driving && !CF.PH.blind) CF.HUD.hint('Spawn protection · ends when you fire');
     this.mpHudT = (this.mpHudT || 0) - raw;
@@ -1190,7 +1223,8 @@
   G.leaveMultiplayer = function (reason) {
     this.mode = 'campaign'; this.mpLobby = false;
     CF.RC.clear(); CF.PH.clear();
-    document.body.classList.remove('mp', 'mp-revolver', 'mp-prophunt');
+    document.body.classList.remove('mp', 'mp-revolver', 'mp-prophunt', 'mp-sniper', 'mp-zombies', 'coop-downed', 'coop');
+    CF.Coop.reset();
     $('mpBar').hidden = true; $('mpDead').hidden = true; $('aimName').hidden = true;
     CF.Player.speedMul = 1;
     this.toMenu();

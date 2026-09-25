@@ -74,7 +74,8 @@ window.CF = window.CF || {};
     elite: { label: 'Elite', dmg: 1.5, acc: 1.3, regenDelay: 6.0, regenRate: 18, aggro: 1.3, hp: 1.15, score: 1.4 }
   };
   if (!CF.DIFF[CF.settings.difficulty]) CF.settings.difficulty = CF.settings.difficulty === 'easy' ? 'recruit' : 'veteran'; // Easy was retired
-  CF.diff = () => CF.DIFF[CF.settings.difficulty] || CF.DIFF.veteran;
+  // multiplayer (Zombies) runs at Veteran; co-op campaign uses the host's choice with its own co-op tuning (js/coop.js)
+  CF.diff = () => (CF.Game && CF.Game.mode === 'mp' ? CF.DIFF.veteran : CF.Coop && CF.Coop.campaign() ? CF.Coop.coopDiff() : CF.DIFF[CF.settings.difficulty] || CF.DIFF.veteran);
   /** No drones: no enemy Hornet drones in the campaign. Your kill-streak drone is unaffected. */
   CF.noDrones = () => !!CF.settings.noDrones && !(CF.Game && CF.Game.mode === 'mp');
   /** The campaign chosen on the campaign screen (registry lives in mission-halden.js). */

@@ -82,7 +82,7 @@
   RC.setup = function () {
     RC.clear();
     const L = CF.Level, p = L.points.rcChest;
-    if (!p || MP().mode === 'revolver' || MP().mode === 'prophunt') return;
+    if (!p || MP().mode === 'revolver' || MP().mode === 'prophunt' || MP().mode === 'zombies') return;
     const mesh = chestModel(); mesh.position.set(p.x, p.y, p.z); mesh.rotation.y = p.yaw || 0; CF.Game.scene.add(mesh);
     const col = W.add(p.x - 0.62, p.y, p.z - 0.62, p.x + 0.62, p.y + 0.62, p.z + 0.62, { surf: 'metal' });
     const lamp = L.lamp(p.x, p.y + 1.4, p.z, { color: 0xffc040, intensity: 2, distance: 9, pool: false, pulse: 3, prio: 2 });
@@ -158,7 +158,7 @@
     if (!W.segmentClear(P.body.pos.x, P.body.pos.y + 0.4, P.body.pos.z, x, P.body.pos.y + 0.4, z)) { x = P.body.pos.x; z = P.body.pos.z; }
     const gy = W.groundBelow(x, z, 0.2, P.body.pos.y + 0.6, 3);
     const body = { pos: new THREE.Vector3(x, gy === null ? P.body.pos.y : gy, z), vel: new THREE.Vector3(), radius: 0.3, height: 0.42, stepHeight: 0.22, grounded: true, stepped: 0 };
-    const mesh = RC.carModel(MP().mode === 'tdm' ? MP().TEAM[MP().team].c : null); mesh.position.copy(body.pos); CF.Game.scene.add(mesh);
+    const mesh = RC.carModel(MP().tdm() ? MP().TEAM[MP().team].c : null); mesh.position.copy(body.pos); CF.Game.scene.add(mesh);
     RC.have = false;
     RC.driving = { body, mesh, yaw: P.yaw, speed: 0, hp: HP, fuse: FUSE, orbit: 0, camPos: new THREE.Vector3().copy(CF.Game.camera.position), beep: 0, engine: A.ready ? A.loop('rc') : null, t: 0 };
     if (RC.driving.engine) RC.driving.engine.set(0.12);
@@ -273,7 +273,7 @@
       const M = MP(), pl = M.players[owner];
       this.name = (pl ? pl.name : 'Enemy') + '’s RC-XD';
       this.css = '#ffc040';
-      this.mesh = RC.carModel(M.mode === 'tdm' && pl ? M.TEAM[pl.team].c : null); CF.Game.scene.add(this.mesh);
+      this.mesh = RC.carModel(M.tdm() && pl ? M.TEAM[pl.team].c : null); CF.Game.scene.add(this.mesh);
       this.T = { height: 0.5, radius: 0.45, name: 'RC-XD', score: 0 };
       this.body = { pos: new THREE.Vector3(), vel: new THREE.Vector3() }; this.tp = new THREE.Vector3(); this.yaw = 0; this.tyaw = 0; this.t = 0;
       this.m = { hit: [{ w: new THREE.Vector3(), r: 0.42, mult: 1, tag: 'body', off: null }] };

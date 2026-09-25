@@ -1,6 +1,7 @@
 /* Cinderfall server (Cloudflare Worker).
    GET  /                → { ok, name, v } (v is the API version; the game uses it to tell an outdated server)
-   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden&mode=all|drones|nodrones&player=&name=
+   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden&mode=all|drones|nodrones|coop&player=&name=
+                           'all' covers the two solo modes; co-op runs ('coop', two callsigns) have their own board and never earn Champion.
    POST /scores          → submit a run {player, name, campaign, mode, prog, score, stage, diff, time, token?, run?}; keeps each player's best per campaign and mode.
                            A run that takes #1 on a board with enough entries, backed by a server-tracked campaign run, unlocks the Champion skins.
    GET  /profile?pub=    → another player's verified cosmetics { pub, equip, champion } (multiplayer uses it so skins can't be faked)
@@ -14,7 +15,7 @@
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
 import { DurableObject } from 'cloudflare:workers';
 
-const API = 3;
+const API = 4; // 4: co-op board
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
@@ -38,7 +39,7 @@ const clean = (s, n) => String(s || '').replace(/[<>\u0000-\u001f]/g, '').trim()
 const cleanName = (s) => clean(s, 16) || 'Operative';
 
 // ------------------------------------------------------------ economy (the game's js/skins.js mirrors the catalog for visuals)
-const CAMPAIGNS = ['foundry', 'halden'], MODES = ['drones', 'nodrones'];
+const CAMPAIGNS = ['foundry', 'halden'], MODES = ['drones', 'nodrones'], BOARDS = MODES.concat('coop'); // MODES: solo (Champion-eligible)
 const PHASES = { foundry: 5, halden: 6 };
 const DIFF_MUL = { recruit: 0.75, veteran: 1, elite: 1.5 };
 const PHASE_COINS = 40, FINISH_COINS = { foundry: 250, halden: 300 }, WELCOME = 300, DAILY_CAP = 6000;
@@ -106,14 +107,14 @@ export class Board extends DurableObject {
   }
 
   // ---------------------------------------------------------- leaderboard
-  where(campaign, mode) { const all = mode === 'all'; return { w: all ? 'campaign = ?' : 'campaign = ? AND mode = ?', a: all ? [campaign] : [campaign, mode] }; }
+  where(campaign, mode) { const all = mode === 'all'; return { w: all ? "campaign = ? AND mode != 'coop'" : 'campaign = ? AND mode = ?', a: all ? [campaign] : [campaign, mode] }; }
   /** Top rows for one campaign (mode 'all' mixes both modes), plus the caller's own best row and rank within that view. */
   board(key, campaign, mode, limit) {
     const { w, a } = this.where(campaign, mode);
     const rows = this.sql.exec(`SELECT key, ${COLS} FROM runs WHERE ${w} ORDER BY prog DESC, score DESC, date ASC LIMIT ?`, ...a, limit).toArray();
     const out = { campaign, mode, rows: rows.map((r) => { const o = Object.assign({}, r, { me: r.key === key, name: cleanName(r.name) }); delete o.key; return o; }) };
     out.total = this.sql.exec(`SELECT COUNT(*) AS n FROM runs WHERE ${w}`, ...a).one().n;
-    out.champMin = CHAMP_MIN_ENTRIES;
+    out.champMin = CHAMP_MIN_ENTRIES; out.modes = BOARDS; // a client only sends co-op runs to a server that lists 'coop'
     const mine = key && this.sql.exec(`SELECT ${COLS} FROM runs WHERE key = ? AND ${w} ORDER BY prog DESC, score DESC LIMIT 1`, key, ...a).toArray()[0];
     if (mine) { mine.rank = this.rankOf(mine, w, a); mine.me = true; mine.name = cleanName(mine.name); out.mine = mine; }
     return out;
@@ -140,7 +141,7 @@ export class Board extends DurableObject {
     const pick = (v, list, def) => (list.includes(v) ? v : def);
     if (req.method === 'GET') {
       const q = url.searchParams, limit = Math.max(1, Math.min(100, Math.floor(+q.get('limit')) || 10));
-      return json(this.board(keyOf(q.get('player') || '', q.get('name')), pick(q.get('campaign'), CAMPAIGNS, 'foundry'), pick(q.get('mode'), MODES.concat('all'), 'all'), limit));
+      return json(this.board(keyOf(q.get('player') || '', q.get('name')), pick(q.get('campaign'), CAMPAIGNS, 'foundry'), pick(q.get('mode'), BOARDS.concat('all'), 'all'), limit));
     }
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
     let b; try { b = await req.json(); } catch (e) { return json({ error: 'Bad JSON' }, 400); }
@@ -148,7 +149,7 @@ export class Board extends DurableObject {
     const prog = Math.floor(+b.prog), score = Math.floor(+b.score), time = Math.floor(+b.time) || 0;
     const campaign = pick(b.campaign, CAMPAIGNS, 'foundry');
     // clients from before drone modes only sent a difficulty label
-    const mode = pick(b.mode, MODES, / · No/.test(String(b.diff || '')) ? 'nodrones' : 'drones');
+    const mode = pick(b.mode, BOARDS, / · No/.test(String(b.diff || '')) ? 'nodrones' : 'drones');
     const diff = clean(String(b.diff || '').split(' · ')[0], 16);
     if (!key || !(prog >= 0 && prog <= PHASES[campaign]) || !(score >= 0 && score <= 5e6)) return json({ error: 'Invalid run' }, 400);
     const prof = b.token ? this.profile(String(b.token)) : null;
@@ -159,9 +160,9 @@ export class Board extends DurableObject {
       this.sql.exec('INSERT OR REPLACE INTO runs (key, campaign, mode, name, prog, score, stage, diff, time, date, prof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         key, campaign, mode, name, prog, score, clean(b.stage, 40), diff, time, now, prof ? prof.pub : null);
     }
-    const out = Object.assign(this.board(key, campaign, pick(b.view, MODES.concat('all'), 'all'), Math.max(1, Math.min(100, Math.floor(+b.limit) || 10))), { improved });
+    const out = Object.assign(this.board(key, campaign, pick(b.view, BOARDS.concat('all'), 'all'), Math.max(1, Math.min(100, Math.floor(+b.limit) || 10))), { improved });
     // Champion: #1 on a board with enough entries, with a server-tracked run that really reached this far, at a plausible pace
-    if (improved && prof) {
+    if (improved && prof && mode !== 'coop') {
       const { w, a } = this.where(campaign, mode);
       const rank = this.rankOf({ prog, score, date: now }, w, a);
       const total = this.sql.exec(`SELECT COUNT(*) AS n FROM runs WHERE ${w}`, ...a).one().n;

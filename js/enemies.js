@@ -49,7 +49,10 @@
   class Enemy {
     constructor(type, x, y, z, o) {
       o = o || {};
-      const T = this.T = TYPES[type]; this.type = type; this.kind = T.kind; this.name = T.name;
+      let T = TYPES[type];
+      if (o.dmgMul && o.dmgMul !== 1) T = Object.assign({}, T, { dmg: T.dmg * o.dmgMul }); // co-op scaling
+      this.T = T; this.type = type; this.kind = T.kind; this.name = T.name;
+      this.ghost = !!o.ghost; this.nid = o.nid || 0; // ghost: a co-op client's copy of an enemy the host runs
       this.m = CF.EnemyModels[type]();
       for (const mm of this.m.mats) if (mm.emissive) mm.userData.e0 = mm.emissive.clone();
       this.root = this.m.root; E.scene.add(this.root);
@@ -69,7 +72,8 @@
       this.rocketT = U.rand(5, 8); this.tele = null;
       this.hover = U.rand(3.5, 6.5); this.orbitA = Math.random() * 6.28; this.orbitDir = Math.random() < 0.5 ? -1 : 1;
       this.noScore = !!o.noScore; this.onDeath = o.onDeath || null; this.tag = o.tag || null;
-      if (T.flying) { this.body.pos.y = y + this.hover; this.body.noSnap = true; }
+      if (T.flying && !this.ghost) { this.body.pos.y = y + this.hover; this.body.noSnap = true; }
+      if (this.ghost) this.gt = { x, y, z, yaw: this.yaw, pitch: 0, code: 0 };
       if (o.spawnFx) { CF.FX.spawnBeam(new THREE.Vector3(x, y, z), T.height, T.frost); this.root.scale.set(0.001, 0.001, 0.001); }
       this.root.position.copy(this.body.pos); this.root.rotation.y = this.yaw;
       this.root.updateMatrixWorld(true); this.cacheHits();
@@ -96,6 +100,9 @@
       if (tag === 'head' && info.weapon) mult = CF.Weapons.defs[info.weapon].head * (part.mult / 2);
       const unaware = this.state === 'idle' || this.state === 'patrol';
       if (unaware && info.source === 'player') mult *= 1.5;
+      if (info.raw) { mult = 1; tag = info.head ? 'head' : 'body'; } // a co-op partner's hit, already worked out on their side
+      if (this.ghost) return CF.Coop.ghostHit(this, amount * mult, tag, info);
+      if (info.source === 'ally' && CF.Coop) CF.Coop.allyAggro(this, info.by);
       const dmg = amount * mult;
       this.hp -= dmg; this.flashT = 0.09; this.flinch = Math.min(1, this.flinch + dmg / 40);
       this.staggerAcc += dmg;
@@ -119,7 +126,7 @@
       const c = this.center(new THREE.Vector3());
       const big = this.kind === 'juggernaut' ? 1.6 : this.kind === 'bloom' ? 2 : this.kind === 'stalker' ? 0.8 : 1;
       if (this.T.frost) { CF.FX.shatter(c, big); A.play('shatter', c, { ref: 7, vol: big }); } else CF.FX.botExplode(c, big);
-      if (this.kind === 'juggernaut') CF.Game.explode(c, { radius: 4, damage: 40, source: 'enemy', noFx: true, shake: 0.5 });
+      if (this.kind === 'juggernaut' && !this.ghost) CF.Game.explode(c, { radius: 4, damage: 40, source: 'enemy', noFx: true, shake: 0.5 });
       const d = info && info.dir ? _v.copy(info.dir) : _v.set(0, 0, 0);
       for (const part of this.m.gibs) {
         const vel = new THREE.Vector3(d.x * U.rand(2, 5) + U.gauss() * 2.5, U.rand(3, 6.5), d.z * U.rand(2, 5) + U.gauss() * 2.5);
@@ -130,6 +137,8 @@
       for (const mm of this.m.mats) if (mm.emissive) mm.emissive.setRGB(0, 0, 0);
       this.fallDir = Math.random() < 0.5 ? -1 : 1;
       if (this.tele) { this.tele = null; }
+      if (this.ghost) return;
+      if (CF.Coop) CF.Coop.enemyDied(this, info, head);
       if (this.onDeath) this.onDeath(this);
       CF.Game.onEnemyKilled(this, info || {}, head);
     }
@@ -176,6 +185,7 @@
         this.pose(dt, 0); this.root.position.copy(b.pos); this.root.updateMatrixWorld(true); this.cacheHits();
         return;
       }
+      if (this.ghost) { this.ghostStep(dt); return; }
       this.perceive(dt, P);
       this.flashT -= dt; this.flinch = Math.max(0, this.flinch - dt * 4); this.recoil = Math.max(0, this.recoil - dt * 8);
       this.staggerAcc = Math.max(0, this.staggerAcc - dt * 80);
@@ -184,9 +194,48 @@
       const k = Math.max(0, this.flashT / 0.09) * 0.7;
       for (const mm of this.m.mats) if (mm.emissive) { const e = mm.userData.e0; mm.emissive.setRGB(e.r + k, e.g + k * 0.9, e.b + k * 0.8); }
       if (this.reactT > 0) this.reactT -= dt;
-      if (T.static) this.staticAI(dt, P); else if (T.flying) this.flyAI(dt, P); else if (this.kind === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
+      if (T.melee) this.meleeAI(dt, P); else if (T.static) this.staticAI(dt, P); else if (T.flying) this.flyAI(dt, P); else if (this.kind === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
       this.root.position.copy(b.pos); this.root.rotation.y = this.yaw;
       this.root.updateMatrixWorld(true); this.cacheHits();
+    }
+
+    /** Ghost: glide to the host's latest snapshot and pose from it. */
+    ghostStep(dt) {
+      const b = this.body, g = this.gt, ox = b.pos.x, oy = b.pos.y, oz = b.pos.z;
+      if (b.pos.distanceToSquared(_v.set(g.x, g.y, g.z)) > 36) b.pos.set(g.x, g.y, g.z);
+      else { b.pos.x = U.damp(b.pos.x, g.x, 12, dt); b.pos.y = U.damp(b.pos.y, g.y, 12, dt); b.pos.z = U.damp(b.pos.z, g.z, 12, dt); }
+      b.vel.set((b.pos.x - ox) / Math.max(dt, 1e-3), (b.pos.y - oy) / Math.max(dt, 1e-3), (b.pos.z - oz) / Math.max(dt, 1e-3));
+      this.yaw += U.wrapAngle(g.yaw - this.yaw) * Math.min(1, dt * 12);
+      this.aimPitch = U.damp(this.aimPitch, g.pitch, 10, dt);
+      const c = g.code;
+      this.state = ['idle', 'hunt', 'combat', 'alert'][c & 3];
+      this.staggerT = c & 4 ? 0.2 : 0; this.leapState = c & 8 ? 'air' : ''; this.biteT = c & 16 ? 0.2 : 0;
+      this.flashT -= dt; this.flinch = Math.max(0, this.flinch - dt * 4); this.recoil = Math.max(0, this.recoil - dt * 8);
+      const k = Math.max(0, this.flashT / 0.09) * 0.7;
+      for (const mm of this.m.mats) if (mm.emissive) { const e = mm.userData.e0; mm.emissive.setRGB(e.r + k, e.g + k * 0.9, e.b + k * 0.8); }
+      this.gSpeed = U.damp(this.gSpeed || 0, Math.hypot(b.vel.x, b.vel.z), 8, dt);
+      this.pose(dt, this.gSpeed);
+      this.root.position.copy(b.pos); this.root.rotation.y = this.yaw;
+      this.root.updateMatrixWorld(true); this.cacheHits();
+    }
+
+    /** Infected melee walker (Zombies): close in along the flow field, then swing. */
+    meleeAI(dt, P) {
+      const b = this.body, T = this.T, ppos = P.body.pos, dist = Math.hypot(ppos.x - b.pos.x, ppos.z - b.pos.z);
+      let speed = 0;
+      if (this.state === 'idle' || this.state === 'patrol') this.state = 'hunt';
+      this.swingT = (this.swingT || 0) - dt;
+      if (!P.alive) this.moveDir(0, 0, 0, dt);
+      else if (this.staggerT > 0) this.moveDir(0, 0, 0, dt);
+      else if (this.windT > 0) {
+        this.windT -= dt; this.faceTarget(P, dt, 8); this.moveDir(0, 0, 0, dt);
+        if (this.windT <= 0 && dist < 2.1 && Math.abs(ppos.y - b.pos.y) < 1.6) { P.damage(T.dmg, b.pos, 'a ' + this.name); A.play('meleeHit', b.pos, { ref: 4 }); }
+      } else if (dist < 1.6 && Math.abs(ppos.y - b.pos.y) < 1.5 && this.swingT <= 0) { this.windT = 0.4; this.swingT = 1.1; this.recoil = 1; A.play(T.alert || 'screech', b.pos, { ref: 4, vol: 0.6 }); }
+      else if (dist >= 1.3) { this.lastKnown.copy(ppos); this.chase(T.run, dt); speed = T.run; }
+      else { this.faceTarget(P, dt, 6); this.moveDir(0, 0, 0, dt); }
+      this.state = dist < 3 ? 'combat' : 'hunt';
+      this.physics(dt);
+      this.pose(dt, Math.hypot(b.vel.x, b.vel.z));
     }
 
     // steer along the flow field toward the player
@@ -312,6 +361,7 @@
       _dir.subVectors(_pc, muzzle).normalize();
       _dir.x += U.gauss() * spread; _dir.y += U.gauss() * spread * 0.7; _dir.z += U.gauss() * spread; _dir.normalize();
       E.shoot(T.bolt, muzzle, _dir, T.projSpeed, T.dmg, this);
+      if (CF.Coop) CF.Coop.enemyShot(this, muzzle, _dir);
       this.recoil = 1; this.lastFired = CF.time;
       if (T.frost) CF.FX.muzzle(muzzle, _dir, 1.2, 3.4, 5, this.kind === 'juggernaut' ? 1.1 : 0.6);
       else CF.FX.muzzle(muzzle, _dir, 5, 1.4, 0.5, this.kind === 'juggernaut' ? 1.1 : 0.6);
@@ -335,6 +385,7 @@
           const r = this.rq[i]; r.t -= dt;
           if (r.t <= 0) {
             const from = this.m.p.podMuzzle.getWorldPosition(new THREE.Vector3());
+            if (CF.Coop) CF.Coop.enemyLob(this, from, r.target);
             if (this.T.lob) { E.mortar(from, r.target, 1.25, this, 36, 'shardLob'); A.play('shardLob', from, { ref: 8 }); CF.FX.muzzle(from, _v.set(0, 1, 0), 1.2, 3.4, 5, 1.1); }
             else E.rocket(from, r.target, this);
             this.rq.splice(i, 1);
@@ -551,10 +602,12 @@
     this.list.push(e);
     return e;
   };
-  E.alive = function (filter) { let n = 0; for (const e of this.list) if (e.alive && (!filter || filter(e))) n++; return n; };
+  E.alive = function (filter) { let n = 0; for (const e of this.list) if (e.alive && !e.net && (!filter || filter(e))) n++; return n; };
   E.clear = function () {
-    for (const e of this.list) { E.scene.remove(e.root); if (e.cleanup) e.cleanup(); }
-    this.list.length = 0;
+    // other players (multiplayer, co-op) live in this list too; they stay
+    const keep = this.list.filter((e) => e.net);
+    for (const e of this.list) if (!e.net) { E.scene.remove(e.root); if (e.cleanup) e.cleanup(); }
+    this.list.length = 0; this.list.push(...keep);
     for (const p of this.proj) if (p.mesh) E.scene.remove(p.mesh);
     this.proj.length = 0; this.lines.length = 0;
   };
@@ -690,24 +743,28 @@
           if (p.kind !== 'rocket' && p.kind !== 'mortar') { CF.FX.sparks(h.x, h.y, h.z, h.nx, h.ny, h.nz, 5, 4, true); CF.FX.glow(h.x, h.y, h.z, 0.5, p.spec.c[0] * 0.5, p.spec.c[1] * 0.5, p.spec.c[2] * 0.5, 0.08); CF.FX.decal(CF.FX.scorches, h.x, h.y, h.z, h.nx, h.ny, h.nz, 0.3); }
         }
       }
-      // player
-      if (P.alive && !dead) {
-        _pa.set(P.body.pos.x, P.body.pos.y + 0.35, P.body.pos.z); _pb.set(P.body.pos.x, P.body.pos.y + P.body.height - 0.25, P.body.pos.z);
+      // players (co-op host: every standing player; a ghost shot stops on the local player but never hurts)
+      const tg = CF.Coop && CF.Coop.hostSim() ? CF.Coop.targets : null;
+      for (let ti = 0, tn = tg ? tg.length : 1; ti < tn && !dead; ti++) {
+        const T = tg ? tg[ti] : P;
+        if (!T.alive) continue;
+        _pa.set(T.body.pos.x, T.body.pos.y + 0.35, T.body.pos.z); _pb.set(T.body.pos.x, T.body.pos.y + T.body.height - 0.25, T.body.pos.z);
         const rr = 0.36 + p.r;
         if (segSegDist2(p.prev, p.pos, _pa, _pb) < rr * rr) {
           dead = true; hitPos = p.pos.clone();
-          if (p.kind !== 'rocket' && p.kind !== 'mortar') P.damage(p.dmg, p.owner ? p.owner.body.pos : p.prev, p.src);
-        } else if (!p.whiz) {
-          const d2 = segSegDist2(p.prev, p.pos, cam, cam);
-          if (d2 < 2.6 * 2.6) { p.whiz = true; A.play('whiz', _cp, { ref: 2 }); CF.HUD.suppress(0.35); }
+          if (p.kind !== 'rocket' && p.kind !== 'mortar' && !p.ghost) T.damage(p.dmg, p.owner ? p.owner.body.pos : p.prev, p.src);
         }
+      }
+      if (P.alive && !dead && !p.whiz) {
+        const d2 = segSegDist2(p.prev, p.pos, cam, cam);
+        if (d2 < 2.6 * 2.6) { p.whiz = true; A.play('whiz', _cp, { ref: 2 }); CF.HUD.suppress(0.35); }
       }
       // mortar: detonate over target
       if (!dead && p.kind === 'mortar' && p.vel.y < 0 && p.pos.y <= p.target.y + 0.2) { dead = true; hitPos = p.pos.clone(); }
       if (dead) {
         if (p.kind === 'rocket' || p.kind === 'mortar') {
           const at = hitPos || p.pos;
-          CF.Game.explode(at, { radius: p.kind === 'rocket' ? 4.5 : 3.6, damage: p.dmg, source: 'enemy', killer: p.src, scale: 0.8, frost: p.frost });
+          if (p.ghost) CF.FX.explosion(at, 0.8); else CF.Game.explode(at, { radius: p.kind === 'rocket' ? 4.5 : 3.6, damage: p.dmg, source: 'enemy', killer: p.src, scale: 0.8, frost: p.frost });
         }
         if (p.mesh) this.scene.remove(p.mesh);
         this.proj.splice(i, 1);
@@ -750,13 +807,15 @@
     this.flowT -= dt;
     if (this.flowT <= 0) {
       this.flowT = 0.3;
-      if (this.list.some((e) => e.alive && (e.state === 'hunt' || e.state === 'combat' || e.state === 'alert'))) W.computeFlow(P.body.pos.x, P.body.pos.z);
+      if (this.list.some((e) => e.alive && !e.ghost && (e.state === 'hunt' || e.state === 'combat' || e.state === 'alert'))) {
+        if (CF.Coop && CF.Coop.hostSim()) CF.Coop.computeFlow(); else W.computeFlow(P.body.pos.x, P.body.pos.z);
+      }
     }
     let combat = 0;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const e = this.list[i];
       if (!e) continue;
-      e.update(dt, P);
+      e.update(dt, !e.net && CF.Coop && CF.Coop.hostSim() ? CF.Coop.targetFor(e) : P);
       if (e.alive && (e.state === 'combat' || e.state === 'hunt')) combat++;
     }
     // separation between ground units

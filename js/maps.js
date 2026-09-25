@@ -104,5 +104,17 @@
       menuCam: (t, cam) => { const a = t * 0.04; cam.position.set(Math.sin(a) * 34, 14 + Math.sin(a * 1.3) * 2, Math.cos(a) * 34); cam.lookAt(0, 2, 0); }
     }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown'];
+  CF.Maps.sniper = {
+    id: 'sniper', name: 'Sniper Valley', mp: true, nav: false, blurb: 'Two rooftops face each other across a 60 m drop. Rail rifles only.',
+    bounds: { minX: -40, maxX: 40, minZ: -60, maxZ: 60 },
+    theme: base({
+      fogDensity: 0.0075,
+      skyline: Object.assign(base().skyline, { r0: 70, r1: 300, clearX: 50, clearZ: 64, hMin: 40, hMax: 170, count: 130, base: -120, holo: 16, seed: 311 }),
+      traffic: { count: 60, minAlt: -60, maxAlt: 40 },
+      rain: { count: 2200, roofs: [] }
+    }),
+    build: () => CF.MapSniper.build(),
+    menuCam: (t, cam) => { const a = t * 0.03; cam.position.set(Math.sin(a) * 30, 6 + Math.sin(a * 1.2) * 2, Math.cos(a) * 12); cam.lookAt(0, 0, Math.cos(a) * -30); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'sniper'];
 })(window.CF);

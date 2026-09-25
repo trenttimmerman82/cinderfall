@@ -13,8 +13,11 @@ It is set in a rain-soaked neon city.
   music, weather and weapon progression.
 - Both campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
+- **Co-op campaign.** Play Cinder Foundry or Whiteout with a friend through a room code: shared objectives, revive each
+  other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
-  (revolvers only, every hit kills) or **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) on **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
+  (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) or co-op
+  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -63,6 +66,29 @@ disguised; sprinting or getting shot blows your cover, and you can't hide again 
 loadouts, but for the first 45 seconds of the hunt Props take only 35% damage. A found Prop joins the Hunters.
 Hunters win by finding every Prop within 5 minutes; Props win if anyone is still hiding when time runs out. No
 kill-streak drones or RC-XD. Maps register their hiding spots through `CF.PH.place` / `CF.PH.mark` (`js/prophunt.js`).
+
+**Zombies** (2+ players, best on Neon Market) puts everyone on one team against waves of infected: Husks (clawing
+Sentry frames), Crawlers, Blight drones from wave 3 and Brutes every fifth wave. Each wave is bigger and tougher;
+count, health and damage also scale with the number of players (`CF.ZM.scale` in `js/zombies.js`). An 18-second
+break between waves restocks every ammo and armor pickup, gets downed players up and brings back anyone who bled out.
+Out of health, you go **down**: you crawl and can't shoot; a teammate holds **E** next to you for 3 seconds to revive
+you (50 health). After 30 seconds down you bleed out until the next break. The game ends when nobody is standing; the
+scoreboard shows the wave reached and total kills.
+
+**Sniper Valley** is its own map and mode: team deathmatch (first to 25, 10 minutes) between two skyscraper rooftops
+60 m apart with nothing connecting them. Each roof has a spawn bunker and a watchtower. Loadouts are rail-rifle kits
+only (Deadeye: VX-3 + KF-44, Spotter: VX-3 + P-11 + 50 armor, Longshot: VX-3 with 40 spare rounds + P-11), no
+grenades. Go over the edge and you fall to your death.
+
+**Co-op Campaign:** pick **Co-op Campaign** and a campaign, host, and have your friend join with the code. The host
+runs the mission; both players share every objective (either can hit a breaker, hold the uplink or the landing pad),
+weapon unlocks and checkpoints. A player who runs out of health goes down and can be revived; both down at once
+restarts from the last checkpoint. Difficulty and No drones come from the host's campaign settings. Tuning: enemies
+have **1.4× health** and deal the **same damage** as solo (the second gun roughly doubles your damage, so the net
+result is a little easier than solo at the same difficulty; `COOP_HP` / `COOP_DMG` in `js/coop.js`). Co-op runs earn
+no coins, never touch your solo save, and are ranked on a separate **Co-op** leaderboard under both callsigns (needs
+the updated server: run `npx wrangler deploy` in `server/`). The partner sees boss attacks land but not their
+wind-up telegraphs.
 
 **RC-XD (Nuketown):** hold **E** at the chest between the school bus and the moving truck, then press **T** to drive.
 **W/S** drive, **A/D** steer, the mouse swings the camera, **click or T** detonates (7 m blast). It also explodes after
@@ -118,7 +144,7 @@ To try it locally, run `npx wrangler dev` in `server/` and open the game with `?
 | Space | Jump · climb ledges |
 | C | Crouch · slide while sprinting |
 | R | Reload |
-| E | Interact (hold) · Prop Hunt: disguise as the object in front of you |
+| E | Interact (hold) · Prop Hunt: disguise as the object in front of you · co-op: revive a downed teammate (hold) |
 | G | Throw grenade |
 | T | Drive / detonate the RC-XD (Nuketown) |
 | V | Melee |

@@ -506,6 +506,8 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .lb-mode.drones::before { content: '◆ '; }
 .lb-mode.nodrones { color: #d5cfe6; border-color: rgba(213, 207, 230, 0.35); background: rgba(213, 207, 230, 0.06); }
 .lb-mode.nodrones::before { content: '◇ '; }
+.lb-mode.coop { color: #9dff8a; border-color: rgba(157, 255, 138, 0.45); background: rgba(157, 255, 138, 0.07); }
+.lb-mode.coop::before { content: '⇄ '; }
 @media (max-width: 860px) { .lb-controls { grid-template-columns: 1fr; } .lb-row { grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr) 64px 92px; gap: 8px; } .lb-row span:nth-child(5) { display: none; } }
 @media (max-width: 520px) { .lb-row { grid-template-columns: 34px minmax(0, 1fr) 60px 30px; } .lb-row span:nth-child(3) { display: none; } .lb-row .lb-mode { font-size: 0; padding: 3px 4px; } .lb-row .lb-mode::before { font-size: 11px; } }
 
@@ -563,6 +565,22 @@ body.mp-revolver #screen-mpmenu [data-lo-grid], body.mp-revolver .md-lo, body.mp
 body.mp-revolver .revolver-note { display: grid; }
 body.mp-revolver .mpb-mode { color: var(--ember); }
 body.mp-revolver .mp-bar { border-left-color: var(--ember); }
+/* Sniper Valley */
+.card-sniper b::before { content: '⌖ '; color: var(--cyan, #37f3ff); }
+.mp-mode-note { margin: 0; font: 500 13px/1.4 var(--f-body); color: var(--bone-dim); }
+.card[data-mode]:disabled { opacity: 0.4; cursor: default; }
+body.mp-sniper .grenades { display: none !important; }
+/* Zombies and co-op */
+.card-coop b::before { content: '⇄ '; color: #37f3ff; }
+body.coop #screen-mpmenu [data-lo-grid], body.coop #screen-mpmenu .mp-h small { display: none; }
+body.coop .mp-bar { display: none !important; }
+.card-zombies b::before { content: '☣ '; color: #8dff6a; }
+.card-zombies.sel { border-color: #8dff6a; background: linear-gradient(135deg, rgba(141, 255, 106, 0.14), rgba(255, 60, 90, 0.05)); }
+.card-zombies.sel b { color: #8dff6a; }
+body.mp-zombies .mpb-mode { color: #8dff6a; }
+body.mp-zombies .mp-bar { border-left-color: #8dff6a; }
+body.coop-downed .crosshair, body.coop-downed .weapon-panel, body.coop-downed .hitmarker { display: none; }
+body.coop-downed #hud::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 35%, rgba(120, 0, 10, 0.55) 100%); }
 /* Prop Hunt */
 .card-prophunt b::before { content: '▣ '; color: #4dff9a; }
 .card-prophunt.sel { border-color: #4dff9a; background: linear-gradient(135deg, rgba(77, 255, 154, 0.14), rgba(255, 138, 42, 0.06)); box-shadow: 0 0 18px rgba(77, 255, 154, 0.18); }
