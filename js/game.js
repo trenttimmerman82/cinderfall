@@ -652,6 +652,8 @@
 
   G.slowMo = function (scale, dur) { this.slow = { scale, dur, t: 0 }; this.timeScale = scale; };
   G.addScore = function (n) { this.score += Math.round(n); CF.HUD.setScore(this.score); };
+  /** Campaign points scaled by difficulty (Recruit 0.8×, Veteran 1×, Elite 1.4×), so harder runs rank higher on the leaderboard. */
+  G.pts = function (n) { return Math.round(n * (this.mode === 'mp' ? 1 : CF.diff().score)); };
   G.later = function (t, fn) { this.pending.push({ t, fn }); };
   G.updatePending = function (dt) {
     for (let i = this.pending.length - 1; i >= 0; i--) {
@@ -664,18 +666,18 @@
   G.onEnemyKilled = function (e, info, head) {
     if (e.noScore) return;
     const st = this.stats; st.kills++; if (head) st.headshots++;
-    const pts = Math.round((e.T.score || 100) * CF.diff().score);
-    this.addScore(pts + (head ? 50 : 0));
+    const pts = this.pts((e.T.score || 100) + (head ? 50 : 0));
+    this.addScore(pts);
     const how = head ? 'Headshot' : info && info.explosive ? 'Explosive' : info && info.melee ? 'Melee' : '';
-    CF.HUD.popup(e.name + (how ? ' · ' + how.toLowerCase() : ''), pts + (head ? 50 : 0), head ? 'head' : '');
+    CF.HUD.popup(e.name + (how ? ' · ' + how.toLowerCase() : ''), pts, head ? 'head' : '');
     CF.HUD.killfeed(e.name + ' destroyed', how);
     CF.Streak.onKill();
     A.play('kill', null, { ui: true, delay: 0.04 });
     const now = CF.time;
     this.multi = now - this.lastKill < 2.4 ? this.multi + 1 : 1; this.lastKill = now;
-    if (this.multi === 2) { CF.HUD.popup('Double kill', 100); this.addScore(100); }
-    else if (this.multi === 3) { CF.HUD.popup('Triple kill', 250); this.addScore(250); }
-    else if (this.multi >= 4) { CF.HUD.popup('Rampage', 400); this.addScore(400); }
+    if (this.multi === 2) { CF.HUD.popup('Double kill', this.pts(100)); this.addScore(this.pts(100)); }
+    else if (this.multi === 3) { CF.HUD.popup('Triple kill', this.pts(250)); this.addScore(this.pts(250)); }
+    else if (this.multi >= 4) { CF.HUD.popup('Rampage', this.pts(400)); this.addScore(this.pts(400)); }
     const r = Math.random();
     if (r < 0.38) this.drop('ammo', e);
     else if (r < 0.5) this.drop('armor', e, { amount: 20 });

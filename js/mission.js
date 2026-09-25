@@ -224,7 +224,7 @@
     this.spawner = null;
     CF.Game.phaseDone(this.idx);
     A.play('objective', null, { ui: true }); CF.Music.sting('objective');
-    CF.HUD.popup('Objective complete', 1000, 'obj'); CF.Game.addScore(1000);
+    CF.HUD.popup('Objective complete', CF.Game.pts(1000), 'obj'); CF.Game.addScore(CF.Game.pts(1000));
     const reward = { yard: 'shotgun', power: 'rail', uplink: 'rocket' }[this.phase.id];
     if (reward) this.unlock(reward);
     const next = this.idx + 1;
@@ -251,7 +251,7 @@
     if (this.phase.id !== 'power') return;
     this.breakersDone.push(it.id);
     const n = this.breakersDone.length;
-    CF.HUD.popup('Breaker online', 250, 'obj'); CF.Game.addScore(250);
+    CF.HUD.popup('Breaker online', CF.Game.pts(250), 'obj'); CF.Game.addScore(CF.Game.pts(250));
     CF.Music.sting('objective');
     if (n === 1) { say('b1', [[OW, 'One breaker online. The Warden knows what you are doing. Expect company.']]); this.unlock('satchel'); }
     if (n === 2) say('b2', [[OW, 'Two down. One left.']]);
@@ -283,8 +283,8 @@
   };
   MS.onBossKilled = function () {
     if (this.phase.id !== 'boss') return;
-    CF.Game.addScore(Math.round(3000 * CF.diff().score));
-    CF.HUD.popup('The Warden destroyed', Math.round(3000 * CF.diff().score), 'obj');
+    CF.Game.addScore(CF.Game.pts(3000));
+    CF.HUD.popup('The Warden destroyed', CF.Game.pts(3000), 'obj');
     CF.HUD.killfeed('The Warden destroyed', 'Boss');
     alarms(false);
     this.s.doneT = 3.5;

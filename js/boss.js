@@ -185,8 +185,8 @@
       c.c.mesh.visible = false;
       const pos = c.c.group.localToWorld(new THREE.Vector3(0, 0.35, 0));
       CF.FX.explosion(pos, 1.3); A.play('shieldBreak', pos, { ref: 12 });
-      CF.HUD.popup('Shoulder core destroyed', 500, 'obj');
-      CF.Game.addScore(500);
+      CF.HUD.popup('Shoulder core destroyed', CF.Game.pts(500), 'obj');
+      CF.Game.addScore(CF.Game.pts(500));
       if (this.cores.every((k) => k.dead)) { this.state = 'stagger'; this.stateT = 0; this.cancelAttack(); A.play('roar', this.body.pos, { ref: 20 }); CF.HUD.radio('Overwatch', 'Both shoulder cores are down. Its chest armour is opening. Hit the core!'); }
     }
     enrage() {

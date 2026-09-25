@@ -170,7 +170,7 @@
       pl.dead = true; pl.hp = 0; pl.node.visible = false;
       CF.FX.shatter(pl.pos, 2.2); CF.FX.frostBurst(pl.pos, 0.8); A.play('shieldBreak', pl.pos, { ref: 14 });
       pl.g.children.forEach((c, i) => { if (i < 5 && c !== pl.node) CF.FX.gib(c, new THREE.Vector3(U.gauss() * 4, U.rand(4, 8), U.gauss() * 4), 3); });
-      CF.HUD.popup('Feeder pylon shattered', 500, 'obj'); CF.Game.addScore(500);
+      CF.HUD.popup('Feeder pylon shattered', CF.Game.pts(500), 'obj'); CF.Game.addScore(CF.Game.pts(500));
       const left = this.pylons.filter((p) => !p.dead).length;
       if (left === 0) {
         this.state = 'stagger'; this.stateT = 0; this.cancelAttack();

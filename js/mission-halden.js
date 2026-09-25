@@ -99,7 +99,7 @@
           if (left === 0) {
             MS.st.depot = true;
             this.phase.logStage.call(this);
-            A.play('objective', null, { ui: true }); CF.Game.addScore(250); CF.HUD.popup('Depot secured', 250, 'obj');
+            A.play('objective', null, { ui: true }); CF.Game.addScore(CF.Game.pts(250)); CF.HUD.popup('Depot secured', CF.Game.pts(250), 'obj');
             say('depot', [[SK, 'Depot is clear. The duty office is in the orange module on the west side. Start there.']]);
             CF.Game.saveCheckpoint(L.points.cp.depot);
           }
@@ -316,7 +316,7 @@
     this.spawner = null;
     CF.Game.phaseDone(this.idx);
     A.play('objective', null, { ui: true }); CF.Music.sting('objective');
-    CF.HUD.popup('Objective complete', 1000, 'obj'); CF.Game.addScore(1000);
+    CF.HUD.popup('Objective complete', CF.Game.pts(1000), 'obj'); CF.Game.addScore(CF.Game.pts(1000));
     const reward = { landfall: 'shotgun', deadair: 'rail', whiteout: 'minigun', bloom: 'rocket' }[this.phase.id];
     if (reward) this.unlock(reward);
     const next = this.idx + 1;
@@ -357,7 +357,7 @@
     } else if (it.id.startsWith('cell') && this.phase.id === 'deadair') {
       it.enabled = false; it.mesh.visible = false; it.lamp.on = false;
       st.cells.push(it.id);
-      A.play('fuseTake', null, { ui: true }); CF.HUD.popup('Fuse cell ' + st.cells.length + ' / 3', 150, 'obj'); CF.Game.addScore(150);
+      A.play('fuseTake', null, { ui: true }); CF.HUD.popup('Fuse cell ' + st.cells.length + ' / 3', CF.Game.pts(150), 'obj'); CF.Game.addScore(CF.Game.pts(150));
       const n = st.cells.length;
       if (n === 1) say('cell1', [[SK, 'That is one.']]);
       if (n === 2) say('cell2', [[SK, 'Two. One more and that mast lives.']]);
@@ -376,7 +376,7 @@
       this.phase.startHold.call(this, false);
     } else if (it.beacon && this.phase.id === 'whiteout') {
       beaconOn(it, true); st.lit++;
-      A.play('beaconLight', it.pos, { ref: 8 }); CF.HUD.popup('Heat beacon lit', 250, 'obj'); CF.Game.addScore(250);
+      A.play('beaconLight', it.pos, { ref: 8 }); CF.HUD.popup('Heat beacon lit', CF.Game.pts(250), 'obj'); CF.Game.addScore(CF.Game.pts(250));
       CF.Game.saveCheckpoint(L.points.cp['beacon' + st.lit]);
       if (st.lit === 1) say('b1', [[VG, 'Good, that is the first beacon. Move between them. Do not stop in the open.']]);
       if (st.lit === 2) say('b2', [[SK, 'Second beacon is burning. You are halfway.']]);
@@ -399,8 +399,8 @@
   };
   MS.onBossKilled = function () {
     if (this.phase.id !== 'heart') return;
-    CF.Game.addScore(Math.round(3000 * CF.diff().score));
-    CF.HUD.popup('The Rime Heart destroyed', Math.round(3000 * CF.diff().score), 'obj');
+    CF.Game.addScore(CF.Game.pts(3000));
+    CF.HUD.popup('The Rime Heart destroyed', CF.Game.pts(3000), 'obj');
     CF.HUD.killfeed('The Rime Heart destroyed', 'Boss');
     say('heartDead', [[VG, 'It is… quiet. It stopped singing.']]);
     this.s.doneT = 4;

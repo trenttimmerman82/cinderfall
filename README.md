@@ -11,7 +11,7 @@ It is set in a rain-soaked neon city.
   whiteout (keep warm at the heat beacons), destroy the crystal blooms, kill the Rime Heart in the Hollow, then outrun
   the collapsing ice shelf to the extraction aircraft. New enemies (Thralls, Skitters, Frost Drones, a Colossus), its own
   music, weather and weapon progression.
-- Both campaigns have three threat levels and a **No drones** option (no enemy drones) that works with any of them.
+- Both campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin) or **Revolver One-Shot**
   (revolvers only, every hit kills) on **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
