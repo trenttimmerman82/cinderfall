@@ -19,6 +19,13 @@
     ENV = pm.fromScene(env, 0.04).texture; pm.dispose();
     return ENV;
   }
+  /** A relaxed stance for the showroom: arms at the sides, the rifle carried low in the right hand. */
+  function standAtEase(model) {
+    const p = model.p;
+    p.armL.rotation.set(0.04, 0, -0.1); p.foreL.rotation.x = 0.2;
+    p.armR.rotation.set(0.04, 0, 0.14); p.foreR.rotation.x = 0.4;
+    p.foreR.add(p.gun); p.gun.position.set(0.02, -0.24, 0); p.gun.rotation.set(-1.55, 0, 0);
+  }
   function buildShowroom() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0.012, 0.012, 0.02);
@@ -37,8 +44,7 @@
     ground.rotation.x = -Math.PI / 2; ground.position.y = -0.16; ground.receiveShadow = true; scene.add(ground);
     const model = CF.MP.buildOperative([0.35, 3.1, 4.2]);
     model.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    const p = model.p;
-    p.armR.rotation.set(-1.25, 0, 0.1); p.foreR.rotation.x = -0.5; p.armL.rotation.set(-1.35, 0.35, -0.4); p.foreL.rotation.x = -0.9;
+    standAtEase(model);
     scene.add(model.root);
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
     scene.environment = studioEnv();
@@ -101,7 +107,7 @@
     const rim = new THREE.PointLight(0x37f3ff, 1, 6, 2); rim.position.set(1.5, 1.8, -1.2); scene.add(rim);
     const cam = new THREE.PerspectiveCamera(28, 1, 0.05, 30);
     const model = CF.MP.buildOperative([0.35, 3.1, 4.2]);
-    model.p.armR.rotation.set(-1.2, 0, 0.1); model.p.foreR.rotation.x = -0.5; model.p.armL.rotation.set(-1.3, 0.35, -0.4); model.p.foreL.rotation.x = -0.9;
+    standAtEase(model);
     const gun = CF.VM.build('carbine', false);
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = N;
     return (TH = { r, N, hdr, ldr, q, scene, cam, model, gun, canvas, px: new Uint8Array(N * N * 4) });
