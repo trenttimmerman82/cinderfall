@@ -84,7 +84,10 @@
   const onScreen = () => CF.Game && CF.Game.screen === 'leaderboard';
   const viewMatches = (d) => d && d.campaign === Board.campaign && d.mode === Board.mode;
   Board.submit = function (run) {
-    if (!server() || !canSend(run)) return;
+    if (!server()) return;
+    // learn which server version answers before sending a run it might misfile (old servers only know the foundry)
+    if (this.v2 === null && run.campaign !== 'foundry') { request('GET').then(() => { if (this.v2) this.submit(run); }).catch(() => {}); return; }
+    if (!canSend(run)) return;
     // the profile token and server-tracked run let the server check a #1 before it awards the Champion skins
     const G = CF.Game, auth = { token: CF.Profile.token() || undefined, run: (G && CF.Profile.runId(G.runKey)) || undefined, limit: TOP };
     request('POST', Object.assign({ player: this.player(), view: this.mode }, run, auth))

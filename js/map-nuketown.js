@@ -724,6 +724,8 @@
     L.addPickup('armor', -5.5, F, -24); L.addPickup('armor', -3.5, F, 22.5);
     L.addPickup('ammo', -11.2, 0.05, -21); L.addPickup('ammo', 11.2, 0.1, 25.5); L.addPickup('ammo', 1.2, 0.05, 8.6); L.addPickup('ammo', -19.5, 0.08, -5);
     L.points.start = { x: 0, y: 0.02, z: -40, yaw: Math.PI };
+    // the RC-XD chest: the lane between the school bus and the moving truck, equally far from both teams' spawns
+    L.points.rcChest = { x: -1.5, y: 0.02, z: 0, yaw: 0.25 };
     L.killY = -10;
   };
 })(window.CF);

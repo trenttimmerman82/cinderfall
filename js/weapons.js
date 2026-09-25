@@ -31,11 +31,17 @@
     satchel: { id: 'satchel', name: 'Satchel charge', short: 'C4', auto: false, rpm: 90, dmg: 0, head: 1, pellets: 1, satchel: { radius: 7, damage: 230 }, noAds: true,
       spreadHip: 0, spreadAds: 0, spreadMove: 0, spreadAir: 0, bloom: 0, bloomMax: 0, mag: 2, reserve: 2, maxReserve: 4,
       reload: 1.0, reloadEmpty: 1.0, magInAt: 0.6, falloff: [400, 500, 1], recoil: [1, 0.2, 0.02, 0.1], adsFov: 1, adsTime: 0.2,
-      hip: [0.16, -0.16, -0.3], adsZ: -0.3, equip: 0.4, sound: 'throw', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 8 }
+      hip: [0.16, -0.16, -0.3], adsZ: -0.3, equip: 0.4, sound: 'throw', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 8 },
+    // Revolver One-Shot mode only: slow, deliberate, deadly. Aim first; hip shots wander.
+    revolver: { id: 'revolver', name: 'KF-44 Kingfisher', short: 'KF-44', auto: false, rpm: 72, dmg: 120, head: 2, pellets: 1, cylinder: true,
+      spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: Infinity, maxReserve: Infinity,
+      reload: 2.5, reloadEmpty: 2.5, magInAt: 0.66, falloff: [400, 500, 1], recoil: [4.2, 0.8, 0.1, 0.34], adsFov: 0.78, adsTime: 0.2,
+      hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 }
   };
   // Player-vs-player damage scaling (multiplayer only)
-  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel']; // index is sent over the network: bump Net's PREFIX when this changes
+  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 1;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver']; // index is sent over the network: bump Net's PREFIX when this changes
+  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver'); // campaign number keys (the revolver is multiplayer-only)
 
   const S = U.Spring;
   const WP = CF.Weapons = {
@@ -97,7 +103,7 @@
   /** Weapons bound to number keys: fixed campaign slots, or the owned loadout in multiplayer. */
   WP.slots = function () {
     if (CF.Game && CF.Game.mode === 'mp') return ORDER.filter((id) => this.inv[id]).sort((a, b) => (a === 'pistol') - (b === 'pistol'));
-    return ORDER;
+    return CAMPAIGN;
   };
   WP.select = function (id) {
     if (!this.inv[id] || id === this.curId || this.state === 'melee' || this.state === 'throw') return;
@@ -187,6 +193,7 @@
     w.mag--; this.fireCd = 60 / d.rpm; this.shotCount++;
     if (d.pump) this.cycleT = 0;
     if (d.id === 'rail') this.cycleT = 0;
+    if (d.cylinder) { this.cylTurn = (this.cylTurn || 0) + Math.PI / 3; this.hammerT = 0; }
     const st = CF.Game.stats; st.shots++;
     cam.getWorldDirection(_f); _o.copy(cam.position);
     _r.set(1, 0, 0).applyQuaternion(cam.quaternion); _u.set(0, 1, 0).applyQuaternion(cam.quaternion);
@@ -246,7 +253,7 @@
     A.play(d.sound, null, { send: 0.3 + A.room * 0.8 });
     this.flashT = d.id === 'rail' ? 0.06 : 0.035;
     this.flash.material.rotation = Math.random() * Math.PI * 2;
-    const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' ? 0.16 : d.id === 'rail' ? 0.3 : 0.22;
+    const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' ? 0.16 : d.id === 'rail' ? 0.3 : d.id === 'revolver' ? 0.3 : 0.22;
     this.flash.scale.setScalar(fs * U.rand(0.8, 1.2));
     this.flash.material.color.setRGB(d.id === 'rail' ? 1.5 : 5, d.id === 'rail' ? 4 : 3.6, d.id === 'rail' ? 6 : 2.2);
     CF.FX.flashLight(muzzle, d.id === 'rail' ? 0x60c8ff : 0xffa850, d.id === 'shotgun' ? 5 : 3, 9, 0.07);
@@ -571,6 +578,7 @@
       parts.pump.position.z = -0.42 + 0.075 * pk;
     }
     if (parts.barrels) parts.barrels.rotation.z += this.spin * dt * 45;
+    if (parts.cyl) { parts.cyl.rotation.z = U.damp(parts.cyl.rotation.z, this.cylTurn || 0, 22, dt); this.hammerT = (this.hammerT || 0) + dt; parts.hammer.rotation.x = -0.4 + (this.hammerT < 0.06 ? 0.55 : Math.max(0, 0.55 - (this.hammerT - 0.06) * 3)); }
     if (parts.charge && this.state !== 'reload') parts.charge.visible = this.cur.mag > 0;
     if (d.rocket && parts.mag && this.state !== 'reload') parts.mag.visible = this.cur.mag > 0;
     if (parts.coils) {
@@ -625,6 +633,18 @@
       return out;
     }
     const k = this.stateT / this.reloadDur;
+    if (d.cylinder) { // swing the cylinder out, dump the brass, speedloader in, snap it shut
+      const out = U.easeInOut(U.seg(k, 0.08, 0.2)) * (1 - U.easeInOut(U.seg(k, 0.8, 0.9)));
+      if (P.cylArm) P.cylArm.rotation.z = out * 1.25;
+      const load = U.seg(k, 0.42, d.magInAt);
+      if (P.mag) { P.mag.visible = k > 0.36 && k < d.magInAt + 0.04; P.mag.position.set(-0.05 + load * 0.034, 0.02 + (1 - load) * -0.12, -0.035); }
+      if (P.handL) { const w = U.pulse(k, 0.3, 0.8); P.handL.position.set(P.handLHome.x - 0.02 * w, P.handLHome.y + 0.02 * w, P.handLHome.z - 0.05 * w); }
+      if (k > 0.25 && k < 0.3 && !this.dumped) { this.dumped = true; for (let i = 0; i < 3; i++) CF.FX.shell(this.camera.position.clone().add(new THREE.Vector3(0, -0.2, 0)), new THREE.Vector3(U.gauss() * 0.3, -1.5, U.gauss() * 0.3), 0.7); }
+      if (k > 0.9) this.dumped = false;
+      tilt = k < 0.14 ? U.easeInOut(k / 0.14) : k > 0.86 ? 1 - U.easeInOut((k - 0.86) / 0.14) : 1;
+      out.rz = -0.55 * tilt; out.rx = 0.25 * tilt; out.py = -0.02 * tilt; out.px = 0.02 * tilt;
+      return out;
+    }
     tilt = k < 0.14 ? U.easeInOut(k / 0.14) : k > 0.84 ? 1 - U.easeInOut((k - 0.84) / 0.16) : 1;
     const magOut = U.easeInOut(U.seg(k, 0.16, 0.3)), magIn = U.easeInOut(U.seg(k, 0.4, d.magInAt));
     const dropY = -0.28;

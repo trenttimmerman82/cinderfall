@@ -13,10 +13,15 @@ It is set in a rain-soaked neon city.
   music, weather and weapon progression.
 - Both campaigns have three threat levels and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
-- **Multiplayer.** Play online with friends: free-for-all or team deathmatch (Voltage vs Ronin) on
-  **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones work here too.
-- **Global leaderboard.** Campaign runs are ranked against everyone who plays, separately for each campaign. Every run
-  records whether drones were on or off, and the board can be filtered by drone mode (needs the game server below).
+- **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin) or **Revolver One-Shot**
+  (revolvers only, every hit kills) on **Neon Market**, **Skyline** and **Nuketown**, with six loadouts. Kill-streak drones
+  work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
+  shielded, and blow it up.
+- **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
+- **Coins, crates and the Locker.** Clearing campaign parts earns coins; crates hold weapon finishes and operative suits
+  (Common to Legendary) that other players see in multiplayer. Taking #1 on a leaderboard unlocks the Champion gear.
+- **Global leaderboard.** Campaign runs are ranked against everyone who plays, separately for each campaign and drone
+  mode. Each board shows the top 10 and your own rank (needs the game server below).
 
 **Play:** open this repository's GitHub Pages link in a desktop browser. You need a mouse and keyboard.
 
@@ -40,17 +45,39 @@ moves along, so the host should have the best connection.
 | Heavy | Rotor-6 minigun + P-11 | Starts with 50 armor, 10% slower |
 | Demolition | Havoc RPG + satchel charges + P-11 | — |
 
-## Game server (global leaderboard and multiplayer relay)
+**Revolver One-Shot** replaces the loadouts with the KF-44 revolver: six rounds, 2.5 s reload, every hit kills, first to
+15 kills in 6 minutes. Players are shielded for 2.5 s after spawning or until they fire. No grenades, pickups, drones or RC-XD.
 
-`server/` is a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) that stores the global campaign leaderboard and relays
-multiplayer traffic when a direct connection is blocked. It fits in Cloudflare's free plan. Without it the game still works:
-the leaderboard stays on each computer and multiplayer is peer-to-peer only.
+**RC-XD (Nuketown):** hold **E** at the chest between the school bus and the moving truck, then press **T** to drive.
+**W/S** drive, **A/D** steer, the mouse swings the camera, **click or T** detonates (7 m blast). It also explodes after
+20 seconds, on a hard crash, or when enemies shoot it apart. The chest restocks 75 seconds after the car is gone.
+
+## Coins, crates and saves
+
+- Clearing a campaign part pays 40 coins on Veteran (Recruit 75%, Elite 150%); finishing Cinder Foundry adds 250 and
+  Whiteout 300. New profiles start with 300. A Field crate costs 300, an Elite crate (no commons) 750. Duplicates
+  refund 60/125/275/600 coins by rarity. Equip what you own in **Locker & Shop**.
+- Taking **#1** on a campaign board (per campaign and drone mode) with at least 5 players unlocks the Champion suit and
+  finish for good. While you still hold #1 a crown halo and light trail show on you in multiplayer.
+- With the game server, coins, skins and crate rolls live on the server: coins come only from server-tracked campaign
+  runs (parts claimed in order, no faster than a person can play them, capped per day), crates are rolled there, and
+  other players see the cosmetics the server says you own. Your **save code** (in the Locker) loads your profile,
+  coins, skins and campaign progress on another device. Without a server, all of this is kept in the browser.
+- **Reset campaign progress** is on the campaign screen; it keeps coins, skins and leaderboard entries.
+
+## Game server (leaderboard, profiles and multiplayer relay)
+
+`server/` is a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) that stores the global campaign leaderboard,
+player profiles (coins, skins, cloud saves) and relays multiplayer traffic when a direct connection is blocked. It fits in
+Cloudflare's free plan. Without it the game still works: the leaderboard, coins and skins stay on each computer and multiplayer
+is peer-to-peer only. After changing `server/worker.js`, run `npx wrangler deploy` in `server/` again.
 
 1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
 2. In this folder run `cd server && npx wrangler login`, then `npx wrangler deploy`.
 3. Copy the `https://cinderfall.<your-subdomain>.workers.dev` address it prints into `js/config.js` (`CF.SERVER = '…'`), then commit and push.
 
-To try it locally, run `npx wrangler dev` in `server/` and set `CF.SERVER = 'http://127.0.0.1:8787'`.
+To try it locally, run `npx wrangler dev` in `server/` and open the game with `?server=http://127.0.0.1:8787` in the address
+(or set `CF.SERVER`). `npx wrangler dev --var MIN_PHASE_SECS:0` turns off the per-part pacing check for quick testing.
 
 ## Controls
 
@@ -66,6 +93,7 @@ To try it locally, run `npx wrangler dev` in `server/` and set `CF.SERVER = 'htt
 | R | Reload |
 | E | Interact (hold) |
 | G | Throw grenade |
+| T | Drive / detonate the RC-XD (Nuketown) |
 | V | Melee |
 | 1–7 · mouse wheel | Switch weapon (multiplayer: pick a loadout while respawning) |
 | Esc | Pause · multiplayer menu |

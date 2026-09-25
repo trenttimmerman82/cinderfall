@@ -43,7 +43,7 @@
   P.shake = function (amount) { this.trauma = Math.min(1, this.trauma + amount * CF.settings.shake); };
 
   P.damage = function (amount, from, source, kind) {
-    if (!this.alive || CF.Game.godMode) return;
+    if (!this.alive || CF.Game.godMode || (CF.RC && CF.RC.driving)) return; // standing shielded while driving the RC car
     if (CF.Game.mode !== 'mp') amount *= CF.diff().dmg;
     let absorbed = 0;
     if (this.armor > 0) { absorbed = Math.min(this.armor, amount * 0.66); this.armor -= absorbed; }

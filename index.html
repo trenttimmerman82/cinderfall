@@ -129,6 +129,15 @@
       <div class="pc-sub" id="pcSub"></div>
     </div>
 
+    <div class="rc-hud" id="rcHud" hidden>
+      <div class="rc-cam" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="rc-panel">
+        <div class="rc-title"><b>RC-XD</b><span>Remote link · your body is shielded</span><em id="rcSpeed">0 km/h</em></div>
+        <div class="rc-row"><span>Fuse</span><div class="rc-bar"><i id="rcFuseFill"></i></div><b id="rcFuse">20.0s</b></div>
+        <div class="rc-row"><span>Hull</span><div class="rc-bar hp"><i id="rcHpFill"></i></div><b></b></div>
+        <div class="rc-keys" id="rcKeys"></div>
+      </div>
+    </div>
     <div class="countdown" id="countdown" hidden><span id="cdLabel">Ice shelf collapse</span><b id="cdTime">2:00</b></div>
     <div class="frost-edge" id="frostEdge"></div>
     <div class="fps" id="fps" hidden>0 fps</div>
@@ -154,13 +163,14 @@
         <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry or Whiteout</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
+        <button class="menu-item" data-act="locker"><span class="mi-label">Locker &amp; Shop</span><span class="mi-note">Skins, crates and your save code</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
         <button class="menu-item" data-act="manual"><span class="mi-label">Field manual</span><span class="mi-note">Keys and tactics</span></button>
       </nav>
     </div>
     <div class="main-foot">
       <span>Mouse and keyboard required</span>
-      <span>Build 2.1 · three.js r147</span>
+      <span>Build 2.2 · three.js r147</span>
     </div>
     <div class="touch-note" id="touchNote" hidden>Cinderfall needs a mouse and keyboard. Open it on a desktop browser to play.</div>
   </section>
@@ -304,6 +314,7 @@
           <div><dt>1 – 7 · Wheel</dt><dd>Switch weapon (in multiplayer, 1–6 picks a loadout while you wait to respawn)</dd></div>
           <div><dt>X</dt><dd>Last weapon</dd></div>
           <div><dt>Z</dt><dd>Deploy attack drone (earned with 5 kills within 30 seconds; it carries 60 rounds)</dd></div>
+          <div><dt>T</dt><dd>Nuketown: drive the RC-XD once you've taken it from the chest (hold E). Click or T detonates</dd></div>
           <div><dt>Satchel</dt><dd>Click throws a charge · right click or Q detonates</dd></div>
           <div><dt>Esc</dt><dd>Pause · multiplayer menu</dd></div>
         </dl>
@@ -322,6 +333,10 @@
           <p><b>Red barrels</b> explode. Your health recovers when you avoid damage for a few seconds. Armor plates do not recover.</p>
           <h3>Multiplayer loadouts</h3>
           <p><b>Assault</b> — M7 carbine. <b>Breacher</b> — KS-12 shotgun and 50 armor. <b>Marksman</b> — VX-3 rail, one-shot headshots. <b>Runner</b> — M7 carbine, one grenade and 8% more speed. <b>Heavy</b> — Rotor-6 minigun (spins up before firing) and 50 armor. <b>Demolition</b> — Havoc RPG and satchel charges. Every loadout carries the P-11 sidearm and grenades. Armor and ammo pickups come back 20 seconds after they're taken.</p>
+          <h3>Revolver One-Shot and the RC-XD</h3>
+          <p><b>Revolver One-Shot</b>: everyone carries the KF-44 revolver (6 rounds, 2.5 s reload) and any hit kills. Aim down sights; hip fire wanders. You're shielded for 2.5 s after spawning or until you fire. <b>RC-XD</b> (Nuketown): hold E at the chest between the bus and the truck, then press T to drive the car. Your body stands shielded while you drive. It explodes when you click or press T, after 20 seconds, when it crashes hard, or when enemies shoot it. The chest restocks 75 seconds after the car is gone.</p>
+          <h3>Coins, crates and saves</h3>
+          <p>Clearing campaign parts earns coins (40 each on Veteran; Recruit 75%, Elite 150%) and finishing a campaign pays a bonus. Spend them on crates in the <b>Locker &amp; Shop</b> for weapon finishes and operative suits; duplicates refund coins. Taking <b>#1</b> on a campaign leaderboard with at least 5 players unlocks the Champion gear, and while you hold #1 a crown halo and trail follow you in multiplayer. Campaign progress saves at every checkpoint; your save code carries everything to another device.</p>
         </div>
       </div>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
@@ -377,6 +392,53 @@
     </div>
   </section>
 
+  <section class="screen locker-screen" id="screen-locker" hidden>
+    <div class="lk-panel">
+      <header class="lk-head">
+        <div><span class="eyebrow">Locker &amp; Shop</span><h2>Gear up</h2></div>
+        <span class="coin-chip"><span data-coins>0</span></span>
+      </header>
+      <div class="set-tabs lk-tabs" role="tablist" aria-label="Locker">
+        <button role="tab" data-ltab="p" aria-selected="true">Operative</button>
+        <button role="tab" data-ltab="w" aria-selected="false">Weapon finish</button>
+        <button role="tab" data-ltab="shop" aria-selected="false">Shop</button>
+      </div>
+      <div class="lk-list" id="lockerList"></div>
+      <div class="lk-info" id="lockerInfo">
+        <span class="lk-rarity" id="lpRarity"></span>
+        <h3 id="lpName"></h3>
+        <p id="lpDesc"></p>
+        <p class="lk-note" id="lpNote"></p>
+        <button class="btn" id="lpEquip">Equip</button>
+      </div>
+      <div class="lk-info" id="shopInfo" hidden><p class="lk-note" id="shopCollection"></p></div>
+      <div class="save-code" id="saveCode" hidden>
+        <span class="field-label">Save code · use it to load this profile (coins, skins, campaign progress) on another device</span>
+        <div class="sc-row"><b id="saveCodeValue">—</b><button class="btn-ghost" id="saveCodeCopy">Copy</button></div>
+        <div class="sc-row"><input id="saveCodeInput" maxlength="11" placeholder="XXXXX-XXXXX" autocomplete="off" spellcheck="false"><button class="btn-ghost" id="saveCodeUse">Load</button></div>
+      </div>
+      <p class="lk-status" id="lockerStatus" aria-live="polite"></p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+    <div class="lk-drag-hint" aria-hidden="true">Drag to turn</div>
+  </section>
+
+  <div class="crate-open" id="crateOpen" hidden>
+    <div class="co-inner">
+      <div class="co-title" id="coTitle">Field crate</div>
+      <div class="co-window" id="coWindow"><div class="co-reel" id="coReel"></div><i class="co-marker"></i></div>
+      <div class="co-burst" id="coBurst"></div>
+      <div class="co-result" id="coResult" hidden>
+        <span class="co-rays"></span>
+        <span class="lk-img co-img" id="coImg"></span>
+        <span class="co-rarity" id="coRarity"></span>
+        <b class="co-name" id="coName"></b>
+        <span id="coNew"></span>
+        <div class="co-actions"><button class="btn" id="coEquip">Equip now</button><button class="btn-ghost" id="coAgain">Open another</button><button class="btn-ghost" id="coClose">Done</button></div>
+      </div>
+    </div>
+  </div>
+
   <section class="screen panel-screen dim" id="screen-win" hidden>
     <div class="panel">
       <header class="panel-head"><span class="eyebrow" id="winWhere">Cinder Station secured</span><h2>Mission complete</h2></header>
@@ -401,11 +463,12 @@
           <div class="card-row">
             <button class="card" data-map="market"><b>Neon Market</b><span>Tight streets, alleys and balconies around a holographic plaza.</span></button>
             <button class="card" data-map="rooftops"><b>Skyline</b><span>Five rooftops, stairways and catwalks, 60 metres above the street.</span></button>
-            <button class="card" data-map="nuketown"><b>Nuketown</b><span>Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac.</span></button>
+            <button class="card" data-map="nuketown"><b>Nuketown</b><span>Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac. An RC-XD chest waits in the middle.</span></button>
           </div>
-          <div class="card-row">
+          <div class="card-row three">
             <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
             <button class="card" data-mode="tdm"><b>Team deathmatch</b><span>Voltage vs Ronin. First team to 40 kills, 10 minutes.</span></button>
+            <button class="card card-revolver" data-mode="revolver"><b>Revolver One-Shot</b><span>Six-shot revolvers only. Every hit kills. First to 15, 6 minutes. Best on Nuketown or Neon Market.</span></button>
           </div>
           <button class="btn" data-act="mphost">Host match</button>
         </div>
@@ -431,7 +494,8 @@
       </header>
       <div class="mp-grid">
         <div class="mp-col"><h3 class="mp-h">Scoreboard</h3><div class="board" id="mpBoard"></div><p class="mp-team" id="mpTeamNote"></p></div>
-        <div class="mp-col"><h3 class="mp-h">Loadout <small>used from your next spawn</small></h3><div class="lo-grid" data-lo-grid></div></div>
+        <div class="mp-col"><h3 class="mp-h">Loadout <small>used from your next spawn</small></h3><div class="lo-grid" data-lo-grid></div>
+          <div class="revolver-note"><b>Revolver One-Shot</b><span>Everyone carries the KF-44 Kingfisher: six rounds, one hit kills, a 2.5 s reload. Aim down sights; hip shots wander. You're shielded for 2.5 s after spawning, until you fire. No grenades, pickups, kill-streak drones or RC-XD.</span></div></div>
       </div>
       <footer class="panel-foot">
         <button class="btn" data-act="mpresume" id="mpResumeBtn">Deploy</button>
@@ -498,11 +562,13 @@
 <script src="js/mission-halden.js"></script>
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
+<script src="js/rccar.js"></script>
 <script src="js/streak.js"></script>
 <script src="js/board.js"></script>
 <script src="js/skins.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/locker.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

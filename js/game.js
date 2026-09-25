@@ -229,7 +229,8 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) { if (e.code === 'Escape') e.target.blur(); return; }
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
-      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard')) this.back();
+      else if (e.code === 'Escape' && !$('crateOpen').hidden) { if (!CF.Locker.spinning) CF.Locker.closeCrate(); }
+      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard' || this.screen === 'locker')) this.back();
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
@@ -247,6 +248,7 @@
       else if (this.state === 'playing') { CF.Input.exitLock(); this.pause(); }
     });
     this.renderMpPick(); this.renderLoadouts();
+    CF.Locker.bind();
     if (CF.isTouch()) $('touchNote').hidden = false;
   };
   G.act = function (a) {
@@ -261,6 +263,7 @@
       case 'settings': this.backTo = this.screen; this.syncSettingsUI(); this.settingsTab('controls'); this.showScreen('settings'); break;
       case 'manual': this.backTo = this.screen; this.showScreen('manual'); break;
       case 'leaderboard': this.backTo = this.screen; CF.Board.open(); this.showScreen('leaderboard'); break;
+      case 'locker': this.backTo = this.screen === 'locker' ? 'main' : this.screen; this.showScreen('locker'); CF.Locker.open(); break;
       case 'back': this.back(); break;
       case 'resume': this.resume(); break;
       case 'restart': this.restoreCheckpoint(); break;
@@ -307,6 +310,7 @@
   };
   G.back = function () {
     this.stopCapture();
+    if (this.screen === 'locker') { if (CF.Locker.spinning) return; CF.Locker.close(); }
     this.showScreen(this.backTo || 'main');
     this.backTo = this.state === 'paused' ? 'pause' : this.state === 'mpmenu' ? 'mpmenu' : 'main';
   };
@@ -696,7 +700,7 @@
     }
     for (const b of L.barrels) if (b.alive && b.pos.distanceTo(at) < R * 0.85) this.later(U.rand(0.1, 0.22), () => this.damageBarrel(b, 999));
     const P = CF.Player;
-    if (P.alive) {
+    if (P.alive && !o.noSelf) {
       P.chestPos(_c);
       const d = _c.distanceTo(at);
       const clear = W.segmentClear(at.x, at.y + 0.2, at.z, _c.x, _c.y, _c.z) || W.segmentClear(at.x, at.y + 0.2, at.z, _c.x, P.body.pos.y + 0.3, _c.z);
@@ -799,7 +803,7 @@
       if (this.collect(p)) {
         p.alive = false; p.mesh.visible = false;
         if (p.dropped) { this.scene.remove(p.mesh); L.pickups.splice(i, 1); }
-        else if (this.mode === 'mp') p.respawn = 20;
+        else if (this.mode === 'mp' && CF.MP.mode !== 'revolver') p.respawn = 20;
       }
     }
     if (this.mode === 'mp') {
@@ -811,10 +815,11 @@
     }
   };
   G.resetPickups = function () {
+    const none = this.mode === 'mp' && CF.MP.mode === 'revolver'; // Revolver One-Shot: armor and ammo would only get in the way
     for (let i = L.pickups.length - 1; i >= 0; i--) {
       const p = L.pickups[i];
       if (p.dropped) { this.scene.remove(p.mesh); L.pickups.splice(i, 1); }
-      else { p.alive = true; p.respawn = 0; if (p.mesh) p.mesh.visible = true; }
+      else { p.alive = !none; p.respawn = 0; if (p.mesh) p.mesh.visible = !none; }
     }
   };
 
@@ -906,8 +911,9 @@
     if (playing) this.stats.time += dt;
     if (mp && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
     else P.update(dt);
-    if (mp && playing && P.alive) CF.MP.autoAim(dt);
-    if (P.alive && playing) CF.Weapons.update(dt, P);
+    if (mp) CF.RC.update(dt, raw);
+    if (mp && playing && P.alive && !CF.RC.driving) CF.MP.autoAim(dt);
+    if (P.alive && playing && !CF.RC.driving) CF.Weapons.update(dt, P);
     else if (P.alive) CF.Weapons.animate(dt, P);
     else { CF.Weapons.updateGrenades(dt); CF.Weapons.updateProjectiles(dt); }
     CF.Streak.update(dt, playing && P.alive);
@@ -950,6 +956,7 @@
     if (!(raw > 0)) raw = 0;
     raw = Math.min(raw, 0.1);
     CF.realTime += raw;
+    CF.Skins.tick(CF.realTime);
     if (this.slow) {
       this.slow.t += raw;
       const k = Math.min(1, this.slow.t / this.slow.dur);
@@ -966,8 +973,9 @@
       else A.update(raw, this.camera);
       const cam = this.camera;
       if (cam.fov !== this.lastFov) { this.lastFov = cam.fov; CF.FX.resize(CF.Post.H, cam.fov); }
-      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby);
-      CF.Post.render(this.scene, cam, showVM ? this.vmScene : null, this.vmCam);
+      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving;
+      if (st === 'menu' && this.screen === 'locker' && CF.Locker.active) CF.Locker.render(raw);
+      else CF.Post.render(this.scene, cam, showVM ? this.vmScene : null, this.vmCam);
       if (st === 'playing' || st === 'menu' || mpSt) CF.Post.adapt(raw);
     } catch (e) {
       if (!this.errOnce) { this.errOnce = true; console.error(e); }
@@ -1028,6 +1036,7 @@
     const M = MPM();
     this.mode = 'mp';
     document.body.classList.add('mp');
+    document.body.classList.toggle('mp-revolver', M.mode === 'revolver');
     this.initAudio(); A.resume(); A.setPaused(false);
     if (this.audioOn) { CF.Music.boss = false; CF.Music.start('game'); CF.Music.setIntensity(0.14); }
     CF.FX.reset(); CF.FX.clearDecals(); CF.HUD.reset(); CF.HUD.objTarget = null; CF.HUD.bossBar(false);
@@ -1035,6 +1044,7 @@
     this.pending.length = 0; this.godMode = false; this.slow = null; this.timeScale = 1;
     this.resetPickups(); this.stopHold();
     CF.Player.alive = false; CF.Player.frozen = false;
+    CF.RC.setup();
     this.mpLobby = true; this.deathT = 0; this.menuT = 0;
     $('mpBar').hidden = false; $('mpDead').hidden = true;
     CF.Post.setState({ fade: 1, low: 0, hurt: 0, suppress: 0 });
@@ -1057,7 +1067,7 @@
   G.renderMpMenu = function () {
     const M = MPM(), def = CF.Maps[M.map];
     $('mpRoomCode').textContent = CF.Net.code || '-----';
-    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + (M.mode === 'tdm' ? 'Team deathmatch' : 'Free for all') + (M.isHost() ? ' · you are hosting' : '');
+    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + M.modeDef().name + (M.isHost() ? ' · you are hosting' : '');
     $('mpMenuTitle').textContent = this.mpLobby ? 'Ready to deploy' : 'Match in progress';
     const btn = $('mpResumeBtn');
     btn.textContent = this.mpLobby ? 'Deploy' : CF.Player.alive ? 'Resume' : 'Respawn';
@@ -1077,7 +1087,7 @@
     if (!CF.Input.freeLook) CF.Input.requestLock();
   };
   G.mpSpawn = function () {
-    const M = MPM(), P = CF.Player, lo = M.LOADOUTS[M.nextLoadout] || M.LOADOUTS.assault;
+    const M = MPM(), P = CF.Player, lo = M.loadoutFor(M.nextLoadout);
     M.loadout = M.nextLoadout;
     const s = M.pickSpawn();
     CF.Weapons.reset(lo);
@@ -1093,6 +1103,7 @@
   };
   G.mpOnDeath = function (source) {
     if (this.state !== 'playing' && this.state !== 'mpmenu') return;
+    CF.RC.onDeath();
     if (this.state === 'playing') this.state = 'mpdead';
     this.deathT = 0; this.stats.deaths++;
     MPM().onLocalDeath(source);
@@ -1116,12 +1127,13 @@
     if (this.state === 'mpdead') {
       this.deathT += raw;
       CF.Post.setState({ fade: Math.max(0.35, 1 - this.deathT * 0.25) });
-      for (let i = 0; i < M.LO_KEYS.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(M.LO_KEYS[i]); this.renderLoadouts(); }
+      if (M.mode !== 'revolver') for (let i = 0; i < M.LO_KEYS.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(M.LO_KEYS[i]); this.renderLoadouts(); }
       const left = Math.max(0, RESPAWN - this.deathT);
       const txt = M.ended ? 'Match over' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
       if (this.ui.md !== txt) { $('mdTimer').textContent = txt; this.ui.md = txt; }
       if (left <= 0 && !M.ended) this.mpSpawn();
     } else if (this.state === 'mpmenu' && !CF.Player.alive) this.deathT += raw;
+    if (this.state === 'playing' && M.protectedNow() && !CF.RC.driving) CF.HUD.hint('Spawn protection · ends when you fire');
     this.mpHudT = (this.mpHudT || 0) - raw;
     if (this.mpHudT <= 0) {
       this.mpHudT = 0.2;
@@ -1137,6 +1149,7 @@
     if (this.mode !== 'mp') return;
     const M = MPM();
     this.state = 'mpend';
+    CF.RC.end(false, true);
     CF.Input.active = false; CF.Input.exitLock(); CF.Input.clearAll();
     $('mpDead').hidden = true; $('aimName').hidden = true; $('relock').hidden = true;
     $('mpWinner').textContent = winner || 'Match over';
@@ -1153,6 +1166,7 @@
     this.stats = newStats(); this.score = 0;
     CF.Player.alive = false; this.mpLobby = true; this.deathT = 0;
     this.resetPickups();
+    CF.RC.setup();
     CF.HUD.reset();
     $('mpDead').hidden = true;
     MPM().sendState();
@@ -1160,7 +1174,8 @@
   };
   G.leaveMultiplayer = function (reason) {
     this.mode = 'campaign'; this.mpLobby = false;
-    document.body.classList.remove('mp');
+    CF.RC.clear();
+    document.body.classList.remove('mp', 'mp-revolver');
     $('mpBar').hidden = true; $('mpDead').hidden = true; $('aimName').hidden = true;
     CF.Player.speedMul = 1;
     this.toMenu();

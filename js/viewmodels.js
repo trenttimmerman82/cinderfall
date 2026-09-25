@@ -167,6 +167,40 @@
     return { root, gun, parts: P, sightY: 0.074, sightZ: 0.02 };
   }
 
+  /** KF-44 Kingfisher: six-shot revolver. The cylinder swings out to reload and turns one chamber per shot. */
+  function revolver(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    B(gun, M.metal, 0, 0.042, -0.02, 0.03, 0.05, 0.1);                 // frame
+    B(gun, M.metal, 0, 0.074, -0.03, 0.03, 0.012, 0.14);               // top strap
+    CZ(gun, M.metal, 0, 0.066, -0.17, 0.014, 0.2);                     // barrel
+    B(gun, M.metal, 0, 0.056, -0.17, 0.018, 0.014, 0.2);               // under-lug
+    B(gun, M.metal, 0, 0.083, -0.265, 0.004, 0.014, 0.012);            // front blade
+    B(gun, M.accent, 0.0092, 0.066, -0.17, 0.001, 0.006, 0.16);        // barrel stripe
+    for (const sx of [-0.007, 0.007]) B(gun, M.metal, sx, 0.084, 0.03, 0.005, 0.012, 0.01); // rear notch
+    P.cylArm = new THREE.Group(); P.cylArm.position.set(-0.012, 0.03, -0.035); gun.add(P.cylArm); // crane (swings out to the left)
+    P.cyl = new THREE.Group(); P.cyl.position.set(0.012, 0.012, 0); P.cylArm.add(P.cyl);
+    CZ(P.cyl, M.steel, 0, 0, 0, 0.026, 0.056);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; B(P.cyl, M.metal, Math.cos(a) * 0.024, Math.sin(a) * 0.024, 0, 0.008, 0.008, 0.058); CZ(P.cyl, M.brass, Math.cos(a + 0.52) * 0.015, Math.sin(a + 0.52) * 0.015, 0.029, 0.006, 0.004); }
+    P.hammer = B(gun, M.metal, 0, 0.078, 0.035, 0.008, 0.022, 0.014, -0.4, 0, 0);
+    B(gun, M.metal, 0, 0.012, 0.012, 0.004, 0.022, 0.018);             // trigger guard
+    B(gun, M.polymer, 0, -0.03, 0.04, 0.032, 0.1, 0.045, -0.35, 0, 0); // grip
+    B(gun, M.metal, 0, -0.08, 0.058, 0.034, 0.014, 0.047, -0.35, 0, 0); // butt cap
+    P.mag = new THREE.Group(); gun.add(P.mag); P.mag.visible = false;  // speedloader
+    CZ(P.mag, M.polymer, 0, 0, 0, 0.022, 0.03); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; CZ(P.mag, M.brass, Math.cos(a) * 0.015, Math.sin(a) * 0.015, -0.025, 0.006, 0.03); }
+    P.muzzle = node(gun, 0, 0.066, -0.275);
+    P.eject = node(gun, 0, 0.042, -0.03);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.003, -0.035, 0.05); P.handR.rotation.set(0.25, 0, -0.1); gun.add(P.handR);
+      forearm(gun, 0.02, -0.07, 0.1, 0.12, -0.3, 0.46);
+      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.03, -0.045, 0.04);
+      const hl = hand(M.glove, -1); hl.rotation.set(0.25, 0.2, 0.8); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.03, -0.2, -0.3, 0.4);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.084, sightZ: 0.03 };
+  }
+
   function rail(hands) {
     const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
     const P = { coils: [] };
@@ -325,11 +359,20 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel };
+  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);
     r.root.traverse((o) => { if (o.isMesh) { o.castShadow = !hands; o.receiveShadow = false; o.frustumCulled = false; } });
+    // weapon finishes: which stock material plays which role (receiver/body, furniture/trim, glow strips)
+    if (CF.Skins && CF.Skins.prepareGun) CF.Skins.prepareGun(r.root, new Map([[M.metal, 'body'], [M.tan, 'body'], [M.grenade, 'body'], [M.polymer, 'trim'], [M.accent, 'accent']]));
     return r;
+  };
+  /** First-person arms in the equipped suit's colours (null: stock). */
+  VM.setArms = function (suit) {
+    VM.materials();
+    if (!M.sleeveStock) M.sleeveStock = M.sleeve.color.getHex(), M.gloveStock = M.glove.color.getHex();
+    M.sleeve.color.setHex(suit ? suit.sleeve : M.sleeveStock);
+    M.glove.color.setHex(suit ? suit.glove : M.gloveStock);
   };
 })(window.CF);
