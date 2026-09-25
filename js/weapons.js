@@ -35,7 +35,7 @@
     // Revolver One-Shot mode only: slow, deliberate, deadly. Aim first; hip shots wander.
     revolver: { id: 'revolver', name: 'KF-44 Kingfisher', short: 'KF-44', auto: false, rpm: 72, dmg: 120, head: 2, pellets: 1, cylinder: true,
       spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: Infinity, maxReserve: Infinity,
-      reload: 2.5, reloadEmpty: 2.5, magInAt: 0.66, falloff: [400, 500, 1], recoil: [4.2, 0.8, 0.1, 0.34], adsFov: 0.78, adsTime: 0.2,
+      reload: 1.6, reloadEmpty: 1.6, magInAt: 0.62, falloff: [400, 500, 1], recoil: [4.2, 0.8, 0.1, 0.34], adsFov: 0.78, adsTime: 0.2,
       hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 }
   };
   // Player-vs-player damage scaling (multiplayer only)
@@ -459,6 +459,7 @@
       if (want) {
         if (P.sprinting) P.stopSprint();
         if (this.state === 'reload' && d.shellReload && w.mag > 0) this.interrupt = true;
+        if (this.state === 'reload' && d.cylinder && this.reloadAdded) { this.state = 'idle'; this.fireCd = 0; } // rounds are in: skip closing the cylinder
         if (this.state === 'idle' && this.fireCd <= 0 && P.sprintOut <= 0 && this.cycleT >= 1 && (!d.spin || this.spin >= 1)) {
           if (w.mag > 0) { if (d.rocket || d.satchel) this.fireSpecial(P); else this.fire(P); this.fireBuffer = 0; }
           else if (d.satchel && inp.mpressed[0] && this.detonate()) this.fireBuffer = 0;
@@ -619,6 +620,8 @@
     if (P.mag && !magBase[this.curId]) magBase[this.curId] = P.mag.position.clone();
     if (P.mag) P.mag.position.copy(magBase[this.curId]);
     if (P.handL && P.handLHome) P.handL.position.copy(P.handLHome);
+    if (P.cylArm) P.cylArm.rotation.z = 0;
+    if (d.cylinder && P.mag) P.mag.visible = false;
     if (this.state !== 'reload') return out;
     let tilt = 0, dip = 0;
     if (d.shellReload) {
