@@ -56,7 +56,7 @@
     elite: { id: 'elite', name: 'Elite crate', price: 750, desc: 'No commons. Much better odds at Epic and Legendary.', odds: [['rare', 0.55], ['epic', 0.33], ['legendary', 0.12]] }
   };
   K.DUP_REFUND = { common: 60, rare: 125, epic: 275, legendary: 600 };
-  K.ECON = { phase: 40, finish: { foundry: 250, halden: 300 }, diff: { recruit: 0.75, veteran: 1, elite: 1.5 }, welcome: 300 };
+  K.ECON = { phase: 40, finish: { foundry: 250, halden: 300, story: 400 }, diff: { recruit: 0.75, veteran: 1, elite: 1.5 }, welcome: 300 };
   /** Coins for clearing a campaign part (the server computes the same numbers; this is for offline play and display). */
   K.phaseCoins = (campaign, diff, phase, total) => {
     const mul = K.ECON.diff[diff] || 1;

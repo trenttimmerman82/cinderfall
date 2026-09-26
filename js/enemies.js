@@ -24,7 +24,7 @@
   };
   TYPES.hornet.drone = true;
   for (const k in TYPES) TYPES[k].kind = TYPES[k].kind || k;
-  const E = CF.Enemies = { types: TYPES, list: [], proj: [], flowT: 0, combatCount: 0, scene: null };
+  const E = CF.Enemies = { types: TYPES, list: [], proj: [], flowT: 0, combatCount: 0, scene: null, sightMul: 1, onRpg: null };
   const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _pc = new THREE.Vector3(), _eye = new THREE.Vector3(), _dir = new THREE.Vector3(), _flow = { x: 0, z: 0 };
 
   E.init = function (scene) {
@@ -61,6 +61,7 @@
       this.yaw = o.yaw != null ? o.yaw : Math.random() * 6.28; this.aimYaw = 0; this.aimPitch = 0;
       this.state = o.aware ? 'hunt' : (o.patrol ? 'patrol' : 'idle');
       this.patrol = o.patrol || null; this.pIdx = 1; this.pWait = 0;
+      this.route = o.route || null; this.rIdx = 0; this.keepCorpse = !!o.keepCorpse; this.gunnerDead = false; // route: technicals; keepCorpse: stealth (bodies can be found)
       this.alive = true; this.canSee = false; this.seenT = -99; this.spotT = -99; this.losT = Math.random() * 0.3;
       this.lastKnown = new THREE.Vector3(x, y, z); this.alertT = 0; this.reactT = 0;
       this.fireCd = U.rand(0.6, 1.4); this.burstLeft = 0; this.burstT = 0; this.lastFired = -99;
@@ -100,16 +101,20 @@
       if (tag === 'head' && info.weapon) mult = CF.Weapons.defs[info.weapon].head * (part.mult / 2);
       const unaware = this.state === 'idle' || this.state === 'patrol';
       if (unaware && info.source === 'player') mult *= 1.5;
+      if (unaware && info.melee && info.source === 'player' && this.T.human) mult = 50; // a knife from behind: silent takedown
+      if (this.T.armor && !info.explosive && !info.melee) mult *= this.T.armor; // vehicles shrug off rifle rounds
       if (info.raw) { mult = 1; tag = info.head ? 'head' : 'body'; } // a co-op partner's hit, already worked out on their side
       if (this.ghost) return CF.Coop.ghostHit(this, amount * mult, tag, info);
       if (info.source === 'ally' && CF.Coop) CF.Coop.allyAggro(this, info.by);
+      if (info.source === 'npc' && info.from) { this.becomeAware(info.from, false); this.lastKnown.copy(info.from); }
+      if (part && part.gunner && this.T.vehicle) return this.hitGunner(amount * (part.mult || 1), tag, info);
       const dmg = amount * mult;
       this.hp -= dmg; this.flashT = 0.09; this.flinch = Math.min(1, this.flinch + dmg / 40);
       this.staggerAcc += dmg;
       if (info.dir && info.knock) { const k = info.knock * Math.min(1.5, dmg / 60) * (this.kind === 'juggernaut' ? 0.2 : this.T.static ? 0 : 1); this.body.vel.x += info.dir.x * k; this.body.vel.z += info.dir.z * k; }
       if (info.source === 'player') { const P = CF.Player; this.becomeAware(P.chestPos(_v2), true); this.lastKnown.copy(P.body.pos); this.seenT = CF.time; }
-      if (info.point) CF.FX.botHit(info.point, info.normal || _v.set(0, 1, 0), tag === 'weak');
-      if (info.point) A.play('impactBot', info.point, { ref: 4 });
+      if (info.point && this.T.human) { CF.FX.fleshHit(info.point, info.normal || _v.set(0, 1, 0), tag === 'head'); A.play('impactFlesh', info.point, { ref: 4 }); }
+      else if (info.point) { CF.FX.botHit(info.point, info.normal || _v.set(0, 1, 0), tag === 'weak'); A.play(this.T.vehicle ? 'impactMetal' : 'impactBot', info.point, { ref: 4 }); }
       CF.Game.stats.damageDealt += Math.min(dmg, Math.max(0, this.hp + dmg));
       const killed = this.hp <= 0;
       if (info.source === 'player') {
@@ -125,14 +130,17 @@
       this.alive = false; this.state = 'dead'; this.deadT = 0;
       const c = this.center(new THREE.Vector3());
       const big = this.kind === 'juggernaut' ? 1.6 : this.kind === 'bloom' ? 2 : this.kind === 'stalker' ? 0.8 : 1;
-      if (this.T.frost) { CF.FX.shatter(c, big); A.play('shatter', c, { ref: 7, vol: big }); } else CF.FX.botExplode(c, big);
+      if (this.T.human) { CF.FX.humanDown(c); A.play(head ? 'deathHead' : 'death', c, { ref: 5 }); if (this.m.torch) this.m.torch.visible = false; }
+      else if (this.T.vehicle) { CF.FX.explosion(c, 1.5); CF.FX.flashLight(c, 0xff8a30, 16, 26, 0.8); A.play('bigBoom', c, { ref: 10 }); if (this.m.wreck) this.m.wreck(); this.keepCorpse = true; if (!this.ghost) CF.Game.explode(c, { radius: 5, damage: 70, source: 'enemy', noFx: true, shake: 0.8, killer: 'an exploding truck' }); }
+      else if (this.T.frost) { CF.FX.shatter(c, big); A.play('shatter', c, { ref: 7, vol: big }); } else CF.FX.botExplode(c, big);
       if (this.kind === 'juggernaut' && !this.ghost) CF.Game.explode(c, { radius: 4, damage: 40, source: 'enemy', noFx: true, shake: 0.5 });
       const d = info && info.dir ? _v.copy(info.dir) : _v.set(0, 0, 0);
       for (const part of this.m.gibs) {
         const vel = new THREE.Vector3(d.x * U.rand(2, 5) + U.gauss() * 2.5, U.rand(3, 6.5), d.z * U.rand(2, 5) + U.gauss() * 2.5);
         CF.FX.gib(part, vel, 9);
       }
-      if (this.T.frost) this.m.eyeMat.color.setRGB(0.02, 0.05, 0.08); else this.m.eyeMat.color.setRGB(0.06, 0.01, 0.01);
+      if (!this.m.eyeMat) { /* people and vehicles have no glowing eyes to put out */ }
+      else if (this.T.frost) this.m.eyeMat.color.setRGB(0.02, 0.05, 0.08); else this.m.eyeMat.color.setRGB(0.06, 0.01, 0.01);
       if (this.m.ventMat) this.m.ventMat.color.setRGB(0.2, 0.05, 0.01);
       for (const mm of this.m.mats) if (mm.emissive) mm.emissive.setRGB(0, 0, 0);
       this.fallDir = Math.random() < 0.5 ? -1 : 1;
@@ -156,14 +164,14 @@
         const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
         const cosA = (fx * dx + fz * dz) / (Math.hypot(dx, dz) || 1);
         const crouchK = P.crouching ? 0.75 : 1;
-        see = cosA > this.T.fovCos && dist < this.T.sight * 0.8 * crouchK;
+        see = cosA > this.T.fovCos && dist < this.T.sight * 0.8 * crouchK * E.sightMul;
       }
       if (see) see = W.segmentClear(_eye.x, _eye.y, _eye.z, _pc.x, _pc.y, _pc.z) || W.segmentClear(_eye.x, _eye.y, _eye.z, _pc.x, P.body.pos.y + P.eye, _pc.z);
       this.canSee = see; this.dist = dist;
       const unaware = this.state === 'idle' || this.state === 'patrol';
       if (see && unaware) {
         // suspicion builds over time: fast up close, slow at range, slower if crouched, faster if sprinting
-        const near = U.clamp(1 - dist / (this.T.sight * 0.8), 0, 1);
+        const near = U.clamp(1 - dist / (this.T.sight * 0.8 * E.sightMul), 0, 1);
         const rate = (0.3 + near * 1.9) * (P.crouching ? 0.55 : 1) * (P.sprinting ? 1.5 : 1) * CF.diff().aggro;
         this.suspicion = Math.min(1, (this.suspicion || 0) + rate * 0.24);
         this.suspectPos = P.body.pos.clone();
@@ -194,7 +202,8 @@
       const k = Math.max(0, this.flashT / 0.09) * 0.7;
       for (const mm of this.m.mats) if (mm.emissive) { const e = mm.userData.e0; mm.emissive.setRGB(e.r + k, e.g + k * 0.9, e.b + k * 0.8); }
       if (this.reactT > 0) this.reactT -= dt;
-      if (T.melee) this.meleeAI(dt, P); else if (T.static) this.staticAI(dt, P); else if (T.flying) this.flyAI(dt, P); else if (this.kind === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
+      if (this.brain) this.brain(dt, P); // a mission's scripted behaviour (someone running for the car)
+      else if (T.vehicle) this.vehicleAI(dt, P); else if (T.melee) this.meleeAI(dt, P); else if (T.static) this.staticAI(dt, P); else if (T.flying) this.flyAI(dt, P); else if (this.kind === 'stalker') this.stalkerAI(dt, P); else this.soldierAI(dt, P);
       this.root.position.copy(b.pos); this.root.rotation.y = this.yaw;
       this.root.updateMatrixWorld(true); this.cacheHits();
     }
@@ -321,6 +330,7 @@
         if (!stag && this.reactT <= 0) this.shootLogic(dt, P, dist);
       }
       if (this.kind === 'juggernaut' && this.state !== 'idle' && this.state !== 'patrol') this.rocketLogic(dt, P);
+      if (T.rpg && this.state === 'combat' && !stag) this.rpgLogic(dt, P, dist);
       this.physics(dt);
       this.pose(dt, Math.hypot(b.vel.x, b.vel.z));
     }
@@ -337,6 +347,14 @@
 
     shootLogic(dt, P, dist) {
       const T = this.T;
+      if (!T.burst) return; // RPG gunners only fire rockets
+      if (T.aimTime && this.aimT > 0) { // snipers: a visible laser settles on you before the shot
+        this.aimT -= dt;
+        const from = this.m.p.muzzle.getWorldPosition(_v), to = P.chestPos(_v2);
+        E.line(from, to, 6, 0.3, 0.2, 0.012 + (1 - this.aimT / T.aimTime) * 0.02);
+        if (!this.canSee) { this.aimT = 0; this.burstLeft = 0; }
+        return;
+      }
       if (this.burstLeft > 0) {
         this.burstT -= dt;
         if (this.burstT <= 0) { this.burstLeft--; this.burstT = T.burstGap; this.fireAt(P, dist); }
@@ -344,8 +362,9 @@
       }
       this.fireCd -= dt * CF.diff().aggro;
       if (this.fireCd <= 0 && this.canSee && dist < T.range[1] + 6) {
-        this.burstLeft = T.burst + (Math.random() < 0.3 ? 1 : 0); this.burstT = 0;
+        this.burstLeft = T.burst + (T.aimTime ? 0 : Math.random() < 0.3 ? 1 : 0); this.burstT = 0;
         this.fireCd = U.rand(T.cool[0], T.cool[1]);
+        if (T.aimTime) { this.aimT = T.aimTime / Math.max(0.7, CF.diff().aggro); A.play('laserCharge', this.body.pos, { ref: 10, vol: 0.5 }); }
       }
     }
 
@@ -511,6 +530,7 @@
     }
 
     pose(dt, speed) {
+      if (this.m.pose) { this.m.pose(this, dt, speed); return; } // people and vehicles animate themselves (js/story-models.js)
       const p = this.m.p, t = this.kind, T = this.T;
       const amp = U.clamp(speed / T.run, 0, 1.2);
       this.phase += dt * (t === 'stalker' ? 2.2 : t === 'juggernaut' ? 1.1 : 1.6) * Math.max(speed, 0.001) * (t === 'stalker' ? 1.1 : 1.4);
@@ -580,11 +600,74 @@
         } else if (this.deadT > 7) this.remove();
         return;
       }
+      if (this.m.death) { this.m.death(this, dt); if (this.deadT > 8 && !this.keepCorpse) this.remove(); return; }
       const k = Math.min(1, this.deadT / 0.55);
       this.root.rotation.x = this.fallDir * U.easeOutCubic(k) * 1.45 * (this.kind === 'stalker' ? 0.3 : this.kind === 'bloom' ? 0 : 1);
       this.root.rotation.z = this.kind === 'stalker' ? this.fallDir * U.easeOutCubic(k) * 1.4 : 0;
       if (this.deadT > 6) this.root.position.y -= dt * 0.5;
       if (this.deadT > 8) this.remove();
+    }
+    /** RPG gunner: shoulder the launcher, hold still a moment (the shout gives you a beat), then fire. */
+    rpgLogic(dt, P, dist) {
+      this.rpgT = (this.rpgT == null ? U.rand(2, 4) : this.rpgT) - dt * CF.diff().aggro;
+      if (this.rpgAim > 0) {
+        this.rpgAim -= dt;
+        if (this.rpgAim <= 0) {
+          const from = this.m.p.muzzle.getWorldPosition(new THREE.Vector3());
+          const tgt = P.body.pos.clone(); tgt.y += 0.9; tgt.addScaledVector(P.body.vel, 0.35);
+          tgt.x += U.gauss() * 1.1 / CF.diff().acc; tgt.z += U.gauss() * 1.1 / CF.diff().acc;
+          E.rocket(from, tgt, this);
+          CF.FX.muzzle(from, _dir.subVectors(tgt, from).normalize(), 5, 2.4, 0.8, 1.2);
+          for (let i = 0; i < 8; i++) CF.FX.smoke.spawn(from.x - _dir.x * 1.2, from.y, from.z - _dir.z * 1.2, U.gauss() - _dir.x * 3, U.gauss() * 0.4, U.gauss() - _dir.z * 3, 1.6, 0.4, 2.2, 0.4, 0.38, 0.35, 0.6, -0.2, 0.8, 1);
+          this.recoil = 1; this.lastFired = CF.time;
+        }
+        return;
+      }
+      if (this.rpgT <= 0 && this.canSee && dist > 7 && dist < 70) {
+        this.rpgT = U.rand(6, 9); this.rpgAim = 0.95; this.burstLeft = 0;
+        A.play('shout', this.body.pos, { ref: 8 });
+        if (E.onRpg) E.onRpg(this);
+      }
+    }
+    /** Technicals: drive a set route, the gunner on the back swings the heavy gun at you. */
+    vehicleAI(dt, P) {
+      const b = this.body, T = this.T;
+      let speed = 0;
+      if (this.route && this.rIdx < this.route.length) {
+        const tg = this.route[this.rIdx], dx = tg[0] - b.pos.x, dz = tg[1] - b.pos.z, l = Math.hypot(dx, dz);
+        if (l < 2.2) this.rIdx++;
+        else {
+          const want = Math.atan2(-dx, -dz), d = U.wrapAngle(want - this.yaw);
+          this.yaw += U.clamp(d, -T.turn * dt, T.turn * dt);
+          speed = T.drive * (Math.abs(d) > 0.8 ? 0.45 : 1) * U.clamp(l / 6, 0.35, 1);
+        }
+      }
+      this.vSpeed = U.damp(this.vSpeed || 0, speed, 2.2, dt);
+      b.pos.x += -Math.sin(this.yaw) * this.vSpeed * dt; b.pos.z += -Math.cos(this.yaw) * this.vSpeed * dt;
+      const gy = W.navHeight(b.pos.x, b.pos.z); if (!isNaN(gy)) b.pos.y = U.damp(b.pos.y, gy, 10, dt);
+      b.vel.set(-Math.sin(this.yaw) * this.vSpeed, 0, -Math.cos(this.yaw) * this.vSpeed);
+      if (this.state === 'idle' || this.state === 'patrol') this.state = 'hunt';
+      if (this.canSee) { this.state = 'combat'; this.seenT = CF.time; }
+      // turret: yaw toward the player in the truck's frame, pitch with the gun
+      const px = P.body.pos.x - b.pos.x, pz = P.body.pos.z - b.pos.z;
+      const rel = U.wrapAngle(Math.atan2(-px, -pz) - this.yaw);
+      this.turretYaw = U.damp(this.turretYaw || 0, rel, 3.5, dt);
+      const dy = (P.body.pos.y + 1.2) - (b.pos.y + T.eye);
+      this.aimPitch = U.damp(this.aimPitch, U.clamp(Math.atan2(dy, Math.hypot(px, pz)), -0.4, 0.6), 6, dt);
+      if (!this.gunnerDead && this.reactT <= 0 && Math.abs(U.wrapAngle(rel - this.turretYaw)) < 0.25) this.shootLogic(dt, P, Math.hypot(px, pz));
+      this.pose(dt, this.vSpeed);
+    }
+    hitGunner(amount, tag, info) {
+      if (this.gunnerDead) return null;
+      this.gunnerHp = (this.gunnerHp == null ? this.T.gunnerHp : this.gunnerHp) - amount * (tag === 'head' ? 2 : 1);
+      if (info.point) { CF.FX.fleshHit(info.point, info.normal || _v.set(0, 1, 0), tag === 'head'); A.play('impactFlesh', info.point, { ref: 4 }); }
+      if (info.source === 'player') { CF.HUD.hitmarker(this.gunnerHp <= 0 ? 'kill' : tag === 'head' ? 'head' : 'hit'); A.play(tag === 'head' ? 'headshot' : 'hit', null, { ui: true }); }
+      if (this.gunnerHp <= 0) {
+        this.gunnerDead = true; this.burstLeft = 0;
+        if (this.m.gunnerDown) this.m.gunnerDown();
+        if (info.source === 'player') { CF.Game.addScore(CF.Game.pts(150)); CF.HUD.popup('Gunner down' + (tag === 'head' ? ' · headshot' : ''), CF.Game.pts(150), tag === 'head' ? 'head' : ''); CF.Game.stats.kills++; }
+      }
+      return { head: tag === 'head', dealt: amount };
     }
     remove() {
       E.scene.remove(this.root);
@@ -677,7 +760,7 @@
 
   // ------------------------------------------------------------ projectiles
   const BOLT = { bolt: { c: [6, 1.1, 0.35], len: 1.3, w: 0.075, r: 0.22 }, laser: { c: [5.5, 0.4, 2.2], len: 1.0, w: 0.05, r: 0.2 }, slug: { c: [6, 2.6, 0.6], len: 1.6, w: 0.11, r: 0.3 }, mortar: { c: [6, 2, 0.4], len: 0.8, w: 0.3, r: 0.4 },
-    shard: { c: [0.9, 3.6, 5.5], len: 1.1, w: 0.07, r: 0.22 }, shardHeavy: { c: [1.2, 3.8, 6], len: 1.5, w: 0.11, r: 0.3 }, shardLob: { c: [1.5, 4, 6], len: 0.9, w: 0.28, r: 0.4 } };
+    shard: { c: [0.9, 3.6, 5.5], len: 1.1, w: 0.07, r: 0.22 }, tracer: { c: [5.5, 3.4, 1.3], len: 2.2, w: 0.03, r: 0.16 }, shardHeavy: { c: [1.2, 3.8, 6], len: 1.5, w: 0.11, r: 0.3 }, shardLob: { c: [1.5, 4, 6], len: 0.9, w: 0.28, r: 0.4 } };
   E.shoot = function (kind, pos, dir, speed, dmg, owner) {
     const s = BOLT[kind] || BOLT.bolt;
     this.proj.push({ kind, pos: pos.clone(), prev: pos.clone(), vel: dir.clone().multiplyScalar(speed), dmg, owner, life: 3, r: s.r, whiz: false, spec: s, src: owner ? 'a ' + owner.name : 'enemy fire' });
@@ -686,7 +769,8 @@
     const dir = target.clone().sub(from).normalize();
     const mesh = new THREE.Mesh(this.rocketGeo, this.rocketMat);
     mesh.position.copy(from); mesh.lookAt(from.clone().add(dir)); this.scene.add(mesh);
-    this.proj.push({ kind: 'rocket', pos: from.clone(), prev: from.clone(), vel: dir.multiplyScalar(24), dmg: 45, owner, life: 5, r: 0.35, whiz: false, mesh, target: target.clone(), spec: null, src: 'a Juggernaut rocket' });
+    const rpg = owner && owner.T.rpg;
+    this.proj.push({ kind: 'rocket', pos: from.clone(), prev: from.clone(), vel: dir.multiplyScalar(rpg ? 30 : 24), dmg: rpg ? 55 : 45, owner, life: 5, r: 0.35, whiz: false, mesh, target: target.clone(), spec: null, src: rpg ? 'an RPG' : 'a Juggernaut rocket' });
     A.play('rocket', from, { ref: 8 });
   };
   E.mortar = function (from, target, flight, owner, dmg, look) {
@@ -822,12 +906,12 @@
     const L = this.list;
     for (let i = 0; i < L.length; i++) {
       const a = L[i]; if (!a.alive || a.T.flying || a.net) continue;
-      const aFix = !!a.T.static;
+      const aFix = !!(a.T.static || a.T.vehicle);
       for (let j = i + 1; j < L.length; j++) {
         const b = L[j]; if (!b.alive || b.T.flying || b.net) continue;
         const dx = b.body.pos.x - a.body.pos.x, dz = b.body.pos.z - a.body.pos.z, r = a.T.radius + b.T.radius, d2 = dx * dx + dz * dz;
         if (d2 < r * r && d2 > 1e-6 && Math.abs(a.body.pos.y - b.body.pos.y) < 1.5) {
-          const d = Math.sqrt(d2), bFix = !!b.T.static, push = (r - d) * (aFix || bFix ? 1 : 0.5);
+          const d = Math.sqrt(d2), bFix = !!(b.T.static || b.T.vehicle), push = (r - d) * (aFix || bFix ? 1 : 0.5);
           if (!aFix) { a.body.pos.x -= dx / d * push; a.body.pos.z -= dz / d * push; }
           if (!bFix) { b.body.pos.x += dx / d * push; b.body.pos.z += dz / d * push; }
         }

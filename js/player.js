@@ -22,7 +22,7 @@
     const b = this.body;
     b.pos.set(x, y, z); b.vel.set(0, 0, 0); b.grounded = true; b.height = STAND;
     this.yaw = yaw || 0; this.pitch = 0; this.recoilP = 0; this.recoilY = 0;
-    this.alive = true; this.frozen = false; this.deathT = 0; this.chillT = 0;
+    this.alive = true; this.frozen = false; this.ride = null; this.deathT = 0; this.chillT = 0;
     this.maxHealth = state && state.maxHealth ? state.maxHealth : 100;
     this.health = state && state.health != null ? state.health : this.maxHealth;
     this.armor = state && state.armor != null ? state.armor : 0;
@@ -114,6 +114,19 @@
     }
     this.recoilP = U.damp(this.recoilP, 0, 8, dt);
     this.recoilY = U.damp(this.recoilY, 0, 8, dt);
+    // riding (Story Campaign helicopters): the vehicle carries you, you can still look and shoot
+    if (this.ride) {
+      const r = this.ride;
+      r.get(b.pos);
+      if (r.dyaw) { this.yaw += r.dyaw; r.dyaw = 0; }
+      b.vel.set(0, 0, 0); b.grounded = true; this.sprinting = false; this.sliding = false; this.mantling = false;
+      if (this.crouching) { this.crouching = false; b.height = STAND; }
+      this.moveFrac = 0; this.bobAmp = U.damp(this.bobAmp, 0, 8, dt); this.lean = U.damp(this.lean, 0, 10, dt);
+      this.sprintT = U.damp(this.sprintT, 0, 10, dt); this.crouchT = U.damp(this.crouchT, 0, 10, dt); this.slideT = 0;
+      const diff = CF.diff();
+      if (this.time - this.lastHurt > diff.regenDelay && this.health < this.maxHealth) { this.health = Math.min(this.maxHealth, this.health + diff.regenRate * dt); CF.HUD.setVitals(this.health, this.armor); }
+      this.updateCamera(dt); return;
+    }
     // mantle in progress
     if (this.mantling) {
       this.mantleT += dt / 0.4;
@@ -271,7 +284,7 @@
       this.eyeOff = U.damp(this.eyeOff, 0, 16, dt);
       // strafe roll + slide roll
       const right = Math.cos(this.yaw) * b.vel.x - Math.sin(this.yaw) * b.vel.z;
-      this.tilt = U.damp(this.tilt, -right * 0.0045 + this.slideT * 0.06, 8, dt);
+      this.tilt = U.damp(this.tilt, -right * 0.0045 + this.slideT * 0.06 + (this.ride && this.ride.roll || 0), 8, dt);
     }
     this.trauma = Math.max(0, this.trauma - dt * 1.4);
     this.flinch = Math.max(0, this.flinch - dt * 3);

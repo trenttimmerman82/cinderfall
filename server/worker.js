@@ -1,6 +1,6 @@
 /* Cinderfall server (Cloudflare Worker).
    GET  /                → { ok, name, v } (v is the API version; the game uses it to tell an outdated server)
-   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden&mode=all|drones|nodrones|coop&player=&name=
+   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden|story&mode=all|drones|nodrones|coop&player=&name=
                            'all' covers the two solo modes; co-op runs ('coop', two callsigns) have their own board and never earn Champion.
    POST /scores          → submit a run {player, name, campaign, mode, prog, score, stage, diff, time, token?, run?}; keeps each player's best per campaign and mode.
                            A run that takes #1 on a board with enough entries, backed by a server-tracked campaign run, unlocks the Champion skins.
@@ -15,7 +15,7 @@
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
 import { DurableObject } from 'cloudflare:workers';
 
-const API = 4; // 4: co-op board
+const API = 5; // 4: co-op board · 5: Story Campaign (Dust Off)
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
@@ -39,10 +39,10 @@ const clean = (s, n) => String(s || '').replace(/[<>\u0000-\u001f]/g, '').trim()
 const cleanName = (s) => clean(s, 16) || 'Operative';
 
 // ------------------------------------------------------------ economy (the game's js/skins.js mirrors the catalog for visuals)
-const CAMPAIGNS = ['foundry', 'halden'], MODES = ['drones', 'nodrones'], BOARDS = MODES.concat('coop'); // MODES: solo (Champion-eligible)
-const PHASES = { foundry: 5, halden: 6 };
+const CAMPAIGNS = ['foundry', 'halden', 'story'], MODES = ['drones', 'nodrones'], BOARDS = MODES.concat('coop'); // MODES: solo (Champion-eligible)
+const PHASES = { foundry: 5, halden: 6, story: 8 };
 const DIFF_MUL = { recruit: 0.75, veteran: 1, elite: 1.5 };
-const PHASE_COINS = 40, FINISH_COINS = { foundry: 250, halden: 300 }, WELCOME = 300, DAILY_CAP = 6000;
+const PHASE_COINS = 40, FINISH_COINS = { foundry: 250, halden: 300, story: 400 }, WELCOME = 300, DAILY_CAP = 6000;
 const MIN_PHASE_SECS = 35;           // a part can't be cleared faster than this (cumulative from the run's start)
 const CHAMP_MIN_ENTRIES = 5;         // a board needs this many players before its #1 counts
 const SKINS = {
@@ -114,7 +114,7 @@ export class Board extends DurableObject {
     const rows = this.sql.exec(`SELECT key, ${COLS} FROM runs WHERE ${w} ORDER BY prog DESC, score DESC, date ASC LIMIT ?`, ...a, limit).toArray();
     const out = { campaign, mode, rows: rows.map((r) => { const o = Object.assign({}, r, { me: r.key === key, name: cleanName(r.name) }); delete o.key; return o; }) };
     out.total = this.sql.exec(`SELECT COUNT(*) AS n FROM runs WHERE ${w}`, ...a).one().n;
-    out.champMin = CHAMP_MIN_ENTRIES; out.modes = BOARDS; // a client only sends co-op runs to a server that lists 'coop'
+    out.champMin = CHAMP_MIN_ENTRIES; out.modes = BOARDS; out.campaigns = CAMPAIGNS; // clients only send co-op / Story runs to a server that lists them
     const mine = key && this.sql.exec(`SELECT ${COLS} FROM runs WHERE key = ? AND ${w} ORDER BY prog DESC, score DESC LIMIT 1`, key, ...a).toArray()[0];
     if (mine) { mine.rank = this.rankOf(mine, w, a); mine.me = true; mine.name = cleanName(mine.name); out.mine = mine; }
     return out;

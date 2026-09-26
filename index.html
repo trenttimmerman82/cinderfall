@@ -140,9 +140,29 @@
     </div>
     <div class="countdown" id="countdown" hidden><span id="cdLabel">Ice shelf collapse</span><b id="cdTime">2:00</b></div>
     <div class="frost-edge" id="frostEdge"></div>
+    <div class="stealth" id="stealth" hidden><span class="st-text" id="stealthText">Hidden</span><span class="st-bar"><i id="stealthFill"></i></span></div>
+    <div class="st-marks" id="stealthMarks"></div>
+    <div class="ally-tags" id="allyTags"></div>
     <div class="fps" id="fps" hidden>0 fps</div>
     <div class="flash" id="flash"></div>
   </div>
+
+  <div class="letterbox" id="letterbox" aria-hidden="true"><i></i><i></i></div>
+
+  <!-- ===================== STORY CAMPAIGN BRIEFING ===================== -->
+  <section class="briefing" id="briefing" hidden aria-live="polite">
+    <div class="br-card">
+      <span class="br-act" id="brAct">Act I</span>
+      <span class="br-num" id="brNum">Mission 01</span>
+      <h2 class="br-title" id="brTitle">Drop Zone</h2>
+      <span class="br-where" id="brWhere"></span>
+    </div>
+    <div class="br-body">
+      <div class="br-log" id="brLog"></div>
+      <div class="br-orders"><span class="br-h">Orders</span><ol id="brObj"></ol></div>
+      <div class="br-foot"><button class="btn" id="brGo">Deploy</button><span class="br-key">Enter</span><button class="btn-ghost danger" data-act="quit">Main menu</button></div>
+    </div>
+  </section>
 
   <!-- ===================== SCREENS ===================== -->
   <section class="screen loading" id="screen-loading">
@@ -158,9 +178,9 @@
     <div class="main-col">
       <div class="eyebrow">Kowloon Arc · Sector 7 · 03:10 · acid rain advisory</div>
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
-      <p class="tagline">Two operations: take Cinder Foundry back from its rogue security AI, or find out what came up the borehole at Halden Deep. Or deploy online and fight your friends across the neon districts.</p>
+      <p class="tagline">Three operations: take Cinder Foundry back from its rogue security AI, find out what came up the borehole at Halden Deep, or bring a captured recon team home from Dar Masir. Or deploy online and fight your friends across the neon districts.</p>
       <nav class="menu" aria-label="Main menu">
-        <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry or Whiteout</span></button>
+        <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry, Whiteout or Dust Off</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
         <button class="menu-item" data-act="locker"><span class="mi-label">Locker &amp; Shop</span><span class="mi-note">Skins, crates and your save code</span></button>
@@ -201,6 +221,18 @@
           <span class="cc-actions">
             <button class="cc-continue" data-continue="halden" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
             <button class="btn" data-campaign="halden">Start operation</button>
+          </span>
+        </div>
+        <div class="cc-card cc-story" data-cc="story">
+          <span class="cc-art" aria-hidden="true"><i class="sc-heli"></i></span>
+          <span class="cc-where">Dar Masir · Qaltan Republic · Story campaign</span>
+          <span class="cc-name">Dust Off</span>
+          <span class="cc-desc">A prisoner rescue goes wrong. Fly in, slip into the Magistrate's villa alone, breach the prison, and walk everyone out after your helicopter goes down.</span>
+          <span class="cc-meta">8 missions · Stealth mission · <span id="storyChars">Characters: Standard</span></span>
+          <span class="cc-best"></span>
+          <span class="cc-actions">
+            <button class="cc-continue" data-continue="story" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
+            <button class="btn" data-campaign="story">Start operation</button>
           </span>
         </div>
       </div>
@@ -282,6 +314,10 @@
             <select id="setQuality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
           </label>
           <label class="set-row toggle"><span>Film grain</span><input type="checkbox" id="setGrain"></label>
+          <label class="set-row"><span>Story Campaign characters</span>
+            <select id="setCharacters"><option value="standard">Standard (fast)</option><option value="enhanced">Enhanced characters</option></select>
+          </label>
+          <p class="set-note soft">Enhanced gives the people in the Story Campaign detailed bodies, gear, faces and textures. It is downloaded and built only when you pick it, and costs more on slower computers. Takes effect the next time a Story mission starts.</p>
           <p class="set-note" id="qualityNote" hidden>Graphics quality changes apply the next time the page loads.</p>
         </fieldset>
         <fieldset data-setpanel="audio" hidden>
@@ -328,6 +364,9 @@
           <h3>Whiteout: the Rime</h3>
           <p><b>Thrall</b>: a crewman with crystal through him. Throws ice shards; the head is the weak point. <b>Skitter</b>: six-legged crystal crawler that pounces. <b>Frost Drone</b>: a crusted survey drone (removed by <b>No drones</b>). <b>Colossus</b>: ice golem that lobs shard clusters; hit the glowing heart-shard on its back. <b>Bloom</b>: a crystal nest that breeds Skitters; shoot the core, explosives work best.</p>
           <p><b>Cold</b>: in the storm your <b>warmth</b> drains outdoors. Stand near a lit heat beacon or go indoors to warm up; at zero you freeze. <b>Crevasses</b> are fatal. Cross on the rope bridges or the pipeline.</p>
+          <h3>Dust Off: the Story Campaign</h3>
+          <p>Eight missions, each with its own kit and a briefing before it. <b>Militia</b> carry rifles; <b>machine gunners</b> soak up more fire; <b>RPG gunners</b> shout before they fire, so move when you hear it. A <b>sniper's</b> red laser settles on you before the shot. <b>Technicals</b> shrug off rifle rounds: use explosives, or kill the gunner on the back. Your squad fights alongside you and the prisoners follow your path: don't leave them behind.</p>
+          <p><b>Ghost Protocol</b> is a stealth mission. The dark hides you, lamps and torch beams give you away, crouching keeps you quiet. Your weapons are suppressed; a melee attack from behind is a silent takedown. Guards who spot you raise the alarm after a few seconds unless you silence them, and a guard who finds a body comes looking. Never raising the alarm earns the Ghost bonus.</p>
           <h3>Earning your kit</h3>
           <p>Both campaigns start you with the M7 carbine and P-11 sidearm, and every objective releases more. In Cinder Foundry, clearing the yard unlocks the KS-12 shotgun, the first breaker unlocks satchel charges, restoring power unlocks the VX-3 rail, the halfway point of the upload unlocks the Rotor-6 minigun, and finishing the upload unlocks the Havoc RPG. Whiteout has its own order, ending with the Havoc RPG before the Hollow. Pause to see what's next.</p>
           <p><b>Kill streak</b> — get 5 kills within 30 seconds to earn an attack drone. It fires 60 rounds in short bursts, then heads home. Turn on <b>No drones</b> to take the enemy Hornets out of the campaign; your kill-streak drone still works.</p>
@@ -359,7 +398,7 @@
 
   <section class="screen panel-screen dim red" id="screen-dead" hidden>
     <div class="panel narrow">
-      <header class="panel-head"><span class="eyebrow" id="deadCause">Killed by a Sentry</span><h2>Killed in action</h2></header>
+      <header class="panel-head"><span class="eyebrow" id="deadCause">Killed by a Sentry</span><h2 id="deadTitle">Killed in action</h2></header>
       <p class="panel-copy">Your last checkpoint keeps your weapons and completed objectives.</p>
       <nav class="stack">
         <button class="btn" data-act="restart">Retry from checkpoint</button>
@@ -375,9 +414,9 @@
         <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
         <div class="lb-filter" role="group" aria-label="Campaign">
           <span class="lb-filter-label">Campaign</span>
-          <div class="seg"><button data-lbcampaign="foundry" aria-selected="true">Cinder Foundry</button><button data-lbcampaign="halden" aria-selected="false">Whiteout</button></div>
+          <div class="seg"><button data-lbcampaign="foundry" aria-selected="true">Cinder Foundry</button><button data-lbcampaign="halden" aria-selected="false">Whiteout</button><button data-lbcampaign="story" aria-selected="false">Dust Off</button></div>
         </div>
-        <div class="lb-filter" role="group" aria-label="Drone mode">
+        <div class="lb-filter" role="group" aria-label="Drone mode" id="lbModeGroup">
           <span class="lb-filter-label">Drone mode</span>
           <div class="seg"><button data-lbmode="all" aria-pressed="true">All</button><button data-lbmode="drones" aria-pressed="false"><i class="lb-mode drones">Drones</i></button><button data-lbmode="nodrones" aria-pressed="false"><i class="lb-mode nodrones">No drones</i></button><button data-lbmode="coop" aria-pressed="false"><i class="lb-mode coop">Co-op</i></button></div>
         </div>
@@ -595,6 +634,7 @@
 <script src="js/map-nuketown.js"></script>
 <script src="js/map-sniper.js"></script>
 <script src="js/map-halden.js"></script>
+<script src="js/map-story.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/viewmodels.js"></script>
 <script src="js/weapons.js"></script>
@@ -602,12 +642,15 @@
 <script src="js/enemy-models.js"></script>
 <script src="js/enemy-models-frost.js"></script>
 <script src="js/enemies.js"></script>
+<script src="js/story-models.js"></script>
 <script src="js/boss.js"></script>
 <script src="js/boss-heart.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/post.js"></script>
 <script src="js/mission.js"></script>
 <script src="js/mission-halden.js"></script>
+<script src="js/story.js"></script>
+<script src="js/mission-story.js"></script>
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
 <script src="js/rccar.js"></script>

@@ -645,6 +645,9 @@
     T.list.scrBeaconOn = makeScreen(['HEAT BEACON', 'BURNING', 'OUTPUT 11 KW', 'STAY CLOSE'], '#ffcf7a', w, h);
   }
 
+  /** Canvas helpers for textures built later, on demand (the Story Campaign city and its people). */
+  T.util = { tileNoise, rgbTex, grayTex, rgbaTex, normalTex, makeCanvas, toTex, size: () => S,
+    pack: (rgb, hgt, rough, ns, n) => ({ map: rgbTex(n || S, n || S, rgb), normalMap: normalTex(n || S, n || S, hgt, ns), roughnessMap: grayTex(n || S, n || S, rough) }) };
   T.build = async function (renderer, progress) {
     S = CF.bootQuality === 'low' ? 256 : 512;
     T.maxAniso = Math.min(CF.bootQuality === 'high' ? 8 : 4, renderer.capabilities.getMaxAnisotropy());

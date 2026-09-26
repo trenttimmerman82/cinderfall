@@ -23,16 +23,29 @@
     bass: [0, 0, 7, 0, 12, 0, 7, 5], arp: [3, 2, 1, 0, 1, 2, 3, 2, 0, 1, 3, 2, 1, 3, 2, 0]
   };
   const NEON = { bpm: 104, chords: CHORDS, bass: BASS_PAT, arp: ARP_PAT };
+  // Story Campaign (Dust Off): C Phrygian dominant, taiko and low string ostinato, a plucked lead over the top
+  const DESERT = {
+    bpm: 92,
+    chords: [
+      { root: 36, tones: [48, 52, 55, 60] },   // C
+      { root: 37, tones: [49, 53, 56, 61] },   // Db
+      { root: 34, tones: [46, 49, 53, 58] },   // Bbm
+      { root: 36, tones: [48, 51, 55, 60] }    // Cm
+    ],
+    scale: [0, 1, 4, 5, 7, 8, 10, 12, 13, 16], lead: [0, 2, 1, 0, 3, 2, 4, 3, 5, 4, 2, 1, 0, 1, 2, 0],
+    bass: [0, 0, 0, 12, 0, 0, 7, 1]
+  };
+  const THEMES = { neon: NEON, frost: FROST, desert: DESERT };
 
   const M = CF.Music = {
     ctx: null, A: null, bus: null, lp: null, playing: false, timer: null,
     intensity: 0, target: 0, step: 0, nextTime: 0, bpm: 104, mode: 'menu', boss: false, theme: 'neon', T: NEON
   };
-  /** 'neon' (Cinder Foundry) or 'frost' (Whiteout). */
+  /** 'neon' (Cinder Foundry), 'frost' (Whiteout) or 'desert' (Story Campaign). */
   M.setTheme = function (name) {
-    const T = name === 'frost' ? FROST : NEON;
+    const T = THEMES[name] || NEON;
     if (this.T === T) return;
-    this.T = T; this.theme = name === 'frost' ? 'frost' : 'neon'; this.bpm = T.bpm;
+    this.T = T; this.theme = THEMES[name] ? name : 'neon'; this.bpm = T.bpm;
     if (this.dl) this.dl.delayTime.setTargetAtTime((60 / this.bpm) * 0.75, this.ctx.currentTime, 0.1);
   };
 
@@ -91,6 +104,7 @@
     const bar = Math.floor(s / 16), inBar = s % 16;
     const chord = T.chords[Math.floor(bar / 2) % 4];
     if (frost) { this.frostStep(s, t, six, I, chord, bar, inBar); return; }
+    if (this.theme === 'desert') { this.desertStep(s, t, six, I, chord, bar, inBar); return; }
     if (s % 32 === 0) this.pad(chord, t, six * 32, I);
     if (I > 0.28 && inBar % 2 === 0) {
       const e = (inBar / 2) | 0;
@@ -123,6 +137,38 @@
     if (I > 0.62 && inBar % 2 === 1) this.A.noise(this.bus, t, { type: 'bandpass', f0: 6500, dur: 0.05, gain: 0.018 + (inBar % 4 === 3 ? 0.012 : 0), Q: 1.2 });
     if (this.boss && I > 0.9 && inBar === 0) this.stab(chord, t);
     if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  // ---------------------------------------------------------------- Dust Off arrangement
+  M.desertStep = function (s, t, six, I, chord, bar, inBar) {
+    const T = this.T, menu = this.mode === 'menu';
+    if (s % 32 === 0) this.strings(chord, t, six * 32, I);
+    // stealth / quiet: a pulse of low strings every beat; combat: running sixteenths
+    if (!menu && I > 0.12 && (I > 0.5 ? true : inBar % 4 === 0)) this.ostinato(chord.root + 12 + (inBar % 8 === 6 ? 1 : 0), t, six * 0.9, 0.035 + I * 0.03, inBar % 4 === 0);
+    if (I > 0.32 && inBar % 4 === 0) this.bassF(chord.root + T.bass[(inBar / 2) | 0], t, six * 3.4, I);
+    if (I > 0.42 && (inBar === 0 || inBar === 7 || inBar === 10 || (I > 0.75 && (inBar === 3 || inBar === 14)))) this.tom(t, inBar === 0 ? 52 : 70, inBar === 0 ? 1.1 : 0.7);
+    if (I > 0.6 && (inBar === 4 || inBar === 12)) this.snare(t);
+    if (I > 0.66 && inBar % 2 === 1) this.A.noise(this.bus, t, { type: 'bandpass', f0: 5200, dur: 0.04, gain: 0.02, Q: 1.5 });
+    const leadOn = menu ? inBar % 4 === 0 && bar % 2 === 0 : I > 0.72 && (inBar % 2 === 0 || I > 0.9);
+    if (leadOn) this.pluck(60 + T.scale[T.lead[inBar] % T.scale.length] + (chord.root - 36), t, menu ? 0.04 : 0.05);
+    if (this.boss && I > 0.9 && inBar === 0) this.stab(chord, t);
+    if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  M.strings = function (chord, t, dur, I) {
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.7;
+    f.frequency.setValueAtTime(500 + I * 1200, t); f.connect(this.bus); f.connect(this.rev);
+    const total = dur + 2;
+    for (let i = 0; i < 3; i++) for (const dt of [-9, 9]) this.osc('sawtooth', mtof(chord.tones[i] - 12), t, total, 0.016, f, 2.4, 2, dt);
+    this.osc('sine', mtof(chord.root - 12), t, total, 0.07, this.bus, 1.5, 2);
+  };
+  M.ostinato = function (note, t, dur, gain, accent) {
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(accent ? 1400 : 900, t); f.frequency.exponentialRampToValueAtTime(300, t + dur); f.connect(this.bus);
+    this.osc('sawtooth', mtof(note), t, dur, gain * (accent ? 1.3 : 1), f, 0.005, dur * 0.8, -5);
+    this.osc('sawtooth', mtof(note), t, dur, gain * 0.7, f, 0.005, dur * 0.8, 5);
+  };
+  M.pluck = function (note, t, gain) { // oud-ish: bright attack, fast decay, a little body
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3800, t); f.frequency.exponentialRampToValueAtTime(700, t + 0.25); f.connect(this.echoIn);
+    this.osc('sawtooth', mtof(note), t, 0.55, gain, f, 0.002, 0.5);
+    this.osc('triangle', mtof(note - 12), t, 0.4, gain * 0.6, f, 0.002, 0.35);
   };
   M.choir = function (chord, t, dur, I) {
     const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.6;

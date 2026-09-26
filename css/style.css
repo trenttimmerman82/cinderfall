@@ -463,7 +463,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .countdown.warn b { color: #ff6a4a; animation: pulse-cold 0.6s ease-in-out infinite; }
 
 /* ---------------- campaign picker */
-.campaign-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.campaign-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
 .cc-card { position: relative; display: grid; align-content: start; gap: 8px; padding: 0 0 18px; text-align: left; overflow: hidden; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.85); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
 .cc-card > span:not(.cc-art) { padding: 0 20px; }
 .cc-card:hover, .cc-card:focus-visible { transform: translateY(-3px); }
@@ -488,6 +488,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .cc-best { font: 600 13px/1.2 var(--f-body); color: rgba(233, 247, 255, 0.55); }
 .cc-foundry:hover, .cc-foundry.sel { border-color: #ff3cc8; box-shadow: 0 0 24px rgba(255, 60, 200, 0.18); }
 .cc-halden:hover, .cc-halden.sel { border-color: #7fe3ff; box-shadow: 0 0 24px rgba(127, 227, 255, 0.2); }
+@media (max-width: 1100px) { .campaign-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 860px) { .campaign-cards { grid-template-columns: 1fr; } .cc-art { height: 72px; } }
 
 /* ---------------- leaderboard filters and drone-mode labels */
@@ -504,6 +505,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .lb-mode { display: inline-block; padding: 3px 7px; font: 700 11px/1 var(--f-mono); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; white-space: nowrap; }
 .lb-mode.drones { color: #7fe3ff; border-color: rgba(127, 227, 255, 0.5); background: rgba(127, 227, 255, 0.08); }
 .lb-mode.drones::before { content: '◆ '; }
+.lb-mode.solo { color: #ffb05a; border-color: rgba(255, 176, 90, 0.5); background: rgba(255, 176, 90, 0.08); }
 .lb-mode.nodrones { color: #d5cfe6; border-color: rgba(213, 207, 230, 0.35); background: rgba(213, 207, 230, 0.06); }
 .lb-mode.nodrones::before { content: '◇ '; }
 .lb-mode.coop { color: #9dff8a; border-color: rgba(157, 255, 138, 0.45); background: rgba(157, 255, 138, 0.07); }
@@ -751,3 +753,58 @@ body.rc-driving .crosshair, body.rc-driving .weapon-panel, body.rc-driving .hitm
   font: 700 18px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sodium); }
 .fb-chip-btn::before { content: '✎'; font-size: 15px; }
 .fb-chip-btn:hover { border-color: var(--sodium); color: var(--yellow); }
+
+/* ===================== Story Campaign: Dust Off ===================== */
+.sc-heli { position: absolute; left: 62%; top: 20%; width: 64px; height: 20px; background: #120c08; border-radius: 10px 14px 4px 4px; transform: rotate(-6deg); }
+.sc-heli::before { content: ''; position: absolute; left: 50px; top: 6px; width: 46px; height: 4px; background: #120c08; }
+.sc-heli::after { content: ''; position: absolute; left: -24px; top: -7px; width: 118px; height: 2px; background: rgba(18, 12, 8, 0.8); }
+.set-note.soft { color: var(--bone-dim); font: 500 13px/1.4 var(--f-body); }
+
+/* briefing between missions */
+.briefing { position: absolute; inset: 0; z-index: 12; display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.3fr); gap: clamp(20px, 4vw, 64px); align-items: center;
+  padding: clamp(24px, 6vw, 96px); background: linear-gradient(90deg, rgba(10, 7, 5, 0.94), rgba(10, 7, 5, 0.78)); opacity: 0; transition: opacity 0.35s; }
+.briefing.show { opacity: 1; }
+.briefing::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 200, 150, 0.03) 0 1px, transparent 1px 3px); }
+.br-card { display: grid; gap: 10px; border-left: 4px solid #ffb05a; padding-left: 22px; }
+.br-act { font: 500 12px/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: #ffb05a; }
+.br-num { font: 500 14px/1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--bone-dim); }
+.br-title { margin: 0; font: 900 clamp(48px, 7vw, 104px)/0.88 var(--f-stencil); text-transform: uppercase; color: #ffe2bf; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.6); }
+.br-where { font: 600 14px/1.3 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-dim); }
+.br-body { display: grid; gap: 20px; max-width: 64ch; }
+.br-log { display: grid; gap: 12px; min-height: 180px; align-content: start; }
+.br-line { margin: 0; display: grid; gap: 3px; animation: brIn 0.35s ease both; }
+.br-line b { font: 500 11px/1 var(--f-mono); letter-spacing: 0.18em; text-transform: uppercase; color: #ffb05a; }
+.br-line span { font: 500 18px/1.45 var(--f-body); color: var(--bone); }
+@keyframes brIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.br-orders { border-top: 1px solid rgba(255, 176, 90, 0.35); padding-top: 12px; }
+.br-h { font: 500 11px/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: #ffb05a; }
+.br-orders ol { margin: 8px 0 0; padding-left: 20px; font: 600 16px/1.6 var(--f-body); color: var(--bone); }
+.br-foot { display: flex; gap: 14px; align-items: center; }
+.br-foot .btn { min-width: 180px; background: #ffb05a; color: #1a0e06; justify-content: center; }
+.br-foot .btn:hover, .br-foot .btn:focus-visible { background: #ffe2bf; color: #1a0e06; }
+.br-key { font: 500 11px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--haze); }
+@media (max-width: 860px) { .briefing { grid-template-columns: 1fr; align-content: center; } }
+
+/* cutscene bars */
+.letterbox { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.letterbox i { position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height 0.8s ease; }
+.letterbox i:first-child { top: 0; } .letterbox i:last-child { bottom: 0; }
+.letterbox.on i { height: 9vh; }
+
+/* stealth read-out, ?/! over heads, ally names */
+.stealth { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; }
+.st-text { font: 700 13px/1 var(--f-display); letter-spacing: 0.22em; text-transform: uppercase; color: rgba(233, 247, 255, 0.75); }
+.st-bar { width: 160px; height: 4px; background: rgba(233, 247, 255, 0.15); }
+.st-bar i { display: block; height: 100%; width: 0; background: #ffd24a; transition: width 0.15s; }
+.stealth.sus .st-text { color: #ffd24a; } .stealth.alert .st-text { color: #ff4a3a; } .stealth.alert .st-bar i { background: #ff4a3a; }
+.st-marks, .ally-tags { position: absolute; inset: 0; pointer-events: none; }
+.st-mark { position: absolute; left: 0; top: 0; font: 900 26px/1 var(--f-display); color: #ffd24a; text-shadow: 0 0 6px #000, 0 0 12px rgba(0, 0, 0, 0.8); }
+.st-mark.bang { color: #ff4a3a; }
+.ally-tag { position: absolute; left: 0; top: 0; font: 600 11px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: #9dffb0; text-shadow: 0 1px 3px #000; white-space: nowrap; opacity: 0.8; }
+
+/* Dust Off card on the campaign screen: desert dusk skyline with a helicopter */
+.cc-story .cc-art { background: radial-gradient(ellipse 50% 60% at 70% 92%, rgba(255, 150, 60, 0.95), transparent 70%), linear-gradient(180deg, #1d1630 0%, #6a3a3a 45%, #d8783a 78%, #f0a860 100%); box-shadow: inset 0 -2px 0 #ffb05a; }
+.cc-story .cc-art::before { background: #120c08; clip-path: polygon(0 100%, 0 70%, 5% 70%, 5% 62%, 12% 62%, 12% 74%, 18% 74%, 18% 58%, 22% 58%, 22% 54%, 24% 54%, 24% 58%, 28% 58%, 28% 68%, 36% 68%, 36% 60%, 40% 60%, 40% 22%, 43% 22%, 43% 18%, 46% 18%, 46% 22%, 49% 22%, 49% 60%, 56% 60%, 56% 72%, 64% 72%, 64% 56%, 72% 56%, 72% 66%, 80% 66%, 80% 52%, 86% 52%, 86% 70%, 94% 70%, 94% 60%, 100% 60%, 100% 100%); }
+.cc-story .cc-art::after { background: radial-gradient(circle at 44.5% 30%, rgba(255, 230, 180, 0.9) 0 3px, transparent 4px); }
+.cc-story .cc-name { color: #ffe2bf; } .cc-story .cc-meta { color: #ffb05a; }
+.cc-story:hover, .cc-story.sel { border-color: #ffb05a; box-shadow: 0 0 24px rgba(255, 176, 90, 0.18); }

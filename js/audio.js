@@ -308,8 +308,35 @@
   R.rcCrash = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 900, dur: 0.12, gain: 0.35, Q: 1.2 }); A.tone(d, t, { f0: 180, f1: 90, dur: 0.12, gain: 0.25 }); };
   R.bigBoom = (d, t) => { R.explosion(d, t); A.tone(d, t, { f0: 52, f1: 18, dur: 1.6, gain: 1.2 }); A.noise(d, t + 0.05, { type: 'lowpass', f0: 1800, f1: 70, dur: 2.2, gain: 0.8 }); };
 
+  // Story Campaign: real rifles, people, the helicopter going down
+  R.suppressed = (d, t) => {
+    A.noise(d, t, { type: 'bandpass', f0: 1500, f1: 700, dur: 0.07, gain: 0.35, Q: 1.1 });
+    A.tone(d, t, { f0: 180, f1: 70, dur: 0.06, gain: 0.25 });
+    A.noise(d, t + 0.03, { type: 'highpass', f0: 3800, dur: 0.02, gain: 0.08 });
+  };
+  R.akShot = (d, t) => {
+    A.noise(d, t, { type: 'highpass', f0: 2200, dur: 0.03, gain: 0.45 });
+    A.noise(d, t, { type: 'lowpass', f0: 4800, f1: 500, dur: 0.18, gain: 0.8, Q: 0.7 });
+    A.tone(d, t, { f0: 130, f1: 42, dur: 0.14, gain: 0.7 });
+    A.noise(d, t + 0.02, { type: 'bandpass', f0: 450, f1: 180, dur: 0.6, gain: 0.12, Q: 0.6 });
+  };
+  R.pkmShot = (d, t) => { R.akShot(d, t); A.tone(d, t, { f0: 95, f1: 35, dur: 0.18, gain: 0.5 }); };
+  R.sniperShot = (d, t) => { R.akShot(d, t); A.noise(d, t, { type: 'lowpass', f0: 2600, f1: 150, dur: 0.9, gain: 0.6 }); A.tone(d, t, { f0: 70, f1: 25, dur: 0.5, gain: 0.8 }); };
+  R.impactFlesh = (d, t) => { A.noise(d, t, { type: 'lowpass', f0: 900, f1: 300, dur: 0.06, gain: 0.3 }); A.tone(d, t, { f0: 120, f1: 60, dur: 0.05, gain: 0.2 }); };
+  R.death = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: U.rand(380, 520), f1: 220, dur: 0.35, gain: 0.18, Q: 3 }); A.tone(d, t, { type: 'sawtooth', f0: U.rand(170, 220), f1: 110, dur: 0.3, gain: 0.03, lp: 900 }); A.noise(d, t + 0.45, { type: 'lowpass', f0: 500, dur: 0.12, gain: 0.25 }); };
+  R.deathHead = (d, t) => { A.noise(d, t + 0.35, { type: 'lowpass', f0: 500, dur: 0.12, gain: 0.25 }); };
+  R.shout = (d, t) => { // a barked word: formant-ish buzz rising then falling
+    for (const [f, q] of [[700, 5], [1150, 6]]) A.tone(d, t, { type: 'sawtooth', f0: U.rand(150, 190), f1: U.rand(120, 140), dur: 0.38, gain: 0.05, lp: f, attack: 0.03 });
+    A.noise(d, t, { type: 'bandpass', f0: 1200, dur: 0.3, gain: 0.05, Q: 4 });
+  };
+  R.heliHit = (d, t) => { R.bigBoom(d, t); for (let i = 0; i < 8; i++) A.noise(d, t + 0.2 + i * 0.09, { type: 'highpass', f0: 2500, dur: 0.05, gain: 0.25 }); A.tone(d, t + 0.3, { type: 'square', f0: 880, dur: 1.6, gain: 0.03 }); };
+  R.crash = (d, t) => { R.bigBoom(d, t); A.noise(d, t, { type: 'bandpass', f0: 600, f1: 200, dur: 2.4, gain: 0.7, Q: 0.6 }); for (let i = 0; i < 12; i++) A.noise(d, t + Math.random() * 1.8, { type: 'bandpass', f0: U.rand(900, 3200), dur: 0.08, gain: 0.25, Q: 2 }); };
+  R.warning = (d, t) => { for (let i = 0; i < 3; i++) A.tone(d, t + i * 0.22, { type: 'square', f0: 1200, dur: 0.12, gain: 0.05 }); };
+  R.charge = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 3000, dur: 0.05, gain: 0.2, Q: 2 }); A.tone(d, t + 0.1, { type: 'square', f0: 2000, dur: 0.05, gain: 0.04 }); A.tone(d, t + 0.35, { type: 'square', f0: 2000, dur: 0.05, gain: 0.04 }); };
+  R.cellDoor = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 1800, f1: 900, dur: 0.5, gain: 0.35, Q: 2 }); A.tone(d, t + 0.4, { f0: 180, f1: 90, dur: 0.2, gain: 0.3 }); };
+
   // Throttle: max plays of a given sound within a short window
-  const LIMIT = { shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
+  const LIMIT = { akShot: 4, impactFlesh: 3, death: 2, shout: 2, shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
 
   /**
    * play(name, pos?, opts?) — pos is a world position ({x,y,z}) for spatial sounds, omitted for first-person/UI.
@@ -390,6 +417,12 @@
       const o = osc('sawtooth', 220); const f = A.filter(out, 'bandpass', 900, 1.6); o.connect(f); freq = o.frequency;
       const b = osc('square', 55); const bg = ctx.createGain(); bg.gain.value = 0.25; const bf = A.filter(out, 'lowpass', 500, 1); b.connect(bg); bg.connect(bf);
       const n = noiseSrc(); const nf = A.filter(out, 'highpass', 4200, 0.7); const ng = ctx.createGain(); ng.gain.value = 0.15; n.connect(ng); ng.connect(nf);
+    } else if (kind === 'siren') { // air-raid style alarm rising and falling
+      const o = osc('sawtooth', 500); const f = A.filter(out, 'bandpass', 900, 1.5); o.connect(f); freq = o.frequency;
+      const lfo = osc('sine', 0.25); const lg = ctx.createGain(); lg.gain.value = 220; lfo.connect(lg); lg.connect(o.frequency);
+    } else if (kind === 'engine') { // diesel pickup
+      const o = osc('sawtooth', 48); const f = A.filter(out, 'lowpass', 300, 2); o.connect(f); freq = o.frequency;
+      const n = noiseSrc(); const nf = A.filter(out, 'lowpass', 180, 1); const ng = ctx.createGain(); ng.gain.value = 0.6; n.connect(ng); ng.connect(nf);
     } else if (kind === 'tinnitus') {
       const a = osc('sine', 3950); a.connect(out);
     }
@@ -412,10 +445,10 @@
     const plant = this.loop('plant'); plant.set(0.025, 2);
     this.ambient = { wind, plant };
   };
-  /** 'industrial' (foundry clanks, plant hum) or 'polar' (ice cracks and crystal chimes, no hum). */
+  /** 'industrial' (foundry clanks, plant hum), 'polar' (ice cracks and crystal chimes, no hum) or 'city' (distant gunfire). */
   A.setAmbience = function (kind) {
     this.ambKind = kind;
-    if (this.ambient) this.ambient.plant.set(kind === 'polar' ? 0 : 0.025, 2);
+    if (this.ambient) this.ambient.plant.set(kind === 'industrial' ? 0.025 : 0, 2);
   };
   A.stopAmbience = function () {
     if (!this.ambient) return;
@@ -460,7 +493,11 @@
       if (this.clankTimer <= 0) {
         this.clankTimer = U.rand(5, 14);
         const a = Math.random() * Math.PI * 2;
-        if (this.ambKind === 'polar') {
+        if (this.ambKind === 'city') { // a city at war: far-off bursts of rifle fire
+          const p = { x: this.lx + Math.cos(a) * 140, y: this.ly + 5, z: this.lz + Math.sin(a) * 140 }, n = 1 + Math.floor(Math.random() * 5);
+          for (let i = 0; i < n; i++) this.play('akShot', p, { ref: 60, vol: 0.5, delay: i * U.rand(0.09, 0.16) });
+          if (Math.random() < 0.15) this.play('explosion', p, { ref: 90, vol: 0.4, delay: 0.8 });
+        } else if (this.ambKind === 'polar') {
           if (Math.random() < 0.55) this.play('iceCrack', { x: this.lx + Math.cos(a) * 55, y: this.ly - 2, z: this.lz + Math.sin(a) * 55 }, { ref: 40 });
           else this.play('chime', { x: this.lx + Math.cos(a) * 25, y: this.ly + 2, z: this.lz + Math.sin(a) * 25 }, { ref: 20 });
         } else this.play('clank', { x: this.lx + Math.cos(a) * 45, y: this.ly + 8, z: this.lz + Math.sin(a) * 45 }, { ref: 30 });

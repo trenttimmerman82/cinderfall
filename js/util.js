@@ -51,7 +51,8 @@ window.CF = window.CF || {};
     sens: 1.0, adsSens: 0.8, invertY: false,
     fov: 90, quality: 'high', shake: 1.0, showFps: false, dmgNumbers: true,
     master: 0.8, music: 0.55, sfx: 0.9, difficulty: 'veteran', noDrones: false, campaign: 'foundry',
-    toggleCrouch: false, toggleSprint: false, aimMode: 'hold', viewBob: 1.0, crosshair: 'white', brightness: 1.0, grain: true
+    toggleCrouch: false, toggleSprint: false, aimMode: 'hold', viewBob: 1.0, crosshair: 'white', brightness: 1.0, grain: true,
+    characters: 'standard' // Story Campaign people: 'standard' (light models) or 'enhanced' (js/enemy-models-enhanced.js, loaded only when picked)
   };
   const KEY = 'cinderfall.settings.v1';
   function loadSettings() {
@@ -61,6 +62,7 @@ window.CF = window.CF || {};
     for (const k in DEFAULTS) if (k in s && typeof s[k] === typeof DEFAULTS[k]) out[k] = s[k];
     if (!['low', 'medium', 'high'].includes(out.quality)) out.quality = 'high';
     if (!['hold', 'toggle'].includes(out.aimMode)) out.aimMode = 'hold';
+    if (!['standard', 'enhanced'].includes(out.characters)) out.characters = 'standard';
     return out;
   }
   CF.DEFAULTS = DEFAULTS;
@@ -80,7 +82,7 @@ window.CF = window.CF || {};
   CF.noDrones = () => !!CF.settings.noDrones && !(CF.Game && CF.Game.mode === 'mp');
   /** The campaign chosen on the campaign screen (registry lives in mission-halden.js). */
   CF.campaign = () => (CF.Campaigns && (CF.Campaigns[CF.settings.campaign] || CF.Campaigns.foundry)) || null;
-  CF.diffLabel = () => CF.diff().label + (CF.settings.noDrones ? ' · No drones' : '');
+  CF.diffLabel = () => CF.diff().label + (CF.settings.noDrones && !(CF.campaign() && CF.campaign().story) ? ' · No drones' : '');
 
   // ---------------------------------------------------------------- key bindings
   // Game code reads each action through its canonical code (the original default key);
@@ -237,6 +239,23 @@ window.CF = window.CF || {};
       this.mreleased[0] = this.mreleased[1] = this.mreleased[2] = false;
       this.dx = 0; this.dy = 0; this.wheel = 0;
     }
+  };
+
+  // ---------------------------------------------------------------- on-demand scripts
+  /** Load a script the page doesn't include up front (heavier optional content). The single-file build embeds such
+      scripts as <script type="text/plain" data-lazy="path"> blocks, so they still work offline. Resolves once it ran. */
+  const lazyDone = {};
+  CF.lazy = function (path) {
+    if (lazyDone[path]) return lazyDone[path];
+    return (lazyDone[path] = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      const inline = document.querySelector('script[type="text/plain"][data-lazy="' + path + '"]');
+      if (inline) { s.textContent = inline.textContent; document.head.appendChild(s); resolve(); return; }
+      s.src = path; s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => { delete lazyDone[path]; reject(new Error('Could not load ' + path)); };
+      document.head.appendChild(s);
+    }));
   };
 
   // ---------------------------------------------------------------- misc

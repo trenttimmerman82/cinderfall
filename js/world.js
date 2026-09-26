@@ -12,6 +12,7 @@
 
   W.reset = function (bounds) {
     this.boxes.length = 0; this.grid = null; this.nav = null;
+    this.flowMax = 0; // > 0: stop the flow field this far (in metres of path) from the player (big maps)
     if (bounds) this.bounds = bounds;
   };
 
@@ -415,6 +416,7 @@
     while (n > 0 && n < HI.length - 8) {
       const d0 = HP[0], i = pop();
       if (d0 > nav.dist[i]) continue;
+      if (this.flowMax && d0 > this.flowMax) break;
       const ix = i % w, iz = (i / w) | 0;
       for (let k = 0; k < 8; k++) {
         const j = canStepTo(nav, ix, iz, k); if (j < 0) continue;

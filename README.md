@@ -11,7 +11,26 @@ It is set in a rain-soaked neon city.
   whiteout (keep warm at the heat beacons), destroy the crystal blooms, kill the Rime Heart in the Hollow, then outrun
   the collapsing ice shelf to the extraction aircraft. New enemies (Thralls, Skitters, Frost Drones, a Colossus), its own
   music, weather and weapon progression.
-- Both campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
+- **Story Campaign: Dust Off.** On the campaign screen next to the other two. A prisoner rescue in Dar Masir, capital of the
+  fictional Qaltan Republic, goes wrong. Eight missions in three acts, each with a briefing, its own kit and time of
+  day: *Drop Zone* (ride in on a helicopter and fire from the door), *Contact* (the souk and Clocktower Square, a
+  technical), *Ghost Protocol* (a night stealth mission, see below), *Breach* (blow the gate and cell block of the old
+  fort, free four prisoners), *Shot Down* (the extraction helicopter is hit by an RPG and crashes; pull the pilot out,
+  hold the wreck), *The Long Walk* (fight across the city with the prisoners following your path), *Last Block* (hold a
+  walled school in three waves) and *Extraction* (hold the stadium until the last helicopter lands). Your squad fights
+  alongside you. Enemies are militia riflemen, machine gunners, RPG gunners who shout before they fire, snipers with a
+  visible laser, and technicals (armoured to rifle fire; blow them up or shoot the gunner).
+- **Ghost Protocol (stealth).** Suppressed pistol and carbine only. Darkness hides you, lamps and the guards' torch
+  beams give you away, crouching keeps you quiet, a melee attack from behind is a silent takedown. A guard who spots you
+  raises the alarm after a few seconds unless you silence him; a guard who finds a body comes looking. If the alarm
+  goes up, Colonel Kaal runs for his car and the mission fails if he reaches it. Never raising the alarm earns the Ghost
+  bonus; silent kills score extra.
+- **Enhanced characters** (Settings → Video → Story Campaign characters). *Standard* keeps the light models.
+  *Enhanced* gives the Story Campaign's people lathe-turned bodies, sculpted heads, plate carriers, chest rigs,
+  helmets, shemaghs, detailed weapons and generated camo, fabric, webbing, leather and skin textures (about 9,000
+  triangles and ~26 draw calls per person). Its script (`js/enemy-models-enhanced.js`) is downloaded, and its textures
+  painted, only when Enhanced is picked; Standard players never load it.
+- All three campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
 - **Co-op campaign.** Play Cinder Foundry or Whiteout with a friend through a room code: shared objectives, revive each
   other when down, ranked on its own Co-op leaderboard.
@@ -85,6 +104,11 @@ scoreboard shows the wave reached and total kills.
 60 m apart with nothing connecting them. Each roof has a spawn bunker and a watchtower. Loadouts are rail-rifle kits
 only (Deadeye: VX-3 + KF-44, Spotter: VX-3 + P-11 + 50 armor, Longshot: VX-3 with 40 spare rounds + P-11), no
 grenades. Go over the edge and you fall to your death.
+
+**Story Campaign runs** are ranked on their own **Dust Off** board (one solo board: the story has no enemy drones and no
+co-op). The server must be redeployed (`npx wrangler deploy` in `server/`, API 5) before it accepts them; until then
+runs are kept on this computer and sent after the update. Missions are campaign parts: each cleared mission pays coins,
+and finishing the story adds a 400-coin bonus.
 
 **Co-op Campaign:** pick **Co-op Campaign** and a campaign, host, and have your friend join with the code. The host
 runs the mission; both players share every objective (either can hit a breaker, hold the uplink or the landing pad),
@@ -170,6 +194,7 @@ No build step is needed. `index.html` loads three.js and PeerJS from a CDN, so y
 ## Single-file build
 
 Run `python3 build.py` to write `dist/Cinderfall.html`, a single file with three.js and PeerJS inlined.
+The Enhanced characters script is carried in the file as inert text and only run when that setting is picked.
 The campaign runs offline; multiplayer needs internet access.
 
 All textures, sound and music are generated in code. three.js and PeerJS are MIT-licensed.

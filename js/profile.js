@@ -157,7 +157,7 @@
     r.starting = true;
     return api({ op: 'runStart', token: this.data.token, campaign: r.campaign, diff: r.diff, mode: r.mode })
       .then((d) => { r.id = d.run; saveClaims(); return r.id; })
-      .catch(() => null).finally(() => { r.starting = false; });
+      .catch((e) => { if (e.status === 400) { r.bad = true; saveClaims(); } return null; }).finally(() => { r.starting = false; }); // 400: a server that doesn't know this campaign yet
   };
   /** A campaign part was cleared: queue its coin claim (kept across reloads until the server answers). */
   Pr.claim = function (key, phase, total) {
@@ -182,7 +182,7 @@
     }
     if (this.status !== 'ready') return;
     const c = this.claims.q[0], r = this.claims.runs[c.key];
-    if (!r) { this.claims.q.shift(); saveClaims(); this.processClaims(); return; }
+    if (!r || r.bad) { this.claims.q.shift(); saveClaims(); this.processClaims(); return; }
     busy = true;
     this.ensureRun(c.key).then((id) => {
       if (!id) throw Object.assign(new Error('no run'), { retry: 20 });

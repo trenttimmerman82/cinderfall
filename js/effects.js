@@ -348,6 +348,17 @@
     for (let k = 0; k < 2; k++) this.smoke.spawn(pos.x, pos.y, pos.z, n.x * 1.5 + U.gauss(), n.y * 1.5 + 1, n.z * 1.5 + U.gauss(), 0.6, 0.04, 0.12, 0.02, 0.02, 0.02, 0.9, 9, 0.5, 0);
     if (Math.random() < 0.3) this.add.spawn(pos.x, pos.y, pos.z, 0, 0, 0, 0.06, 0.6, 0.3, 1.5, 2.6, 5, 1, 0, 0, 0);
   };
+  /** A round striking a person: a small dark puff and a little fabric dust, no sparks. */
+  FX.fleshHit = function (pos, n, head) {
+    for (let k = 0; k < (head ? 5 : 3); k++) this.smoke.spawn(pos.x, pos.y, pos.z, n.x * U.rand(0.4, 1.4) + U.gauss() * 0.3, n.y * 0.8 + U.rand(0, 0.5), n.z * U.rand(0.4, 1.4) + U.gauss() * 0.3,
+      U.rand(0.35, 0.6), 0.06, head ? 0.5 : 0.32, 0.2, 0.025, 0.02, 0.85, 2, 2.5, 1);
+    this.smoke.spawn(pos.x, pos.y, pos.z, n.x * 0.6, 0.4, n.z * 0.6, 0.6, 0.1, 0.4, 0.42, 0.38, 0.32, 0.4, -0.1, 2, 1);
+  };
+  /** Someone falling in dust. */
+  FX.humanDown = function (pos) {
+    const gy = W.groundHeight(pos.x, pos.y + 0.5, pos.z);
+    for (let k = 0; k < 6; k++) this.smoke.spawn(pos.x + U.gauss() * 0.4, gy + 0.15, pos.z + U.gauss() * 0.4, U.gauss() * 0.8, U.rand(0.1, 0.5), U.gauss() * 0.8, U.rand(1.2, 2), 0.4, 1.6, 0.5, 0.45, 0.37, 0.35, -0.05, 1.2, 1);
+  };
   FX.muzzle = function (pos, dir, r, g, b, size) {
     this.flash.spawn(pos.x + dir.x * 0.1, pos.y + dir.y * 0.1, pos.z + dir.z * 0.1, 0, 0, 0, 0.05, size || 0.7, (size || 0.7) * 0.8, r, g, b, 1, 0, 0, 0);
     this.glow(pos.x, pos.y, pos.z, (size || 0.7) * 1.6, r * 0.3, g * 0.3, b * 0.3, 0.06);
@@ -435,6 +446,15 @@
       const hot = Math.random();
       this.add.spawn(x, y, z, U.rand(0.3, 1.2), U.rand(0.1, 0.8), U.rand(-0.4, 0.4), U.rand(3, 6), U.rand(0.05, 0.1), 0.02, 3.2, 1.2 + hot * 0.6, 0.25, 1, -0.05, 0.1, 2, U.rand(-1, 1));
     }
+    // desert: dust motes drifting on the wind, lit by the sun
+    if (this.dustRate) {
+      this.dustT = (this.dustT || 0) + dt * 40 * q * this.dustRate;
+      while (this.dustT > 1) {
+        this.dustT -= 1;
+        const c = this.dustColor || [0.9, 0.8, 0.62];
+        this.smoke.spawn(cam.x + U.rand(-20, 20), cam.y + U.rand(-1.5, 6), cam.z + U.rand(-20, 20), U.rand(0.6, 1.6), U.rand(-0.1, 0.2), U.rand(-0.3, 0.5), U.rand(4, 7), 0.04, 0.06, c[0], c[1], c[2], 0.35, 0, 0, 1);
+      }
+    }
     const L = CF.Level;
     for (let i = 0; i < L.emitters.length; i++) {
       const e = L.emitters[i];
@@ -448,6 +468,11 @@
           if (Math.random() < 0.3) this.smoke.spawn(e.x, e.y + 0.3, e.z, U.gauss() * 0.3, U.rand(1, 2), U.gauss() * 0.3, 2.5, 0.8, 3, 0.18, 0.1, 0.06, 0.35, -0.1, 0.4, 1);
         } else if (e.type === 'smoke') {
           this.smoke.spawn(e.x, e.y, e.z, U.rand(0.2, 0.6), U.rand(1.2, 2), U.gauss() * 0.2, U.rand(3, 5), 0.5, 3.2, 0.1, 0.1, 0.11, 0.5, -0.1, 0.3, 1);
+        } else if (e.type === 'fire') { // burning wreck: flame licks, embers and a column of black smoke
+          const s = e.size || 1;
+          this.add.spawn(e.x + U.gauss() * 0.5 * s, e.y + U.rand(0, 0.4), e.z + U.gauss() * 0.5 * s, U.gauss() * 0.3, U.rand(1, 2.4), U.gauss() * 0.3, U.rand(0.35, 0.7), 0.5 * s, 1.1 * s, 4, U.rand(1.3, 2), 0.35, 1, -1, 0.5, 1);
+          if (Math.random() < 0.5) this.smoke.spawn(e.x + U.gauss() * 0.4, e.y + 1 * s, e.z + U.gauss() * 0.4, U.rand(0.2, 0.7), U.rand(1.6, 3), U.gauss() * 0.3, U.rand(3.5, 6), 0.8 * s, 4.5 * s, 0.05, 0.045, 0.04, 0.7, -0.15, 0.25, 1);
+          if (Math.random() < 0.3) this.add.spawn(e.x + U.gauss() * s, e.y + 0.5, e.z + U.gauss() * s, U.gauss() * 0.8, U.rand(2, 4), U.gauss() * 0.8, U.rand(1, 2), 0.07, 0.02, 4, 1.6, 0.3, 1, -0.3, 0.3, 2, 0);
         } else if (e.type === 'embers') {
           this.add.spawn(e.x + U.gauss(), e.y, e.z + U.gauss(), U.gauss() * 0.3, U.rand(1, 2.5), U.gauss() * 0.3, U.rand(1.5, 3), 0.08, 0.02, 4, 1.5, 0.3, 1, -0.2, 0.2, 2, 0);
         }

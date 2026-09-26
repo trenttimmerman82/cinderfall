@@ -55,6 +55,13 @@
   WP.init = function (vmScene, vmCam, scene, camera) {
     this.vmScene = vmScene; this.vmCam = vmCam; this.scene = scene; this.camera = camera;
     for (const id of ORDER) { const v = CF.VM.build(id, true); v.root.visible = false; vmScene.add(v.root); this.vm[id] = v; }
+    // suppressors (Story Campaign stealth): screwed onto the M7 and the P-11, shown only while WP.suppressed is on
+    const can = new THREE.MeshStandardMaterial({ color: 0x191b1e, metalness: 0.6, roughness: 0.55 });
+    for (const [id, r, len] of [['carbine', 0.024, 0.2], ['pistol', 0.019, 0.13]]) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), can);
+      m.rotation.x = Math.PI / 2; m.position.z = -len / 2; m.visible = false; m.frustumCulled = false;
+      this.vm[id].parts.muzzle.add(m); this.vm[id].suppressor = m;
+    }
     this.gArm = CF.VM.grenadeArm(); this.gArm.visible = false; vmScene.add(this.gArm);
     const T = CF.Tex.list;
     this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.flash, color: new THREE.Color(5, 3.6, 2.2), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
@@ -66,7 +73,14 @@
     this.muzzleLight = new THREE.PointLight(0xffb060, 0, 2.2, 2); vmScene.add(this.muzzleLight);
   };
 
+  /** Story Campaign stealth: quiet shots (enemies hear them only up close), small flash, suppressor on the gun. */
+  WP.setSuppressed = function (on) {
+    this.suppressed = !!on;
+    for (const id of ORDER) if (this.vm[id].suppressor) this.vm[id].suppressor.visible = this.suppressed;
+  };
+  WP.quiet = function () { return this.suppressed && (this.curId === 'carbine' || this.curId === 'pistol'); };
   WP.reset = function (loadout) {
+    this.setSuppressed(false);
     this.inv = {}; this.cur = null; this.curId = null; this.lastId = null;
     for (const id of ORDER) this.vm[id].root.visible = false;
     this.clearLive();
@@ -250,15 +264,16 @@
     this.sp.kz.kick(rc[2] * 18 * adsK); this.sp.rx.kick(rc[3] * 22 * adsK); this.sp.rz.kick((Math.random() - 0.5) * rc[3] * 12);
     this.bloom = Math.min(d.bloomMax, this.bloom + d.bloom);
     P.shake(d.id === 'shotgun' ? 0.22 : d.id === 'rail' ? 0.3 : 0.07);
-    A.play(d.sound, null, { send: 0.3 + A.room * 0.8 });
+    const quiet = this.quiet();
+    A.play(quiet ? 'suppressed' : d.sound, null, { send: 0.3 + A.room * 0.8 });
     this.flashT = d.id === 'rail' ? 0.06 : 0.035;
     this.flash.material.rotation = Math.random() * Math.PI * 2;
     const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' ? 0.16 : d.id === 'rail' ? 0.3 : d.id === 'revolver' ? 0.3 : 0.22;
-    this.flash.scale.setScalar(fs * U.rand(0.8, 1.2));
+    this.flash.scale.setScalar(fs * U.rand(0.8, 1.2) * (quiet ? 0.25 : 1));
     this.flash.material.color.setRGB(d.id === 'rail' ? 1.5 : 5, d.id === 'rail' ? 4 : 3.6, d.id === 'rail' ? 6 : 2.2);
-    CF.FX.flashLight(muzzle, d.id === 'rail' ? 0x60c8ff : 0xffa850, d.id === 'shotgun' ? 5 : 3, 9, 0.07);
+    if (!quiet) CF.FX.flashLight(muzzle, d.id === 'rail' ? 0x60c8ff : 0xffa850, d.id === 'shotgun' ? 5 : 3, 9, 0.07);
     if (d.shell && !d.pump) this.eject(P, d.shell);
-    CF.Enemies.noise(cam.position, d.noise);
+    CF.Enemies.noise(cam.position, quiet ? 4 : d.noise);
     if (d.id === 'rail') A.play('railCharge', null, { delay: 0.25 });
     if (d.pump) { A.play('pumpBack', null, { delay: 0.3 }); A.play('pumpFwd', null, { delay: 0.48 }); }
     this.hudAmmo(); CF.HUD.ammoBump();
@@ -592,8 +607,9 @@
     if (this.flashT > 0) {
       this.flashT -= dt;
       parts.muzzle.getWorldPosition(this.flash.position);
+      if (this.quiet()) { const sp = this.vm[this.curId].suppressor; sp.getWorldPosition(this.flash.position); }
       this.flash.visible = true;
-      this.muzzleLight.position.copy(this.flash.position); this.muzzleLight.intensity = d.id === 'shotgun' ? 5 : 3;
+      this.muzzleLight.position.copy(this.flash.position); this.muzzleLight.intensity = this.quiet() ? 0.3 : d.id === 'shotgun' ? 5 : 3;
       this.muzzleLight.color.set(d.id === 'rail' ? 0x60c8ff : 0xffb060);
     } else { this.flash.visible = false; this.muzzleLight.intensity = 0; }
     root.position.set(px, py, pz);

@@ -116,5 +116,27 @@
     build: () => CF.MapSniper.build(),
     menuCam: (t, cam) => { const a = t * 0.03; cam.position.set(Math.sin(a) * 30, 6 + Math.sin(a * 1.2) * 2, Math.cos(a) * 12); cam.lookAt(0, 0, Math.cos(a) * -30); }
   };
+  // Story Campaign (Dust Off): Dar Masir. The mission relights it (dawn, day, afternoon, dusk, night; js/map-story.js).
+  CF.Maps.story = {
+    id: 'story', name: 'Dar Masir', campaign: true, nav: true, boss: false,
+    bounds: { minX: -110, maxX: 110, minZ: -110, maxZ: 112 },
+    theme: base({
+      fog: [0.8, 0.74, 0.62], fogDensity: 0.0045,
+      hemi: [0xd8e2f0, 0x7a6448, 0.62], moon: { color: 0xfff2dc, intensity: 1.9, dir: [0.4, 0.8, 0.3] },
+      sky: { zen: [0.22, 0.4, 0.7], hor: [0.86, 0.8, 0.68], glow: [0.5, 0.42, 0.28], glowDir: [0.4, 0.3], glow2: [0.12, 0.1, 0.06], glow2Dir: [-1, 0],
+        cloudDark: [0.8, 0.78, 0.76], cloudLit: [1.1, 1.05, 0.98], stars: 0, moon: 2 },
+      env: { top: [0.6, 0.7, 0.9], bottom: [0.5, 0.42, 0.3], band: [0.6, 0.55, 0.45], panels: [[1.4, 1.3, 1.1], [1.2, 1.2, 1.3], [1.3, 1.2, 1.0], [1.2, 1.2, 1.2]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 190, r1: 360, count: 46, hMin: 12, hMax: 46, rock: [0.36, 0.25, 0.16], snow: [0.62, 0.48, 0.32], haze: 0.0042, seed: 21 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.74, sat: 1.06, shadow: [0, 0, 0.004], high: [0.012, 0.005, -0.008], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.1
+    }),
+    build: () => { CF.MapStory.build(); CF.World.flowMax = 120; },
+    enemies: ['militia', 'gunner', 'rpg', 'guard', 'officer', 'sniper', 'technical'],
+    inside: (p) => (p.x > -84 && p.x < -60 && p.z > -90 && p.z < -72) || (p.x > 52 && p.x < 96 && p.z > -102.4 && p.z < -86) || (p.x > 52 && p.x < 58 && p.z > -4 && p.z < 14),
+    menuCam: (t, cam) => { const a = t * 0.025 + 1.2; cam.position.set(-9 + Math.sin(a) * 42, 24 + Math.sin(a * 1.3) * 3, 20 + Math.cos(a) * 42); cam.lookAt(-9, 10, 20); }
+  };
   CF.mpMaps = ['market', 'rooftops', 'nuketown', 'sniper'];
 })(window.CF);

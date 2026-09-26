@@ -37,6 +37,7 @@
       if (!m || typeof m !== 'object') return false;
       if (id === 'foundry' && !(Array.isArray(m.breakers) && m.breakers.every((b) => /^breaker[ABC]$/.test(b)))) return false;
       if (id === 'halden' && !(Array.isArray(m.cells) && m.cells.every((c) => /^cell[123]$/.test(c)) && typeof m.mastLive === 'boolean' && Number.isInteger(m.lit) && m.lit >= 0 && m.lit <= 3)) return false;
+      if (C.mission.validState && !C.mission.validState(m)) return false;
       if (!s.stats || !['shots', 'hits', 'kills', 'deaths', 'time'].every((k) => fin(s.stats[k]) && s.stats[k] >= 0)) return false;
       return true;
     } catch (e) { return false; }

@@ -4,7 +4,7 @@
 (function (CF) {
   const $ = (id) => document.getElementById(id);
   const KEY = 'cinderfall.leaderboard.v1';
-  const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones', coop: 'Co-op' };
+  const MODE_LABEL = { drones: 'Drones', nodrones: 'No drones', coop: 'Co-op', solo: 'Solo' };
   const TOP = 10; // rows shown per board; your own rank is always shown too
   const Board = CF.Board = { tab: 'world', campaign: null, mode: 'all', world: null, loading: false, error: '', req: 0, v2: null, coopOk: null };
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
@@ -45,7 +45,7 @@
     if (coop && !CF.MP.isHost()) return;
     const name = coop ? Object.values(CF.MP.players).map((p) => p.name).sort().join(' + ').slice(0, 40) : (CF.MP && CF.MP.name) || 'Operative';
     const phase = M.phases[Math.min(prog, M.phases.length - 1)];
-    const mode = coop ? 'coop' : CF.settings.noDrones ? 'nodrones' : 'drones';
+    const mode = coop ? 'coop' : CF.settings.noDrones && !C.story ? 'nodrones' : 'drones'; // the Story Campaign has no enemy drones: one solo board
     const run = { name, campaign: C.id, mode, prog, stage: done ? 'Mission complete' : phase.num + ' · ' + phase.title, score: G.score, diff: CF.diff().label, time: Math.round(G.stats.time), date: Date.now() };
     const b = this.load(), key = localKey(name, C.id, mode);
     // fold a pre-campaign entry for this callsign into its new slot
@@ -70,26 +70,33 @@
     const timer = ctl && setTimeout(() => ctl.abort(), 10000);
     return fetch(server() + '/scores' + q, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
       .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((d) => adapt(d))
+      .then((d) => adapt(d, method))
       .finally(() => clearTimeout(timer));
   }
   /** A server from before campaigns (not yet redeployed) answers without campaign/mode: treat it as the Cinder Foundry board. */
-  function adapt(d) {
+  function adapt(d, method) {
     if (!d || !Array.isArray(d.rows)) return d;
-    if (d.campaign) { Board.v2 = true; Board.coopOk = Array.isArray(d.modes) && d.modes.includes('coop'); return d; }
+    if (d.campaign) {
+      Board.v2 = true; Board.coopOk = Array.isArray(d.modes) && d.modes.includes('coop');
+      Board.known = Array.isArray(d.campaigns) ? d.campaigns : ['foundry', 'halden'];
+      // a server from before the Story Campaign answers a board it doesn't have with Cinder Foundry's
+      if (method === 'GET' && d.campaign !== Board.campaign && !Board.known.includes(Board.campaign)) return { campaign: Board.campaign, mode: Board.mode, rows: [], total: 0, mine: null, legacy: true };
+      return d;
+    }
     Board.v2 = false;
     const want = Board.campaign, mode = Board.mode;
     const rows = want === 'foundry' ? d.rows.map((r) => norm(Object.assign({}, r))).filter((r) => mode === 'all' || r.mode === mode) : [];
     return { campaign: want, mode, rows, total: rows.length, mine: want === 'foundry' && d.mine && (mode === 'all' || norm(Object.assign({}, d.mine)).mode === mode) ? norm(Object.assign({}, d.mine)) : null, legacy: true };
   }
   /** Old servers only understand Cinder Foundry runs, so other campaigns wait until the server is updated. */
-  const canSend = (run) => (run.mode === 'coop' ? Board.coopOk === true : Board.v2 === true || run.campaign === 'foundry'); // co-op needs a server that knows the Co-op board
+  const canSend = (run) => (run.mode === 'coop' ? Board.coopOk === true : Board.v2 === true || run.campaign === 'foundry') && // co-op needs a server that knows the Co-op board
+    (run.campaign === 'foundry' || (Board.known || ['foundry', 'halden']).includes(run.campaign)); // and the campaign (Story needs server API 5)
   const onScreen = () => CF.Game && CF.Game.screen === 'leaderboard';
   const viewMatches = (d) => d && d.campaign === Board.campaign && d.mode === Board.mode;
   Board.submit = function (run) {
     if (!server()) return;
     // learn which server version answers before sending a run it might misfile (old servers only know the foundry)
-    if ((this.v2 === null && run.campaign !== 'foundry') || (run.mode === 'coop' && this.coopOk == null)) { request('GET').then(() => { if (canSend(run)) this.submit(run); }).catch(() => {}); return; }
+    if ((this.v2 === null && run.campaign !== 'foundry') || (run.mode === 'coop' && this.coopOk == null) || (run.campaign === 'story' && !this.known)) { request('GET').then(() => { if (canSend(run)) this.submit(run); }).catch(() => {}); return; }
     if (!canSend(run)) return;
     // the profile token and server-tracked run let the server check a #1 before it awards the Champion skins
     const G = CF.Game, auth = { token: CF.Profile.token() || undefined, run: (G && CF.Profile.runId(G.runKey)) || undefined, limit: TOP };
@@ -143,9 +150,10 @@
     this.render();
   };
   Board.show = function (tab) { this.tab = tab; this.render(); };
-  Board.setCampaign = function (c) { if (this.campaign === c) return; this.campaign = c; if (server()) this.fetch(); this.render(); };
+  Board.setCampaign = function (c) { if (this.campaign === c) return; this.campaign = c; if (c === 'story') this.mode = 'all'; if (server()) this.fetch(); this.render(); };
   Board.setMode = function (m) { if (this.mode === m) return; this.mode = m; if (server()) this.fetch(); this.render(); };
   function row(el, cells, cls, mode) {
+    if (mode === 'drones' && Board.campaign === 'story') mode = 'solo'; // the Story Campaign has one solo board
     const d = document.createElement('div'); d.className = 'lb-row' + (cls || '');
     cells.forEach((t, i) => {
       const s = document.createElement('span');
@@ -171,6 +179,7 @@
     for (const b of document.querySelectorAll('[data-lbtab]')) b.setAttribute('aria-selected', String(b.dataset.lbtab === (online ? this.tab : 'local')));
     for (const b of document.querySelectorAll('[data-lbcampaign]')) b.setAttribute('aria-selected', String(b.dataset.lbcampaign === this.campaign));
     for (const b of document.querySelectorAll('[data-lbmode]')) b.setAttribute('aria-pressed', String(b.dataset.lbmode === this.mode));
+    const mg = document.getElementById('lbModeGroup'); if (mg) mg.hidden = this.campaign === 'story'; // one solo board: the story has no drones and no co-op
     const C = CF.Campaigns && CF.Campaigns[this.campaign];
     $('lbEyebrow').textContent = (C ? C.name : 'Campaign') + ' · furthest part first, then score';
     const el = $('lbTable'), rank = $('lbRank'), note = $('lbNote');
