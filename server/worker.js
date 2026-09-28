@@ -10,12 +10,15 @@
    POST /feedback        → {op, ...}: send(name, cat, text, rating?, pub?, ctx?) from any player (rate-limited per address);
                            list(key, filter?) | done(key, id, done) | remove(key, id) for the developer. key is the FEEDBACK_KEY secret
                            (set it with `npx wrangler secret put FEEDBACK_KEY`); without it nobody can read feedback.
+   GET  /lobby           → public matches running now: { rooms: [{code, host, map, mode, n, max}] } (hosts that checked in within LOBBY_TTL)
+   POST /lobby           → {op, code, key, ...}: up(host, map, mode, n, max) every few seconds while a public room is open | down.
+                           key is a random secret from the host's first 'up'; only that host can update or remove the listing.
    GET  /room/<CODE>     → WebSocket relay for a multiplayer room, used when a direct peer-to-peer link is blocked.
                            ?role=host (one per room) or ?role=client&id=<peer id>.
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
 import { DurableObject } from 'cloudflare:workers';
 
-const API = 5; // 4: co-op board · 5: Story Campaign (Dust Off)
+const API = 6; // 4: co-op board · 5: Story Campaign (Dust Off) · 6: public match list
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
@@ -23,7 +26,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    if (url.pathname === '/scores' || url.pathname === '/profile' || url.pathname === '/feedback') return env.BOARD.get(env.BOARD.idFromName('global')).fetch(req);
+    if (url.pathname === '/scores' || url.pathname === '/profile' || url.pathname === '/feedback' || url.pathname === '/lobby') return env.BOARD.get(env.BOARD.idFromName('global')).fetch(req);
     const room = url.pathname.match(/^\/room\/([A-Z0-9]{5})$/);
     if (room) {
       if (req.headers.get('Upgrade') !== 'websocket') return json({ error: 'Expected a WebSocket' }, 426);
@@ -67,6 +70,7 @@ const CRATES = {
 };
 const DUP_REFUND = { common: 60, rare: 125, epic: 275, legendary: 600 };
 const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const LOBBY_TTL = 90000; // a public room drops off the list this long after its host's last check-in (background tabs may only check in once a minute)
 const rand = (n, a) => { const b = new Uint8Array(n); crypto.getRandomValues(b); let s = ''; for (const x of b) s += (a || 'abcdefghijklmnopqrstuvwxyz0123456789')[x % (a || 'abcdefghijklmnopqrstuvwxyz0123456789').length]; return s; };
 const rnd01 = () => { const b = new Uint32Array(1); crypto.getRandomValues(b); return b[0] / 4294967296; };
 const today = () => new Date().toISOString().slice(0, 10);
@@ -105,6 +109,7 @@ export class Board extends DurableObject {
     if (!cols.includes('prof')) sql.exec(`ALTER TABLE runs ADD COLUMN prof TEXT`);
     sql.exec(`CREATE TABLE IF NOT EXISTS profiles (token TEXT PRIMARY KEY, pub TEXT UNIQUE, code TEXT UNIQUE, coins INTEGER, skins TEXT, equip TEXT, progress TEXT, day TEXT, earned INTEGER, created INTEGER, updated INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, name TEXT, cat TEXT, rating INTEGER, text TEXT, pub TEXT, ctx TEXT, src TEXT, done INTEGER DEFAULT 0)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS lobbies (code TEXT PRIMARY KEY, key TEXT, host TEXT, map TEXT, mode TEXT, n INTEGER, max INTEGER, last INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS camps (id TEXT PRIMARY KEY, token TEXT, campaign TEXT, diff TEXT, mode TEXT, phases INTEGER, started INTEGER, last INTEGER)`);
   }
 
@@ -322,10 +327,32 @@ export class Board extends DurableObject {
     return json({ error: 'Unknown op' }, 400);
   }
 
+  // ---------------------------------------------------------- public match list
+  async lobby(req) {
+    this.sql.exec('DELETE FROM lobbies WHERE last < ?', Date.now() - LOBBY_TTL);
+    if (req.method === 'GET') {
+      const rooms = this.sql.exec('SELECT code, host, map, mode, n, max FROM lobbies ORDER BY n DESC, last DESC LIMIT 100').toArray();
+      return json({ rooms });
+    }
+    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+    let b; try { b = await req.json(); } catch (e) { return json({ error: 'Bad JSON' }, 400); }
+    const code = String(b.code || ''), key = String(b.key || '');
+    if (!/^[A-Z0-9]{5}$/.test(code) || !/^[a-z0-9]{16,40}$/.test(key)) return json({ error: 'Bad room' }, 400);
+    const row = this.sql.exec('SELECT key FROM lobbies WHERE code = ?', code).toArray()[0];
+    if (row && row.key !== key) return json({ error: 'Room belongs to another host' }, 403);
+    if (b.op === 'down') { this.sql.exec('DELETE FROM lobbies WHERE code = ?', code); return json({ ok: true }); }
+    if (b.op !== 'up') return json({ error: 'Unknown op' }, 400);
+    const max = Math.max(2, Math.min(16, Math.floor(+b.max) || 8)), n = Math.max(1, Math.min(max, Math.floor(+b.n) || 1));
+    this.sql.exec('INSERT OR REPLACE INTO lobbies (code, key, host, map, mode, n, max, last) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      code, key, cleanName(b.host), clean(b.map, 16), clean(b.mode, 16), n, max, Date.now());
+    return json({ ok: true });
+  }
+
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname === '/lobby') return this.lobby(req);
     if (url.pathname === '/profile') return this.prof(req, url);
-    if (url.pathname === '/feedback') return this.feedback(req);
+    if (url.pathname === '/feedback' || url.pathname === '/lobby') return this.feedback(req);
     return this.scores(req, url);
   }
 }

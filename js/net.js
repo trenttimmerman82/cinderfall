@@ -194,7 +194,23 @@
     const out = {}; for (const id in Net.conns) out[id] = kind(Net.conns[id]);
     return out;
   };
+  // ------------------------------------------------------------ public match list (server/worker.js /lobby)
+  /** Public matches running now, or null when the server can't be reached. */
+  Net.listPublic = async function () {
+    if (!server()) return null;
+    try { const r = await fetch(server() + '/lobby', { cache: 'no-store' }); if (!r.ok) return null; const b = await r.json(); return Array.isArray(b.rooms) ? b.rooms : null; } catch (e) { return null; }
+  };
+  /** Host side: list this room ('up', repeated while it's public) or take it off the list ('down'). */
+  Net.announce = function (op, info) {
+    if (!server() || !Net.code) return;
+    if (!Net.lobbyKey) Net.lobbyKey = randomId().slice(1, 21).padEnd(16, '0');
+    const body = JSON.stringify(Object.assign({ op, code: Net.code, key: Net.lobbyKey }, info || {}));
+    try { fetch(server() + '/lobby', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {}); } catch (e) { /* offline */ }
+  };
+
   Net.close = function () {
+    if (Net.role === 'host' && Net.lobbyKey) Net.announce('down');
+    Net.lobbyKey = '';
     const ws = Net.relay; Net.relay = null;
     try { if (ws) ws.close(); } catch (e) { /* ignore */ }
     try { if (Net.peer) Net.peer.destroy(); } catch (e) { /* ignore */ }

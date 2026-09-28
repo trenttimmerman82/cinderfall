@@ -182,7 +182,6 @@
       <nav class="menu" aria-label="Main menu">
         <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry, Whiteout or Dust Off</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
-        <button class="menu-item" data-act="practice"><span class="mi-label">Practice vs bots</span><span class="mi-note">Any map and mode, offline, against computer players</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
         <button class="menu-item" data-act="locker"><span class="mi-label">Locker &amp; Shop</span><span class="mi-note">Skins, crates and your save code</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
@@ -556,12 +555,14 @@
           </div>
           <p class="mp-mode-note" id="mpModeNote" hidden>Sniper Valley plays its own mode: team deathmatch with rail-rifle loadouts only.</p>
           <p class="mp-mode-note" id="mpCoopNote" hidden></p>
+          <label class="set-row toggle diff-mod mp-public"><span><b>Public match</b> Anyone can find it under Find public games and join. Leave off for a private room only people with the code can join.</span><input type="checkbox" id="mpPublic"></label>
           <button class="btn" data-act="mphost">Host match</button>
         </div>
         <div class="mp-col">
           <h3 class="mp-h">Join a friend</h3>
           <label class="field"><span>Room code</span><input id="mpCode" class="code-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false"></label>
           <button class="btn" data-act="mpjoin">Join match</button>
+          <button class="btn-ghost" data-act="mpbrowse">Find public games</button>
           <h3 class="mp-h">Practice vs bots <small>offline</small></h3>
           <p class="mp-mode-note">Plays the map and mode picked on the left against computer players, on this computer only. Esc pauses.</p>
           <div class="bot-opts">
@@ -575,8 +576,17 @@
         </div>
       </div>
       <p class="mp-status" id="mpStatus" aria-live="polite"></p>
-      <p class="mp-note">The host shares the 5-character room code. Friends open the same game page, pick <b>Multiplayer</b> and enter it. Up to 8 players; the host's connection carries the match.</p>
+      <p class="mp-note">The host shares the 5-character room code. Friends open the same game page, pick <b>Multiplayer</b> and enter it, or tick <b>Public match</b> so anyone can find it under <b>Find public games</b>. Up to 8 players; the host's connection carries the match.</p>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
+    </div>
+  </section>
+
+  <section class="screen panel-screen" id="screen-browse" hidden>
+    <div class="panel wide">
+      <header class="panel-head"><span class="eyebrow">Multiplayer · public matches running now</span><h2>Find public games</h2></header>
+      <div class="lb-table br-list" id="browseList"></div>
+      <p class="mp-status" id="browseStatus" aria-live="polite"></p>
+      <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button><button class="btn-ghost" data-act="browserefresh">Refresh</button></footer>
     </div>
   </section>
 

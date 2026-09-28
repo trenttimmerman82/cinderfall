@@ -234,7 +234,7 @@
       if (this.mode === 'mp' && (this.state === 'playing' || this.state === 'mpdead') && (CF.Input.freeLook || e.code === 'KeyP')) this.mpOpenMenu();
       else if (this.state === 'playing' && (CF.Input.freeLook || e.code === 'KeyP')) { CF.Input.exitLock(); this.pause(); }
       else if (e.code === 'Escape' && !$('crateOpen').hidden) { if (!CF.Locker.spinning) CF.Locker.closeCrate(); }
-      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'leaderboard' || this.screen === 'locker' || this.screen === 'feedback')) this.back();
+      else if (e.code === 'Escape' && (this.screen === 'settings' || this.screen === 'manual' || this.screen === 'difficulty' || this.screen === 'campaign' || this.screen === 'mp' || this.screen === 'browse' || this.screen === 'leaderboard' || this.screen === 'locker' || this.screen === 'feedback')) this.back();
     });
     $('mpName').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
     $('mpName').addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; });
@@ -242,6 +242,7 @@
       $(id).addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
       $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.open(); });
     }
+    $('mpPublic').addEventListener('change', (e) => { try { localStorage.setItem('cinderfall.public', e.target.checked ? '1' : '0'); } catch (err) { /* storage unavailable */ } });
     $('diffNoDrones').addEventListener('change', (e) => { CF.settings.noDrones = e.target.checked; CF.saveSettings(); });
     $('mpCode').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.initAudio(); this.act('mpjoin'); } });
     $('mpCode').addEventListener('input', (e) => { const v = CF.Net.cleanCode(e.target.value); if (v !== e.target.value) e.target.value = v; });
@@ -264,10 +265,11 @@
         this.showScreen('difficulty'); break;
       }
       case 'multiplayer': this.openMpScreen(); break;
-      case 'practice': this.openMpScreen(); $('mpBotsBtn').focus(); break;
       case 'mpbots': this.mpPractice(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
+      case 'mpbrowse': this.openBrowse(); break;
+      case 'browserefresh': this.refreshBrowse(); break;
       case 'mpresume': if (CF.Coop.campaign()) CF.CoopCampaign.deploy(); else this.mpResume(); break;
       case 'mpleave': CF.MP.leave(); break;
       case 'mpagain': CF.MP.hostRestart(); break;
@@ -1061,6 +1063,7 @@
   G.openMpScreen = function () {
     this.backTo = 'main';
     $('mpName').value = MPM().name;
+    try { $('mpPublic').checked = localStorage.getItem('cinderfall.public') === '1'; } catch (e) { /* storage unavailable */ }
     try { const bp = JSON.parse(localStorage.getItem('cinderfall.bots') || 'null'); if (bp) { if ([1, 3, 5, 7].includes(bp.n)) this.mpSel.bots = bp.n; if (CF.Bots.SKILL[bp.s]) this.mpSel.skill = bp.s; } } catch (e) { /* storage unavailable */ }
     this.renderMpPick(); this.renderLoadouts();
     this.mpBusy(false);
@@ -1125,13 +1128,53 @@
     for (const b of document.querySelectorAll('[data-act="mphost"], [data-act="mpjoin"]')) b.disabled = on;
     $('mpBotsBtn').disabled = on || this.mpSel.mode === 'prophunt' || this.mpSel.mode === 'coop';
   };
-  G.mpStart = function (host) {
+  G.mpStart = function (host, listed) {
     const M = MPM();
     M.saveName($('mpName').value); $('mpName').value = M.name;
     if (!CF.Net.available()) { M.status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true); return; }
     if (!host && CF.Net.cleanCode($('mpCode').value).length !== 5) { M.status('Enter the 5-character room code your friend sees on their screen.', true); $('mpCode').focus(); return; }
     this.mpBusy(true);
-    if (host) M.host(this.mpSel.map, this.mpSel.map === 'sniper' ? 'sniper' : this.mpSel.mode); else M.join($('mpCode').value);
+    if (host) M.host(this.mpSel.map, this.mpSel.map === 'sniper' ? 'sniper' : this.mpSel.mode, $('mpPublic').checked); else M.join($('mpCode').value, listed);
+  };
+  /** Find public games: every public room the server lists, refreshed while the screen is open. */
+  G.openBrowse = function () {
+    MPM().saveName($('mpName').value);
+    this.backTo = 'mp'; this.showScreen('browse');
+    $('browseList').textContent = ''; $('browseStatus').textContent = 'Looking for matches…';
+    this.refreshBrowse();
+    clearInterval(this.browseTimer);
+    this.browseTimer = setInterval(() => { if (this.screen === 'browse') this.refreshBrowse(); else clearInterval(this.browseTimer); }, 5000);
+  };
+  G.refreshBrowse = async function () {
+    const rooms = await CF.Net.listPublic();
+    if (this.screen !== 'browse') return;
+    const list = $('browseList'), st = $('browseStatus');
+    st.classList.toggle('err', !rooms);
+    if (!rooms) { st.textContent = 'Could not reach the Cinderfall server. Check your connection and try Refresh.'; return; }
+    st.textContent = rooms.length ? '' : 'No public matches right now. Host one with Public match ticked, or check back soon.';
+    list.textContent = '';
+    if (!rooms.length) return;
+    const cell = (row, text) => { const c = document.createElement('span'); c.textContent = text; row.appendChild(c); return c; };
+    const head = document.createElement('div'); head.className = 'lb-row lb-head';
+    for (const h of ['Host', 'Mode', 'Map', 'Players', '']) cell(head, h);
+    list.appendChild(head);
+    const MODES = MPM().MODES;
+    for (const r of rooms) {
+      const row = document.createElement('div'); row.className = 'lb-row';
+      const card = document.querySelector('#screen-mp [data-map="' + CSS.escape(r.map) + '"] b');
+      cell(row, r.host); cell(row, MODES[r.mode] ? MODES[r.mode].name : r.mode); cell(row, card ? card.textContent : r.map); cell(row, r.n + ' / ' + r.max);
+      const b = document.createElement('button'); b.className = 'btn'; b.textContent = r.n >= r.max ? 'Full' : 'Join'; b.disabled = r.n >= r.max;
+      b.addEventListener('click', () => this.joinPublic(r.code));
+      const wrap = document.createElement('span'); wrap.appendChild(b); row.appendChild(wrap);
+      list.appendChild(row);
+    }
+  };
+  G.joinPublic = function (code) {
+    clearInterval(this.browseTimer);
+    this.initAudio();
+    this.backTo = 'main'; this.showScreen('mp');
+    $('mpCode').value = code;
+    this.mpStart(false, true);
   };
   /** Called once the map is built: show the lobby so the Deploy click can capture the mouse. */
   G.enterMultiplayer = function () {

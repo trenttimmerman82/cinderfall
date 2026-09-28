@@ -300,13 +300,13 @@
   };
   MP.leave = function (reason) {
     const was = MP.active;
-    MP.active = false; CF.Net.close(); MP.reset(); MP.role = null; MP.solo = false;
+    MP.active = false; CF.Net.close(); MP.reset(); MP.role = null; MP.solo = false; MP.setPublic(false);
     if (was) CF.Game.leaveMultiplayer(reason);
   };
 
   /** Host a match: build the map, open a room, spawn. */
-  MP.host = async function (mapId, mode) {
-    MP.solo = false;
+  MP.host = async function (mapId, mode, pub) {
+    MP.solo = false; MP.setPublic(false);
     MP.reset(); MP.mode = MODES[mode] ? mode : 'ffa'; MP.map = mapId; MP.limit = MP.modeDef().limit;
     MP.status('Opening a room…');
     CF.Net.onMsg = (from, msg) => MP.onHostMsg(from, msg);
@@ -316,21 +316,34 @@
       MP.role = 'host'; MP.myId = CF.Net.myId; MP.team = 0; MP.active = true;
       MP.players[MP.myId] = Object.assign({ name: MP.name, team: 0, kills: 0, deaths: 0, color: MP.colorIdx++ }, MP.myCosmetics());
       MP.timeLeft = MP.modeDef().time;
+      MP.setPublic(!!pub);
       await CF.Game.loadMap(MP.mode === 'coop' ? CF.Campaigns[mapId].map : mapId);
       if (MP.mode === 'coop') CF.CoopCampaign.enter(); else CF.Game.enterMultiplayer();
     }, (err) => MP.status(err, true));
   };
-  MP.join = function (code) {
-    MP.solo = false;
+  /** Public rooms show up in Find public games: the host checks in every few seconds with the map, mode and head count.
+      A timer rather than the game loop drives it, because the loop stops while the host's tab is in the background. */
+  MP.setPublic = function (on) {
+    MP.public = on; clearInterval(MP.lobbyTimer); MP.lobbyTimer = 0;
+    if (on) { MP.announce(); MP.lobbyTimer = setInterval(MP.announce, 10000); }
+  };
+  MP.announce = function () {
+    if (!MP.public || MP.solo || !MP.isHost() || !CF.Net.code) return;
+    CF.Net.announce('up', { host: MP.name, map: MP.map, mode: MP.mode, n: Object.keys(MP.players).length, max: MP.mode === 'coop' ? 2 : 8 });
+  };
+  // closing the tab takes the room off the list at once instead of waiting for it to expire
+  window.addEventListener('pagehide', () => { if (MP.public && MP.isHost()) CF.Net.announce('down'); });
+  MP.join = function (code, listed) {
+    MP.solo = false; MP.setPublic(false);
     MP.reset();
     MP.status('Connecting…');
     CF.Net.onMsg = (from, msg) => MP.onClientMsg(msg);
     CF.Net.onDrop = () => { if (MP.active) MP.leave('The host ended the match or the connection dropped.'); };
-    CF.Net.joinGame(code, () => { if (CF.Game.screen !== 'mp') { CF.Net.close(); return; } MP.role = 'client'; MP.myId = CF.Net.myId; CF.Net.send(Object.assign({ t: 'hello', name: MP.name }, MP.myCosmetics())); MP.status('Joining match…'); }, (err) => MP.status(err, true), (text) => MP.status(text));
+    CF.Net.joinGame(code, () => { if (CF.Game.screen !== 'mp') { CF.Net.close(); return; } MP.role = 'client'; MP.myId = CF.Net.myId; CF.Net.send(Object.assign({ t: 'hello', name: MP.name }, MP.myCosmetics())); MP.status('Joining match…'); }, (err) => MP.status(listed ? 'Could not join that match. It may have just ended; pick another from Find public games.' : err, true), (text) => MP.status(text));
   };
   /** Practice: host a match on this computer only (no room, no network) and fill it with bots (js/bots.js). */
   MP.practice = async function (mapId, mode, bots, skill) {
-    CF.Net.close(); MP.reset();
+    CF.Net.close(); MP.reset(); MP.setPublic(false);
     MP.mode = MODES[mode] ? mode : 'ffa'; MP.map = mapId; MP.limit = MP.modeDef().limit;
     MP.role = 'host'; MP.myId = 'me'; MP.team = 0; MP.active = true; MP.solo = true;
     MP.players[MP.myId] = Object.assign({ name: MP.name, team: 0, kills: 0, deaths: 0, color: MP.colorIdx++ }, MP.myCosmetics());
@@ -387,6 +400,7 @@
         CF.Net.broadcast({ t: 'join', id: from, p: MP.players[from] }, from);
         MP.addRemote(from, MP.players[from]);
         CF.HUD.killfeed(MP.players[from].name + ' joined', '');
+        MP.announce();
         return;
       }
       case 'st': if (!pl) return; if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcastFast(msg, from); return;
@@ -412,6 +426,7 @@
     if (MP.remotes[id]) { MP.remotes[id].remove(); delete MP.remotes[id]; }
     CF.RC.dropRemote(id); CF.RC.hostEnded(id); CF.CTF.dropFrom(id);
     CF.HUD.killfeed(pl.name + ' left', '');
+    MP.announce();
     CF.Net.broadcast({ t: 'leave', id });
   };
 
