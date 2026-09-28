@@ -160,5 +160,27 @@
       (p.x > 12 && p.x < 26 && p.z > -8 && p.z < 10 && p.y < 3) || (p.x > -46 && p.x < -40 && p.z > -6 && p.z < 0),
     menuCam: (t, cam) => { const a = t * 0.035 + 0.8; cam.position.set(-4 + Math.sin(a) * 46, 15 + Math.sin(a * 1.3) * 2, -2 + Math.cos(a) * 42); cam.lookAt(-6, 3, -3); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'sniper'];
+  // Terminal: clear Moscow afternoon; bright blue sky, a low sun through the glass, haze over the runways
+  CF.Maps.terminal = {
+    id: 'terminal', name: 'Terminal', mp: true, nav: false, blurb: 'An airport terminal and an airliner you can walk through: security, Burger Town, the bookstore, the gate lounge and the apron.',
+    bounds: { minX: -54, maxX: 40, minZ: -54, maxZ: 30 },
+    theme: base({
+      fog: [0.74, 0.8, 0.87], fogDensity: 0.0022,
+      hemi: [0xc8d8ec, 0x5c5a52, 0.64], moon: { color: 0xfff1d8, intensity: 1.75, dir: [0.5, 0.62, 0.55] },
+      sky: { zen: [0.18, 0.34, 0.64], hor: [0.76, 0.8, 0.84], glow: [0.52, 0.44, 0.3], glowDir: [0.5, 0.55], glow2: [0.1, 0.1, 0.1], glow2Dir: [-1, 0],
+        cloudDark: [0.72, 0.74, 0.78], cloudLit: [1.06, 1.04, 1.0], stars: 0, moon: 2.6 },
+      env: { top: [0.55, 0.66, 0.86], bottom: [0.42, 0.42, 0.4], band: [0.62, 0.62, 0.6], panels: [[1.5, 1.5, 1.5], [1.3, 1.4, 1.6], [1.45, 1.4, 1.3], [1.4, 1.4, 1.4]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 230, r1: 380, count: 40, hMin: 5, hMax: 14, rock: [0.14, 0.18, 0.13], snow: [0.14, 0.18, 0.13], haze: 0.0048, seed: 64 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.8, sat: 1.05, shadow: [0, 0, 0.004], high: [0.01, 0.004, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapTerminal.build(),
+    inside: (p) => (p.x > -46 && p.x < 30 && p.z > -10 && p.z < 18) || (p.y > 3 && p.x > -19.2 && p.x < 16.2 && p.z > -33 && p.z < -29) ||
+      (p.y > 3 && ((p.x > 11.4 && p.x < 15 && p.z > -29 && p.z < -10) || (p.x > -36.1 && p.x < -33.5 && p.z > -19 && p.z < -10))),
+    menuCam: (t, cam) => { const a = t * 0.03 + 2.4; cam.position.set(-2 + Math.sin(a) * 48, 14 + Math.sin(a * 1.3) * 2.5, -16 + Math.cos(a) * 40); cam.lookAt(-2, 4, -18); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'sniper'];
 })(window.CF);

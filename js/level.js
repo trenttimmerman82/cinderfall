@@ -8,8 +8,9 @@
   const UVS = { facade: 1 / 12, concrete: 0.25, concreteDark: 0.25, asphalt: 1 / 6, metalFloor: 0.5, wall: 0.25, wallRust: 0.25, hazard: 1, paintYellow: 0.33, paintGrey: 0.33, paintDark: 0.33, paintRed: 0.5, paintGreen: 0.33, steel: 0.5, rubber: 0.5, crate: 1 / 1.2,
     grass: 1 / 5, sand: 1 / 6, dirt: 1 / 6, wallpaper: 0.5, wallpaper2: 0.5, checker: 0.5, carpetBeige: 0.5, stone: 0.5, sidingWhite: 0.25, sidingTeal: 0.25, boardYellow: 0.4, lattice: 1, stucco: 0.25, sidingBlue: 0.25, boardBrown: 0.4, woodDark: 0.5, trailerWhite: 0.4, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5,
     snow: 1 / 7, snowDirty: 1 / 7, ice: 1 / 6, iceDark: 1 / 6, basalt: 1 / 4, panelOrange: 1 / 3, panelWhite: 1 / 3, panelRed: 1 / 3, panelBlue: 1 / 3, panelDark: 1 / 3, grate: 0.5,
-    sidingBeige: 0.25, plankWall: 0.5, plywood: 0.4, forest: 1 / 5, metalSiding: 0.25, roofTin: 0.33, rust: 0.33, gravel: 1 / 5 };
-  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal', metalSiding: 'metal', roofTin: 'metal', rust: 'metal' };
+    sidingBeige: 0.25, plankWall: 0.5, plywood: 0.4, forest: 1 / 5, metalSiding: 0.25, roofTin: 0.33, rust: 0.33, gravel: 1 / 5,
+    terrazzo: 1 / 4.8, ceilTile: 1 / 4.8, carpetBlue: 0.5, seatBlue: 0.5, vinylRed: 0.5, leather: 0.5, glassClear: 0.25 };
+  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal', metalSiding: 'metal', roofTin: 'metal', rust: 'metal', planeWhite: 'metal', planeBlue: 'metal', glassClear: 'metal', greyClean: 'metal' };
   const FACES = [
     { c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], n: [1, 0, 0], u: (x, y, z) => -z, v: (x, y) => y },
     { c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], n: [-1, 0, 0], u: (x, y, z) => z, v: (x, y) => y },
@@ -108,6 +109,13 @@
     M.sidingBeige = tint(T.siding, 0xd6c8aa); M.plankWall = tint(T.planks, 0xb48c62); M.plywood = tint(T.planks, 0xcfae7c); M.forest = tint(T.grass, 0x8fa878);
     M.metalSiding = tint(T.siding, 0x8c959b, { metalness: 0.45 }); M.roofTin = std(Object.assign(tri(T.paintMetal), { color: 0x6c7a6c, metalness: 0.5 }));
     M.rust = std(Object.assign(tri(T.paintMetal), { color: 0x8a4a2a, metalness: 0.35 })); M.gravel = std(Object.assign(tri(T.dirt), { color: 0xaaa49a, metalness: 0 }));
+    // airport (Terminal)
+    M.terrazzo = std(Object.assign(tri(T.terrazzo), { color: 0xf2eee6, metalness: 0, envMapIntensity: 0.9 })); M.ceilTile = std(Object.assign(tri(T.ceilTile), { color: 0xffffff, metalness: 0 }));
+    M.glassClear = std({ color: 0x9fc4d4, roughness: 0.04, metalness: 0.3, transparent: true, opacity: 0.2, depthWrite: false, envMapIntensity: 1.4 });
+    M.planeWhite = paint(0xf1f3f5); M.planeBlue = paint(0x1c3d86); M.planeGold = paint(0xd3a13c);
+    M.wallClean = std({ color: 0xe9e6df, metalness: 0, roughness: 0.82 }); M.greyClean = std({ color: 0x8b939c, metalness: 0.35, roughness: 0.42 });
+    M.carpetBlue = tint(T.carpet, 0x3a4a6c); M.seatBlue = tint(T.carpet, 0x2f4c7e); M.vinylRed = tint(T.carpet, 0xb0282a); M.leather = tint(T.carpet, 0x6a4128);
+    M.lineWhite = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.8, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     // polar station (Whiteout)
     M.snow = std(Object.assign(tri(T.snow), { color: 0xf4f7ff, metalness: 0, envMapIntensity: 0.5 }));
     M.snowDirty = std(Object.assign(tri(T.snow), { color: 0xb9bcc0, metalness: 0, envMapIntensity: 0.4 }));
@@ -656,7 +664,7 @@
       const mat = M[key] || M.concrete;
       const mesh = new THREE.Mesh(g, mat);
       const lit = mat.isMeshStandardMaterial;
-      mesh.castShadow = lit; mesh.receiveShadow = lit;
+      mesh.castShadow = lit && !mat.transparent; mesh.receiveShadow = lit;
       mesh.matrixAutoUpdate = false; mesh.updateMatrix();
       this.scene.add(mesh);
     }

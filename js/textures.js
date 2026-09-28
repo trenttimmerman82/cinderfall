@@ -565,6 +565,34 @@
   }
 
   // ------------------------------------------------------------ polar station (Whiteout campaign)
+  function makeTerminal() {
+    const n = S * S, rnd = U.mulberry32(2009);
+    const pack = (rgb, hgt, rough, ns) => ({ map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, ns), roughnessMap: grayTex(S, S, rough) });
+    // polished terrazzo: 2 x 2 big tiles, chips of stone in a pale binder, hairline grout
+    {
+      const n1 = tileNoise(S, 4, 4, 4, 2101, 0.5), n2 = tileNoise(S, 96, 96, 1, 2102), C = S / 2;
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, grout = (x % C) < 2 || (y % C) < 2, tile = ((x / C) | 0) + ((y / C) | 0) * 2;
+        const chip = n2[i] > 0.72 ? (n2[i] - 0.72) * 2.4 : 0, dark = n2[i] < 0.2 ? (0.2 - n2[i]) * 2 : 0;
+        const v = 0.8 + (n1[i] - 0.5) * 0.06 + (tile % 2 ? 0.02 : -0.01) - dark * 0.5 + chip * 0.2 + (rnd() - 0.5) * 0.03;
+        if (grout) { rgb[i * 3] = 0.42; rgb[i * 3 + 1] = 0.41; rgb[i * 3 + 2] = 0.4; hgt[i] = 0; rough[i] = 0.8; }
+        else { rgb[i * 3] = v * 0.97; rgb[i * 3 + 1] = v * 0.95; rgb[i * 3 + 2] = v * 0.92; hgt[i] = 1; rough[i] = 0.18 + (n1[i] - 0.5) * 0.12; }
+      }
+      T.list.terrazzo = pack(rgb, hgt, rough, 1.2);
+    }
+    // acoustic ceiling: 4 x 4 lay-in panels with pinholes, white T-bar grid
+    {
+      const C = S / 4;
+      const rgb = new Float32Array(n * 3), hgt = new Float32Array(n), rough = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = i % S, y = (i / S) | 0, grid = (x % C) < 3 || (y % C) < 3, pin = rnd() < 0.05;
+        const v = grid ? 0.97 : 0.88 - (pin ? 0.25 : 0) + (rnd() - 0.5) * 0.03;
+        rgb[i * 3] = v; rgb[i * 3 + 1] = v; rgb[i * 3 + 2] = v * 0.98; hgt[i] = grid ? 1 : pin ? 0 : 0.6; rough[i] = grid ? 0.4 : 0.95;
+      }
+      T.list.ceilTile = pack(rgb, hgt, rough, 1.5);
+    }
+  }
   function makeArctic() {
     const n = S * S, rnd = U.mulberry32(9001);
     const pack = (rgb, hgt, rough, ns) => ({ map: rgbTex(S, S, rgb), normalMap: normalTex(S, S, hgt, ns), roughnessMap: grayTex(S, S, rough) });
@@ -663,6 +691,7 @@
       ['Heating the crucibles', makeMolten],
       ['Booting terminals', makeScreens],
       ['Packing the snow', makeArctic],
+      ['Polishing the terminal floor', makeTerminal],
       ['Scattering debris', () => { makeDecals(); makeParticles(); }]
     ];
     for (let i = 0; i < steps.length; i++) {
