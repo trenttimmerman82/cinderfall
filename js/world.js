@@ -465,6 +465,69 @@
   };
   W.flowDist = function (x, z) { const i = this.cellAt(x, z); return i >= 0 ? this.nav.dist[i] : Infinity; };
 
+  /** A* over the heightfield from (ax,az) to (bx,bz), for walkers with their own goal (practice bots).
+      Returns [x0, z0, x1, z1, ...] cell centres from start to goal, or null when the goal can't be reached. */
+  W.findPath = function (ax, az, bx, bz) {
+    const nav = this.nav; if (!nav) return null;
+    const near = (x, z, r) => { const c = this.cellAt(x, z); return c >= 0 && nav.walk[c] ? c : this.nearestMainCell(x, z, r); };
+    const s = near(ax, az, 4), g = near(bx, bz, 6);
+    if (s < 0 || g < 0 || nav.comp[s] !== nav.comp[g]) return null;
+    const w = nav.w, N = w * nav.h;
+    if (!nav.pg) { nav.pg = new Float32Array(N); nav.pfrom = new Int32Array(N); nav.pmark = new Uint32Array(N); nav.pstamp = 0; nav.pI = new Int32Array(N * 8); nav.pP = new Float32Array(N * 8); }
+    const G = nav.pg, FROM = nav.pfrom, MARK = nav.pmark, HI = nav.pI, HP = nav.pP, stamp = ++nav.pstamp;
+    const gx = g % w, gz = (g / w) | 0;
+    const hEst = (i) => { const dx = Math.abs(i % w - gx), dz = Math.abs(((i / w) | 0) - gz); return Math.max(dx, dz) + 0.4142 * Math.min(dx, dz); };
+    let n = 0;
+    const push = (i, p) => {
+      let k = n++;
+      while (k > 0) { const par = (k - 1) >> 1; if (HP[par] <= p) break; HI[k] = HI[par]; HP[k] = HP[par]; k = par; }
+      HI[k] = i; HP[k] = p;
+    };
+    const pop = () => {
+      const top = HI[0]; n--;
+      if (n > 0) {
+        const li = HI[n], lp = HP[n]; let k = 0;
+        for (;;) {
+          let c = 2 * k + 1; if (c >= n) break;
+          if (c + 1 < n && HP[c + 1] < HP[c]) c++;
+          if (HP[c] >= lp) break;
+          HI[k] = HI[c]; HP[k] = HP[c]; k = c;
+        }
+        HI[k] = li; HP[k] = lp;
+      }
+      return top;
+    };
+    MARK[s] = stamp; G[s] = 0; FROM[s] = -1; push(s, hEst(s));
+    let found = s === g;
+    while (n > 0 && !found && n < HI.length - 8) {
+      const i = pop(), gi = G[i], ix = i % w, iz = (i / w) | 0;
+      for (let k = 0; k < 8; k++) {
+        const j = canStepTo(nav, ix, iz, k); if (j < 0) continue;
+        const nd = gi + NB[k][2] * (nav.edge[j] ? 2.4 : 1);
+        if (MARK[j] === stamp && nd >= G[j]) continue;
+        MARK[j] = stamp; G[j] = nd; FROM[j] = i;
+        if (j === g) { found = true; break; }
+        push(j, nd + hEst(j));
+      }
+    }
+    if (!found) return null;
+    const cells = []; for (let i = g; i >= 0; i = FROM[i]) cells.push(i);
+    const out = [];
+    for (let k = cells.length - 1; k >= 0; k--) out.push(this.cellX(cells[k]), this.cellZ(cells[k]));
+    return out;
+  };
+  /** Random walkable cell (not at an edge) within r of (x,z) that connects to it. -1 if none turned up. */
+  W.randomReachable = function (x, z, r, tries) {
+    const nav = this.nav; if (!nav) return -1;
+    const c0 = this.cellAt(x, z), comp = c0 >= 0 && nav.walk[c0] ? nav.comp[c0] : nav.mainComp;
+    for (let t = 0; t < (tries || 30); t++) {
+      const a = Math.random() * Math.PI * 2, d = Math.random() * r;
+      const i = this.cellAt(x + Math.cos(a) * d, z + Math.sin(a) * d);
+      if (i >= 0 && nav.walk[i] && !nav.edge[i] && nav.comp[i] === comp) return i;
+    }
+    return -1;
+  };
+
   /** Random main-component cell in an annulus around (x,z). */
   W.randomWalkable = function (x, z, rMin, rMax, tries) {
     for (let t = 0; t < (tries || 40); t++) {

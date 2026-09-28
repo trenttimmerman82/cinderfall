@@ -255,7 +255,8 @@
         return;
       }
       const ox = b.pos.x, oz = b.pos.z;
-      if (!this.sample()) {
+      if (this.sim) this.sim(dt); // a practice bot moves itself (js/bots.js)
+      else if (!this.sample()) {
         b.pos.x = U.damp(b.pos.x, this.tp.x, 16, dt); b.pos.y = U.damp(b.pos.y, this.tp.y, 16, dt); b.pos.z = U.damp(b.pos.z, this.tp.z, 16, dt);
         if (b.pos.distanceToSquared(this.tp) > 25) b.pos.copy(this.tp);
         this.yaw += U.wrapAngle(this.tyaw - this.yaw) * Math.min(1, dt * 16);
@@ -294,16 +295,18 @@
     for (const id in MP.remotes) MP.remotes[id].remove();
     MP.remotes = {}; MP.players = {}; MP.teamScores = [0, 0]; MP.ended = false; MP.lastHit = null; MP.colorIdx = 0;
     if (CF.Coop) CF.Coop.reset(); if (CF.ZM) CF.ZM.reset();
-    MP.ping = 0; MP.pingT = 0;
+    if (CF.Bots) CF.Bots.clear();
+    MP.ping = 0; MP.pingT = 0; MP.shotT = -99;
   };
   MP.leave = function (reason) {
     const was = MP.active;
-    MP.active = false; CF.Net.close(); MP.reset(); MP.role = null;
+    MP.active = false; CF.Net.close(); MP.reset(); MP.role = null; MP.solo = false;
     if (was) CF.Game.leaveMultiplayer(reason);
   };
 
   /** Host a match: build the map, open a room, spawn. */
   MP.host = async function (mapId, mode) {
+    MP.solo = false;
     MP.reset(); MP.mode = MODES[mode] ? mode : 'ffa'; MP.map = mapId; MP.limit = MP.modeDef().limit;
     MP.status('Opening a room…');
     CF.Net.onMsg = (from, msg) => MP.onHostMsg(from, msg);
@@ -318,11 +321,24 @@
     }, (err) => MP.status(err, true));
   };
   MP.join = function (code) {
+    MP.solo = false;
     MP.reset();
     MP.status('Connecting…');
     CF.Net.onMsg = (from, msg) => MP.onClientMsg(msg);
     CF.Net.onDrop = () => { if (MP.active) MP.leave('The host ended the match or the connection dropped.'); };
     CF.Net.joinGame(code, () => { if (CF.Game.screen !== 'mp') { CF.Net.close(); return; } MP.role = 'client'; MP.myId = CF.Net.myId; CF.Net.send(Object.assign({ t: 'hello', name: MP.name }, MP.myCosmetics())); MP.status('Joining match…'); }, (err) => MP.status(err, true), (text) => MP.status(text));
+  };
+  /** Practice: host a match on this computer only (no room, no network) and fill it with bots (js/bots.js). */
+  MP.practice = async function (mapId, mode, bots, skill) {
+    CF.Net.close(); MP.reset();
+    MP.mode = MODES[mode] ? mode : 'ffa'; MP.map = mapId; MP.limit = MP.modeDef().limit;
+    MP.role = 'host'; MP.myId = 'me'; MP.team = 0; MP.active = true; MP.solo = true;
+    MP.players[MP.myId] = Object.assign({ name: MP.name, team: 0, kills: 0, deaths: 0, color: MP.colorIdx++ }, MP.myCosmetics());
+    MP.timeLeft = MP.modeDef().time;
+    await CF.Game.loadMap(mapId);
+    CF.Game.enterMultiplayer();
+    CF.Bots.setup(MP.mode === 'zombies' ? 0 : bots, skill);
+    CF.Game.renderMpMenu();
   };
   MP.status = function (text, error) {
     const el = $('mpStatus'); if (el) { el.textContent = text; el.classList.toggle('err', !!error); }
@@ -345,7 +361,7 @@
     MP.post({ t: 'hit', to, dmg: Math.round(dmg * 10) / 10, head: head ? 1 : 0, w, from: [+P.x.toFixed(2), +P.y.toFixed(2), +P.z.toFixed(2)] });
   };
   const rv = (v) => [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)];
-  MP.onShot = function (w, muzzle, ends) { if (MP.active) { MP.spawnT = -99; MP.post({ t: 'fx', w, m: rv(muzzle), e: ends.slice(0, 10).map(rv) }); } };
+  MP.onShot = function (w, muzzle, ends) { if (MP.active) { MP.spawnT = -99; MP.shotT = CF.time; MP.post({ t: 'fx', w, m: rv(muzzle), e: ends.slice(0, 10).map(rv) }); } };
   MP.onBoom = function (pos) { if (MP.active) MP.post({ t: 'boom', p: rv(pos) }); };
   MP.onNade = function (pos, vel) { if (MP.active) MP.post({ t: 'nade', p: rv(pos), v: rv(vel) }); };
   MP.sendState = function () {
@@ -375,7 +391,7 @@
       }
       case 'st': if (!pl) return; if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcastFast(msg, from); return;
       case 'ping': if (pl) { pl.ping = +msg.r || 0; CF.Net.sendToFast(from, { t: 'pong', c: msg.c }); } return;
-      case 'hit': if (MP.ended) return; msg.by = from; if (msg.to === MP.myId) MP.applyHit(msg); else CF.Net.sendTo(msg.to, msg); return;
+      case 'hit': if (MP.ended) return; msg.by = from; if (msg.to === MP.myId) MP.applyHit(msg); else if (!CF.Bots.hit(msg)) CF.Net.sendTo(msg.to, msg); return;
       case 'died': { if (MP.ended) return; const k = { t: 'kill', killer: msg.killer, victim: from, w: msg.w, head: msg.head }; MP.recordKill(k); CF.Net.broadcast(k); return; }
       case 'fx': case 'boom': case 'nade': msg.id = from; CF.Net.broadcast(msg, from); if (!local) MP.showFx(msg); return;
       case 'chest': if (msg.op === 'take' && !MP.ended) CF.RC.hostTake(from); return;
@@ -559,6 +575,7 @@
     if (MP.mode === 'prophunt') CF.PH.reset();
     if (MP.mode === 'zombies') { CF.Coop.reset(); CF.ZM.reset(); }
     if (MP.mode === 'ctf') CF.CTF.reset();
+    if (MP.solo) CF.Bots.restart();
     CF.Game.mpRestart();
   };
   MP.hostRestart = function () {
@@ -574,7 +591,7 @@
     // clients measure their round trip to the host every 2 s and report it, so the host's overlay can list everyone's ping
     if (MP.role === 'client') { MP.pingT = (MP.pingT || 0) - dt; if (MP.pingT <= 0) { MP.pingT = 2; CF.Net.sendFast({ t: 'ping', c: Math.round(performance.now()), r: MP.ping || 0 }); } }
     // Prop Hunt's clock only runs during the hunt; the head start has its own
-    const ph = MP.mode === 'prophunt', clock = !MP.modeDef().noClock && (!ph || CF.PH.phase === 'hunt');
+    const ph = MP.mode === 'prophunt', clock = !MP.modeDef().noClock && (!ph || CF.PH.phase === 'hunt') && !(MP.solo && CF.Game.mpLobby); // practice: the clock starts when you deploy
     if (ph && !MP.ended) CF.PH.tick(dt);
     if (MP.isHost() && !MP.ended) {
       if (clock) MP.timeLeft = Math.max(0, MP.timeLeft - dt);

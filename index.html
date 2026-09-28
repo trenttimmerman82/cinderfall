@@ -182,6 +182,7 @@
       <nav class="menu" aria-label="Main menu">
         <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry, Whiteout or Dust Off</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
+        <button class="menu-item" data-act="practice"><span class="mi-label">Practice vs bots</span><span class="mi-note">Any map and mode, offline, against computer players</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
         <button class="menu-item" data-act="locker"><span class="mi-label">Locker &amp; Shop</span><span class="mi-note">Skins, crates and your save code</span></button>
         <button class="menu-item" data-act="settings"><span class="mi-label">Settings</span><span class="mi-note">Key bindings, controls, video, audio</span></button>
@@ -529,7 +530,7 @@
 
   <section class="screen panel-screen" id="screen-mp" hidden>
     <div class="panel wide">
-      <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends</span><h2>Deploy online</h2></header>
+      <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends, or offline against bots</span><h2>Deploy online</h2></header>
       <div class="mp-grid">
         <div class="mp-col">
           <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>
@@ -561,6 +562,14 @@
           <h3 class="mp-h">Join a friend</h3>
           <label class="field"><span>Room code</span><input id="mpCode" class="code-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false"></label>
           <button class="btn" data-act="mpjoin">Join match</button>
+          <h3 class="mp-h">Practice vs bots <small>offline</small></h3>
+          <p class="mp-mode-note">Plays the map and mode picked on the left against computer players, on this computer only. Esc pauses.</p>
+          <div class="bot-opts">
+            <span>Bots</span><div class="seg"><button data-bots="1" aria-pressed="false">1</button><button data-bots="3" aria-pressed="false">3</button><button data-bots="5" aria-pressed="true">5</button><button data-bots="7" aria-pressed="false">7</button></div>
+            <span>Skill</span><div class="seg"><button data-botskill="easy" aria-pressed="false">Easy</button><button data-botskill="normal" aria-pressed="true">Normal</button><button data-botskill="hard" aria-pressed="false">Hard</button></div>
+          </div>
+          <p class="mp-mode-note" id="mpBotNote" hidden></p>
+          <button class="btn" data-act="mpbots" id="mpBotsBtn">Play vs bots</button>
           <h3 class="mp-h">Loadout</h3>
           <div class="lo-grid" data-lo-grid></div>
         </div>
@@ -658,6 +667,7 @@
 <script src="js/coop.js"></script>
 <script src="js/zombies.js"></script>
 <script src="js/ctf.js"></script>
+<script src="js/bots.js"></script>
 <script src="js/coop-campaign.js"></script>
 <script src="js/streak.js"></script>
 <script src="js/board.js"></script>

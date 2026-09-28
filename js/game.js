@@ -10,7 +10,7 @@
     screen: 'loading', backTo: 'main', menuT: 0, deathT: 0, winT: 0, winShown: false, cp: null,
     pending: [], lastKill: -99, multi: 0, lockEverWorked: false, awaitLock: false, audioOn: false,
     fpsN: 0, fpsT: 0, lastFov: 0, holdLoop: null, inside: false, errOnce: false,
-    mode: 'campaign', mapId: null, mapDef: null, rain: null, traffic: null, mpLobby: false, mpSel: { map: 'market', mode: 'ffa' }
+    mode: 'campaign', mapId: null, mapDef: null, rain: null, traffic: null, mpLobby: false, mpSel: { map: 'market', mode: 'ffa', bots: 5, skill: 'normal' }
   };
   const RESPAWN = 3.5;
   const _v = new THREE.Vector3(), _f = new THREE.Vector3(), _c = new THREE.Vector3();
@@ -193,7 +193,7 @@
   };
   G.bindUI = function () {
     document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-continue], [data-map], [data-mode], [data-loadout]');
+      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-continue], [data-map], [data-mode], [data-loadout], [data-bots], [data-botskill]');
       if (!b || b.disabled) return;
       this.initAudio();
       A.play('uiClick', null, { ui: true });
@@ -203,6 +203,8 @@
       if (b.dataset.map) { this.mpSel.map = b.dataset.map; this.renderMpPick(); return; }
       if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
+      if (b.dataset.bots) { this.mpSel.bots = +b.dataset.bots; this.saveBotPrefs(); this.renderMpPick(); return; }
+      if (b.dataset.botskill) { this.mpSel.skill = b.dataset.botskill; this.saveBotPrefs(); this.renderMpPick(); return; }
       this.act(b.dataset.act);
     });
     document.addEventListener('pointerdown', () => { if (!this.audioOn && this.state === 'menu') this.initAudio(); });
@@ -262,6 +264,8 @@
         this.showScreen('difficulty'); break;
       }
       case 'multiplayer': this.openMpScreen(); break;
+      case 'practice': this.openMpScreen(); $('mpBotsBtn').focus(); break;
+      case 'mpbots': this.mpPractice(); break;
       case 'mphost': this.mpStart(true); break;
       case 'mpjoin': this.mpStart(false); break;
       case 'mpresume': if (CF.Coop.campaign()) CF.CoopCampaign.deploy(); else this.mpResume(); break;
@@ -1033,6 +1037,7 @@
       const mpSt = st === 'mpdead' || st === 'mpmenu' || st === 'mpend';
       if (st === 'loading') { A.update(raw, this.camera); CF.Input.endFrame(); return; }
       if (st === 'menu') this.updateMenu(raw);
+      else if (st === 'mpmenu' && CF.MP.solo && !this.mpLobby) A.update(raw, this.camera); // practice: the menu pauses the match
       else if (st === 'playing' || st === 'dying' || st === 'victory' || mpSt) this.updateGame(dt, raw);
       else A.update(raw, this.camera);
       CF.Perf.mid();
@@ -1056,6 +1061,7 @@
   G.openMpScreen = function () {
     this.backTo = 'main';
     $('mpName').value = MPM().name;
+    try { const bp = JSON.parse(localStorage.getItem('cinderfall.bots') || 'null'); if (bp) { if ([1, 3, 5, 7].includes(bp.n)) this.mpSel.bots = bp.n; if (CF.Bots.SKILL[bp.s]) this.mpSel.skill = bp.s; } } catch (e) { /* storage unavailable */ }
     this.renderMpPick(); this.renderLoadouts();
     this.mpBusy(false);
     if (!CF.Net.available()) MPM().status('Online play needs WebRTC and the PeerJS library. Open the game from its web address in a current browser.', true);
@@ -1076,6 +1082,21 @@
     for (const b of document.querySelectorAll('[data-map]')) b.classList.toggle('sel', b.dataset.map === this.mpSel.map);
     for (const b of document.querySelectorAll('[data-mode]')) { b.classList.toggle('sel', !sniper && b.dataset.mode === this.mpSel.mode); b.disabled = sniper; }
     const note = $('mpModeNote'); if (note) note.hidden = !sniper;
+    // practice: bots play every mode but Prop Hunt and the co-op campaign; Zombies is just you against the waves
+    const mode = sniper ? 'sniper' : this.mpSel.mode, noBots = mode === 'prophunt' || mode === 'coop';
+    for (const b of document.querySelectorAll('[data-bots]')) { b.setAttribute('aria-pressed', String(+b.dataset.bots === this.mpSel.bots)); b.disabled = mode === 'zombies'; }
+    for (const b of document.querySelectorAll('[data-botskill]')) b.setAttribute('aria-pressed', String(b.dataset.botskill === this.mpSel.skill));
+    $('mpBotsBtn').disabled = noBots;
+    const bn = $('mpBotNote');
+    bn.textContent = noBots ? 'Bots can’t play ' + CF.MP.MODES[mode].name + '. Pick another mode to practise.' : mode === 'zombies' ? 'Zombies practice is just you against the waves.' : '';
+    bn.hidden = !bn.textContent;
+  };
+  G.saveBotPrefs = function () { try { localStorage.setItem('cinderfall.bots', JSON.stringify({ n: this.mpSel.bots, s: this.mpSel.skill })); } catch (e) { /* storage unavailable */ } };
+  G.mpPractice = function () {
+    const M = MPM(), sel = this.mpSel;
+    M.saveName($('mpName').value); $('mpName').value = M.name;
+    this.mpBusy(true);
+    M.practice(sel.map, sel.map === 'sniper' ? 'sniper' : sel.mode, sel.bots, sel.skill);
   };
   G.renderLoadouts = function () {
     const M = MPM();
@@ -1100,7 +1121,10 @@
       keys.forEach((k, i) => { const s = document.createElement('span'); s.className = k === M.nextLoadout ? 'sel' : ''; s.textContent = (i + 1) + ' ' + defs[k].label; md.appendChild(s); });
     }
   };
-  G.mpBusy = function (on) { for (const b of document.querySelectorAll('[data-act="mphost"], [data-act="mpjoin"]')) b.disabled = on; };
+  G.mpBusy = function (on) {
+    for (const b of document.querySelectorAll('[data-act="mphost"], [data-act="mpjoin"]')) b.disabled = on;
+    $('mpBotsBtn').disabled = on || this.mpSel.mode === 'prophunt' || this.mpSel.mode === 'coop';
+  };
   G.mpStart = function (host) {
     const M = MPM();
     M.saveName($('mpName').value); $('mpName').value = M.name;
@@ -1151,7 +1175,8 @@
   G.renderMpMenu = function () {
     const M = MPM(), def = CF.Maps[M.map];
     $('mpRoomCode').textContent = CF.Net.code || '-----';
-    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + M.modeDef().name + (M.isHost() ? ' · you are hosting' : '');
+    $('mpRoomCode').parentNode.hidden = M.solo;
+    $('mpRoom').textContent = (def ? def.name : '') + ' · ' + M.modeDef().name + (M.solo ? ' · ' + CF.Bots.describe() : M.isHost() ? ' · you are hosting' : '');
     $('mpMenuTitle').textContent = this.mpLobby ? 'Ready to deploy' : 'Match in progress';
     const btn = $('mpResumeBtn');
     btn.textContent = this.mpLobby ? 'Deploy' : CF.Player.alive ? 'Resume' : 'Respawn';
@@ -1246,7 +1271,7 @@
     $('mpWinner').textContent = winner || 'Match over';
     M.renderBoard($('mpEndBoard'));
     $('mpAgainBtn').hidden = !M.isHost();
-    $('mpEndNote').textContent = M.isHost() ? 'Start another round on this map, or leave to close the room.' : 'Waiting for the host to start another round.';
+    $('mpEndNote').textContent = M.solo ? 'Play another round against the same bots, or leave for the menu.' : M.isHost() ? 'Start another round on this map, or leave to close the room.' : 'Waiting for the host to start another round.';
     CF.HUD.show(false);
     CF.HUD.showScope(false);
     if (this.audioOn) CF.Music.sting('victory');
@@ -1285,6 +1310,7 @@
     kill: () => { for (const e of CF.Enemies.list) if (e.alive && !e.boss) { e.hp = 0; e.die({}); } },
     host: (map, mode) => { G.mpSel = { map: map || 'market', mode: mode || 'ffa' }; G.mpStart(true); },
     join: (code) => { $('mpCode').value = code; G.mpStart(false); },
+    bots: (map, mode, n, skill) => { G.openMpScreen(); Object.assign(G.mpSel, { map: map || 'market', mode: mode || 'ffa', bots: n || 5, skill: skill || 'normal' }); G.mpPractice(); },
     deploy: () => { CF.Input.freeLook = true; G.mpResume(); return G.state; },
     map: (id) => G.loadMap(id),
     view: async (id, x, y, z, yaw, pitch) => { await G.loadMap(id); G.showScreen(null); G.camHold = x == null ? null : [x, y, z, yaw || 0, pitch || 0]; return G.mapId; },

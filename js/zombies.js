@@ -104,7 +104,7 @@
     ZM.t = Math.max(0, ZM.t - dt);
     if (ZM.phase === 'wait') {
       const deployed = CF.Coop.team();
-      if (Object.keys(M.players).length >= 2 && deployed.up + deployed.down > 0) startBreak(true);
+      if ((Object.keys(M.players).length >= 2 || M.solo) && deployed.up + deployed.down > 0) startBreak(true);
     } else if (ZM.phase === 'break') {
       if (ZM.t <= 0) startWave();
     } else if (ZM.phase === 'wave') {

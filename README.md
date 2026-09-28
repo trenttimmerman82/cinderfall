@@ -124,6 +124,17 @@ wind-up telegraphs.
 **W/S** drive, **A/D** steer, the mouse swings the camera, **click or T** detonates (7 m blast). It also explodes after
 20 seconds, on a hard crash, or when enemies shoot it apart. The chest restocks 75 seconds after the car is gone.
 
+## Practice vs bots
+
+**Practice vs bots** on the main menu (or the same section of the Multiplayer screen) plays any map in Free for all, Team
+deathmatch, Capture the Flag, Revolver One-Shot or Sniper Valley against 1, 3, 5 or 7 computer players, offline, on
+Easy, Normal or Hard. Zombies practice is you alone against the waves. **Esc** pauses. Bots can't play Prop Hunt or the
+co-op campaign. The bots (`js/bots.js`) are ordinary multiplayer players driven by the host: they walk the map's
+navigation grid, spot you in their field of view or by the sound of your shots, and in CTF they take, carry, return and
+defend flags. Skill changes their reaction time, aim wobble, turn speed and how often they go for the head. They don't
+throw grenades or use rockets, and the navigation grid only maps the highest walkable floor at each spot, so they
+tend to skip rooms that have another floor above them.
+
 ## Feedback
 
 Players send feedback from the **Feedback** button at the top of the main menu (topic, optional 1–5 rating, message;

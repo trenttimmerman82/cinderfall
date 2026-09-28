@@ -570,6 +570,10 @@ body.mp-revolver .mp-bar { border-left-color: var(--ember); }
 /* Sniper Valley */
 .card-sniper b::before { content: '⌖ '; color: var(--cyan, #37f3ff); }
 .mp-mode-note { margin: 0; font: 500 13px/1.4 var(--f-body); color: var(--bone-dim); }
+.bot-opts { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+.bot-opts > span { font: 600 12px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--haze); }
+.bot-opts .seg { justify-self: start; }
+.seg button:disabled { opacity: 0.4; cursor: default; }
 .card[data-mode]:disabled { opacity: 0.4; cursor: default; }
 body.mp-sniper .grenades { display: none !important; }
 /* Zombies and co-op */
