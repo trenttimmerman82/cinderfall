@@ -7,8 +7,9 @@
   // World-UV scale per material (1 texture repeat per 1/s metres)
   const UVS = { facade: 1 / 12, concrete: 0.25, concreteDark: 0.25, asphalt: 1 / 6, metalFloor: 0.5, wall: 0.25, wallRust: 0.25, hazard: 1, paintYellow: 0.33, paintGrey: 0.33, paintDark: 0.33, paintRed: 0.5, paintGreen: 0.33, steel: 0.5, rubber: 0.5, crate: 1 / 1.2,
     grass: 1 / 5, sand: 1 / 6, dirt: 1 / 6, wallpaper: 0.5, wallpaper2: 0.5, checker: 0.5, carpetBeige: 0.5, stone: 0.5, sidingWhite: 0.25, sidingTeal: 0.25, boardYellow: 0.4, lattice: 1, stucco: 0.25, sidingBlue: 0.25, boardBrown: 0.4, woodDark: 0.5, trailerWhite: 0.4, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5,
-    snow: 1 / 7, snowDirty: 1 / 7, ice: 1 / 6, iceDark: 1 / 6, basalt: 1 / 4, panelOrange: 1 / 3, panelWhite: 1 / 3, panelRed: 1 / 3, panelBlue: 1 / 3, panelDark: 1 / 3, grate: 0.5 };
-  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal' };
+    snow: 1 / 7, snowDirty: 1 / 7, ice: 1 / 6, iceDark: 1 / 6, basalt: 1 / 4, panelOrange: 1 / 3, panelWhite: 1 / 3, panelRed: 1 / 3, panelBlue: 1 / 3, panelDark: 1 / 3, grate: 0.5,
+    sidingBeige: 0.25, plankWall: 0.5, plywood: 0.4, forest: 1 / 5, metalSiding: 0.25, roofTin: 0.33, rust: 0.33, gravel: 1 / 5 };
+  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal', metalSiding: 'metal', roofTin: 'metal', rust: 'metal' };
   const FACES = [
     { c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], n: [1, 0, 0], u: (x, y, z) => -z, v: (x, y) => y },
     { c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], n: [-1, 0, 0], u: (x, y, z) => z, v: (x, y) => y },
@@ -103,6 +104,10 @@
     M.chrome = std({ color: 0xdfe3e8, metalness: 1, roughness: 0.18, envMapIntensity: 1.2 }); M.shutter = tint(T.planks, 0x2f4a3a); M.garageDoor = tint(T.siding, 0xf0ece0);
     M.leaves2 = tint(T.grass, 0x9fc07a); M.pine = tint(T.grass, 0x5f8a6a); M.leaves = tint(T.grass, 0xb8d890);
     M.glassDay = std({ color: 0x223040, roughness: 0.05, metalness: 0.9, envMapIntensity: 1.2 });
+    // rural compound (Oregon)
+    M.sidingBeige = tint(T.siding, 0xd6c8aa); M.plankWall = tint(T.planks, 0xb48c62); M.plywood = tint(T.planks, 0xcfae7c); M.forest = tint(T.grass, 0x8fa878);
+    M.metalSiding = tint(T.siding, 0x8c959b, { metalness: 0.45 }); M.roofTin = std(Object.assign(tri(T.paintMetal), { color: 0x6c7a6c, metalness: 0.5 }));
+    M.rust = std(Object.assign(tri(T.paintMetal), { color: 0x8a4a2a, metalness: 0.35 })); M.gravel = std(Object.assign(tri(T.dirt), { color: 0xaaa49a, metalness: 0 }));
     // polar station (Whiteout)
     M.snow = std(Object.assign(tri(T.snow), { color: 0xf4f7ff, metalness: 0, envMapIntensity: 0.5 }));
     M.snowDirty = std(Object.assign(tri(T.snow), { color: 0xb9bcc0, metalness: 0, envMapIntensity: 0.4 }));

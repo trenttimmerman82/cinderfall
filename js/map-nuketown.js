@@ -222,12 +222,12 @@
   // ------------------------------------------------------------ roofs
   /** Pitched roofs are scenery: an invisible, bullet-transparent cap keeps players off the slopes (and off the map edge behind them). */
   function roofCap(x0, z0, x1, z1, y) { W.add(x0, y, z0, x1, y + 8, z1, { shoot: false, nav: false }); }
-  function gableRoof(cx, cz, w, d, y, h, endMat, roofMat, alongZ) {
+  function gableRoof(cx, cz, w, d, y, h, endMat, roofMat, alongZ, noCap) {
     const o = 0.55, ry = alongZ ? Math.PI / 2 : 0, ww = alongZ ? d : w, dd = alongZ ? w : d;
     put(roofMat || 'roofGray', gableRoofGeo(ww + 2 * o, dd + 2 * o, h), cx, y - 0.1, cz, 1, 1, 1, ry);
     put(endMat, gableEndGeo(ww - 0.02, dd, h, o, -0.25), cx, y - 0.1, cz, 1, 1, 1, ry);
     for (let i = 0; i < 3; i++) { const k = (i + 1) / 4, e = (dd / 2) * (1 - k); if (alongZ) solid(cx - e, y, cz - ww / 2, cx + e, y + h * k, cz + ww / 2); else solid(cx - ww / 2, y, cz - e, cx + ww / 2, y + h * k, cz + e); }
-    roofCap(cx - (alongZ ? dd : ww) / 2 - o, cz - (alongZ ? ww : dd) / 2 - o, cx + (alongZ ? dd : ww) / 2 + o, cz + (alongZ ? ww : dd) / 2 + o, y);
+    if (!noCap) roofCap(cx - (alongZ ? dd : ww) / 2 - o, cz - (alongZ ? ww : dd) / 2 - o, cx + (alongZ ? dd : ww) / 2 + o, cz + (alongZ ? ww : dd) / 2 + o, y);
   }
   function hipRoof(cx, cz, w, d, y, h, roofMat) {
     const o = 0.7;
@@ -614,6 +614,13 @@
     if (carPaint) car(x1 - 2, front > 0 ? z1 + 3.2 : z0 - 3.2, false, carPaint);
     hedge(x0 + 0.5, zf + s * 1.2, x0 + 6, zf + s * 1.2, 0.9);
   }
+
+  // the building kit, shared with the other daylight maps (js/map-oregon.js)
+  MN.kit = {
+    put, sph, deco, solid, geo, blobGeo, extrude, discGeo, gableRoofGeo, hipRoofGeo, canvasTex, plane, art, skin, wall, stairs, railingX, railingZ, roofCap, gableRoof, hipRoof,
+    tree, cypress, pine, bush, hedge, wheels, car, mannequin, sandbags, powerPole, wire, streetLamp, hydrant, trashCan, mailbox, tires, woodpile, woodFenceX, woodFenceZ,
+    latticeTower, painting, roomLight, couch, bed, table, chair, schoolBus
+  };
 
   // ------------------------------------------------------------ build
   MN.build = function () {

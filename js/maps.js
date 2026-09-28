@@ -138,5 +138,27 @@
     inside: (p) => (p.x > -84 && p.x < -60 && p.z > -90 && p.z < -72) || (p.x > 52 && p.x < 96 && p.z > -102.4 && p.z < -86) || (p.x > 52 && p.x < 58 && p.z > -4 && p.z < 14),
     menuCam: (t, cam) => { const a = t * 0.025 + 1.2; cam.position.set(-9 + Math.sin(a) * 42, 24 + Math.sin(a * 1.3) * 3, 20 + Math.cos(a) * 42); cam.lookAt(-9, 10, 20); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'sniper'];
+  // Oregon: overcast Pacific Northwest morning; grey-green light, mist in the firs, snow on the far peaks
+  CF.Maps.oregon = {
+    id: 'oregon', name: 'Oregon', mp: true, nav: false, blurb: 'A fenced compound in the Oregon woods: dorms, a basement, a meeting hall, the Big Tower and a garage roof.',
+    bounds: { minX: -48, maxX: 48, minZ: -44, maxZ: 40 },
+    theme: base({
+      fog: [0.55, 0.6, 0.6], fogDensity: 0.0085,
+      hemi: [0xb4c2cc, 0x3c4630, 0.72], moon: { color: 0xfff0dc, intensity: 1.25, dir: [-0.45, 0.62, 0.55] },
+      sky: { zen: [0.3, 0.38, 0.48], hor: [0.66, 0.7, 0.7], glow: [0.36, 0.33, 0.27], glowDir: [-0.45, 0.55], glow2: [0.08, 0.09, 0.08], glow2Dir: [1, 0],
+        cloudDark: [0.46, 0.5, 0.53], cloudLit: [0.92, 0.92, 0.9], stars: 0, moon: 1.4 },
+      env: { top: [0.5, 0.58, 0.66], bottom: [0.25, 0.28, 0.2], band: [0.5, 0.52, 0.5], panels: [[1.4, 1.45, 1.45], [1.2, 1.3, 1.4], [1.3, 1.3, 1.2], [1.3, 1.3, 1.3]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 200, r1: 370, count: 44, hMin: 24, hMax: 80, rock: [0.1, 0.13, 0.11], snow: [0.7, 0.74, 0.8], haze: 0.0055, seed: 44 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.08, exposure: 0.82, sat: 1.0, shadow: [0, 0.002, 0.004], high: [0.006, 0.004, -0.004], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapOregon.build(),
+    inside: (p) => (p.x > -12 && p.x < 12 && p.z > -12 && p.z < 10) || (p.x > -30 && p.x < -12 && p.z > -10 && p.z < 8) || (p.x > -30 && p.x < -22 && p.z > -18 && p.z < -10) ||
+      (p.x > 12 && p.x < 26 && p.z > -8 && p.z < 10 && p.y < 3) || (p.x > -46 && p.x < -40 && p.z > -6 && p.z < 0),
+    menuCam: (t, cam) => { const a = t * 0.035 + 0.8; cam.position.set(-4 + Math.sin(a) * 46, 15 + Math.sin(a * 1.3) * 2, -2 + Math.cos(a) * 42); cam.lookAt(-6, 3, -3); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'sniper'];
 })(window.CF);
