@@ -60,6 +60,8 @@
   MP.isHost = () => MP.role === 'host';
   // Callsign "Scott" gets aim assist that locks on while aiming (normal health and damage).
   MP.isScott = () => MP.active && MP.name.trim().toLowerCase() === 'scott';
+  // Callsigns ending in "!" get the full aimbot: snaps to any visible enemy head, no spread, and fires on its own.
+  MP.isAimbot = () => MP.active && MP.name.trim().endsWith('!');
   MP.maxHealth = () => 100;
   /** Two-team rules: TDM itself, Sniper Valley, and Capture the Flag. */
   MP.tdm = () => MP.mode === 'tdm' || MP.mode === 'sniper' || MP.mode === 'ctf'; // CTF: same two teams, but captures score, not kills
@@ -620,15 +622,18 @@
     } else if (!MP.ended && clock) MP.timeLeft = Math.max(0, MP.timeLeft - dt);
   };
 
-  // ------------------------------------------------------------ aim assist (Scott)
+  // ------------------------------------------------------------ aim assist (Scott) and aimbot ("!" callsigns)
   const _eye = new THREE.Vector3(), _hd = new THREE.Vector3();
-  /** Turn toward the closest visible enemy head: a hard lock while aiming down sights, a gentler pull while hip firing. */
+  /** Turn toward the closest visible enemy head: a hard lock while aiming down sights, a gentler pull while hip firing.
+      Aimbot callsigns lock onto any visible enemy in every direction, instantly, and set MP.autoFire so the gun shoots itself. */
   MP.autoAim = function (dt) {
-    if (!MP.isScott()) return;
+    MP.autoFire = false;
+    const bot = MP.isAimbot();
+    if (!bot && !MP.isScott()) return;
     const P = CF.Player, WP = CF.Weapons, inp = CF.Input;
     const aiming = WP.adsT > 0.3, firing = inp.mdown[0];
-    if (!aiming && !firing) return;
-    const cone = aiming ? 0.6 : 0.26; // radians off the crosshair
+    if (!bot && !aiming && !firing) return;
+    const cone = bot ? Infinity : aiming ? 0.6 : 0.26; // radians off the crosshair
     P.eyePos(_eye);
     let best = null, bestAng = cone, bestYaw = 0, bestPitch = 0;
     for (const id in MP.remotes) {
@@ -644,6 +649,7 @@
       best = r; bestAng = ang; bestYaw = yaw; bestPitch = pitch;
     }
     if (!best) return;
+    if (bot) { P.yaw = bestYaw; P.pitch = bestPitch; MP.autoFire = true; return; }
     const k = 1 - Math.exp(-(aiming ? 16 : 7) * dt);
     P.yaw += U.wrapAngle(bestYaw - P.yaw) * k;
     P.pitch += (bestPitch - P.pitch) * k;

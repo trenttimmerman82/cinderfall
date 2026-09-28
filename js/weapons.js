@@ -187,6 +187,7 @@
   const _m = new THREE.Vector3(), _hp = new THREE.Vector3(), _v = new THREE.Vector3();
   WP.currentSpread = function (P) {
     const d = this.cur.def;
+    if (CF.MP && CF.MP.isAimbot()) return 0;
     const ads = this.adsE;
     let s = U.lerp(d.spreadHip, d.spreadAds, ads);
     s += d.spreadMove * P.moveFrac * (1 - ads * 0.65);
@@ -465,12 +466,13 @@
     this.cycleT = Math.min(1, this.cycleT + dt / (60 / d.rpm));
     this.bloom = Math.max(0, this.bloom - dt * (d.auto ? 5.5 : 4));
     if (inp.mpressed[0]) this.fireBuffer = 0.14; else this.fireBuffer -= dt;
+    const autoFire = !!(CF.MP && CF.MP.isAimbot() && CF.MP.autoFire) && !d.satchel; // aimbot callsigns: the gun pulls its own trigger (not satchels)
     if (d.spin) { // minigun barrels have to spin up before it fires
-      const spinning = live && inp.mdown[0] && (this.state === 'idle' || this.state === 'raise') && !P.sprinting;
+      const spinning = live && (inp.mdown[0] || autoFire) && (this.state === 'idle' || this.state === 'raise') && !P.sprinting;
       this.spin = U.clamp(this.spin + (spinning ? 1 : -0.7) * dt / d.spin, 0, 1);
     }
     if (live) {
-      const want = d.auto ? inp.mdown[0] : this.fireBuffer > 0;
+      const want = autoFire || (d.auto ? inp.mdown[0] : this.fireBuffer > 0);
       if (want) {
         if (P.sprinting) P.stopSprint();
         if (this.state === 'reload' && d.shellReload && w.mag > 0) this.interrupt = true;
@@ -478,6 +480,7 @@
         if (this.state === 'idle' && this.fireCd <= 0 && P.sprintOut <= 0 && this.cycleT >= 1 && (!d.spin || this.spin >= 1)) {
           if (w.mag > 0) { if (d.rocket || d.satchel) this.fireSpecial(P); else this.fire(P); this.fireBuffer = 0; }
           else if (d.satchel && inp.mpressed[0] && this.detonate()) this.fireBuffer = 0;
+          else if (autoFire && w.reserve > 0) this.reload();
           else if (inp.mpressed[0]) { A.play('dry'); this.fireBuffer = 0; if (w.reserve > 0) this.reload(); else CF.HUD.hint('Out of ammo · switch weapon', true); }
         }
       }
