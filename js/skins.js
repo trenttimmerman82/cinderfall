@@ -24,6 +24,9 @@
     W('w_cobalt', 'rare', 'Anodized Cobalt', 'Deep blue anodized metal, polished edges.'),
     W('w_tiger', 'rare', 'Tiger Stripe', 'Hot orange with black brush stripes.'),
     W('w_redline', 'rare', 'Redline', 'Black polymer cut by red racing lines.'),
+    W('w_negev', 'common', 'Negev', 'Red-rock and ochre blotches from the southern desert.'),
+    W('w_israel', 'rare', 'Blue & White', 'The Israeli flag: two blue stripes and the Star of David.'),
+    W('w_jerusalem', 'epic', 'Jerusalem Stone', 'Honey limestone blocks with a golden shimmer at dusk.'),
     W('w_circuit', 'epic', 'Neon Circuit', 'Live circuit traces that pulse with current.'),
     W('w_damascus', 'epic', 'Damascus', 'Folded steel, every layer visible.'),
     W('w_hologram', 'epic', 'Hologram', 'An iridescent film that shifts with every move.'),
@@ -40,6 +43,8 @@
     P('p_arctic', 'rare', 'Polar Recon', 'White parka with a fur-lined hood and goggles.'),
     P('p_crimson', 'rare', 'Crimson Guard', 'Red lacquered plates and heavy pauldrons.'),
     P('p_stealth', 'rare', 'Nightshade', 'Matte black, hooded, one green lens.'),
+    P('p_idf', 'common', 'IDF Olive', 'Olive fatigues, a scrunched mitznefet helmet cover and a flag patch.'),
+    P('p_israel', 'rare', 'Blue & White', 'White fatigues, blue plates and the Israeli flag on the chest.'),
     P('p_oni', 'epic', 'Oni', 'Black lacquer armour under a horned red demon mask.'),
     P('p_chrome', 'epic', 'Chrome', 'Mirror-polished armour with a crest fin.'),
     P('p_samurai', 'epic', 'Ronin', 'Woven kasa hat and layered shoulder guards.'),
@@ -175,6 +180,20 @@
     weave: (x, n, r) => { x.fillStyle = '#c9a060'; x.fillRect(0, 0, n, n); for (let i = 0; i < n; i += 6) { x.fillStyle = 'rgba(90,60,20,0.35)'; x.fillRect(i, 0, 2, n); x.fillRect(0, i + 3, n, 1); } },
     hazard: (x, n) => { x.fillStyle = '#e5c21c'; x.fillRect(0, 0, n, n); x.fillStyle = 'rgba(40,30,0,0.18)'; for (let i = 0; i < n; i += 16) x.fillRect(0, i, n, 3); },
     lacquer: (x, n, r) => { x.fillStyle = '#9c1b1b'; x.fillRect(0, 0, n, n); for (let i = 0; i < 60; i++) { x.fillStyle = 'rgba(255,200,200,0.05)'; x.fillRect(0, r() * n, n, 2 + r() * 6); } },
+    negev: (x, n, r) => { x.fillStyle = '#b8875a'; x.fillRect(0, 0, n, n); blobs(x, n, r, ['#d4ad7d', '#8a5a3a', '#6e4a30'], 9, 18, 44); },
+    israel: (x, n) => {
+      x.fillStyle = '#f4f6fa'; x.fillRect(0, 0, n, n); x.fillStyle = x.strokeStyle = '#0038b8';
+      x.fillRect(0, n * 0.1, n, n * 0.12); x.fillRect(0, n * 0.78, n, n * 0.12);
+      x.lineWidth = n * 0.035; x.lineJoin = 'miter';
+      for (const a0 of [-Math.PI / 2, Math.PI / 2]) { x.beginPath(); for (let j = 0; j < 3; j++) { const a = a0 + j * Math.PI * 2 / 3; x.lineTo(n / 2 + Math.cos(a) * n * 0.19, n / 2 + Math.sin(a) * n * 0.19); } x.closePath(); x.stroke(); }
+    },
+    jstone: (x, n, r) => {
+      const h = n / 4, w = n / 2, cols = ['#e2cfa6', '#d4bd90', '#cdb385', '#e8d8b4'];
+      for (let j = 0; j < 4; j++) for (let i = -1; i < 3; i++) { x.fillStyle = cols[Math.floor(r() * 4)]; x.fillRect(i * w + (j % 2) * w / 2, j * h, w, h); }
+      for (let i = 0; i < 1500; i++) { x.fillStyle = r() < 0.6 ? 'rgba(120,90,50,0.14)' : 'rgba(255,245,220,0.18)'; x.fillRect(r() * n, r() * n, 2, 2); }
+      x.strokeStyle = '#a8916a'; x.lineWidth = 3;
+      for (let j = 0; j < 4; j++) { x.beginPath(); x.moveTo(0, j * h); x.lineTo(n, j * h); for (let i = 0; i < 3; i++) { const px = i * w + (j % 2) * w / 2; x.moveTo(px, j * h); x.lineTo(px, (j + 1) * h); } x.stroke(); }
+    },
     stripes: (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); for (let i = 0; i < 8; i++) { x.fillStyle = '#fff'; x.fillRect(0, i * n / 8, n, n / 40); x.fillRect(i * n / 8 + n / 16, 0, n / 60, n); } }
   };
   const tex = (key) => paint(key, key === 'damascus' ? 256 : 256, PAT[key]);
@@ -221,6 +240,9 @@
     w_cobalt: { body: { map: 'brushed', metal: 0.95, rough: 0.22, env: 1.3 }, trim: { color: 0x0e1c3c, metal: 0.6, rough: 0.35 }, accent: [0.5, 1.4, 4.2] },
     w_tiger: { body: { map: 'tiger', metal: 0.2, rough: 0.55 }, trim: { color: 0x17120d, metal: 0.1, rough: 0.7 }, accent: [4, 1.6, 0.3] },
     w_redline: { body: { map: 'redline', metal: 0.4, rough: 0.4 }, trim: { color: 0x0e0f10, metal: 0.2, rough: 0.6 }, accent: [4.5, 0.4, 0.4] },
+    w_negev: { body: { map: 'negev', metal: 0.2, rough: 0.7 }, trim: { color: 0x4e3524, metal: 0.1, rough: 0.8 }, accent: [2.6, 1.3, 0.5] },
+    w_israel: { body: { map: 'israel', metal: 0.3, rough: 0.45 }, trim: { color: 0x0b2a78, metal: 0.3, rough: 0.5 }, accent: [0.3, 1, 4.2] },
+    w_jerusalem: { body: { map: 'jstone', metal: 0.1, rough: 0.6, emissive: [0, 0, 0], anim: 'shimmer' }, trim: { color: 0x6b5330, metal: 0.6, rough: 0.35 }, accent: [3.6, 2.6, 0.9] },
     w_circuit: { body: { map: 'pcb', metal: 0.4, rough: 0.35, emap: 'traces', emissive: [0.2, 2.6, 2.2], anim: 'pulse' }, trim: { color: 0x061410, metal: 0.3, rough: 0.5 }, accent: [0.3, 3.6, 3] },
     w_damascus: { body: { map: 'damascus', metal: 0.95, rough: 0.3, env: 1.2 }, trim: { color: 0x2b1d14, metal: 0.1, rough: 0.6 }, accent: [2.6, 2.2, 1.6] },
     w_hologram: { body: { map: 'white', color: 0x9aa4b8, metal: 1, rough: 0.12, env: 1.4, emissive: [0, 0, 0], anim: 'irid' }, trim: { color: 0x1a1d24, metal: 0.8, rough: 0.2 }, accent: [2, 2.6, 3.6] },
@@ -281,6 +303,8 @@
     p_arctic: { suit: { map: 'white', rough: 0.9, metal: 0 }, plate: { color: 0x9aa7b5, metal: 0.3, rough: 0.5 }, sleeve: 0xe8ecf2, glove: 0x5a6674, acc: ['hood', 'goggles'] },
     p_crimson: { suit: { color: 0x2a0c10, rough: 0.8, metal: 0 }, plate: { map: 'lacquer', metal: 0.5, rough: 0.25, env: 1.2 }, sleeve: 0x3a0d12, glove: 0x151515, acc: ['pauldrons'] },
     p_stealth: { suit: { color: 0x0d0f10, rough: 0.95, metal: 0 }, plate: { color: 0x16191b, metal: 0.4, rough: 0.6, emap: 'stripes', emissive: [0.1, 0.9, 0.3] }, sleeve: 0x0d0f10, glove: 0x0a0b0c, acc: ['stealthHood'] },
+    p_idf: { suit: { map: 'olive', rough: 0.9, metal: 0 }, plate: { color: 0x565c3a, metal: 0.1, rough: 0.8 }, sleeve: 0x4a5334, glove: 0x2e2a20, acc: ['mitznefet', 'flagPatch'] },
+    p_israel: { suit: { map: 'white', rough: 0.85, metal: 0 }, plate: { color: 0x0038b8, metal: 0.3, rough: 0.45 }, sleeve: 0xe8ecf2, glove: 0x0b2a78, acc: ['cap', 'flagPatch'] },
     p_oni: { suit: { color: 0x0d0c0c, rough: 0.5, metal: 0.2 }, plate: { color: 0x141112, metal: 0.6, rough: 0.2, env: 1.3 }, sleeve: 0x1a1616, glove: 0x7a0f14, acc: ['oni'] },
     p_chrome: { suit: { color: 0x2e3238, rough: 0.6, metal: 0.4 }, plate: { color: 0xf2f4f8, metal: 1, rough: 0.05, env: 1.8 }, sleeve: 0x8d949c, glove: 0xd9dde2, acc: ['crest'] },
     p_samurai: { suit: { color: 0x2d2a3f, rough: 0.85, metal: 0 }, plate: { color: 0x5b1b1b, metal: 0.3, rough: 0.35, env: 1.1 }, sleeve: 0x2d2a3f, glove: 0x3a2618, acc: ['kasa', 'sode'] },
@@ -319,6 +343,13 @@
     respirator: (p) => { const m = am('resp', { color: 0x1d1d1d, rough: 0.6, metal: 0.3 }); add(p.head, box(), m, 0, 0.03, -0.13, 0.14, 0.1, 0.06); for (const s of [-1, 1]) add(p.head, cyl(), m, s * 0.09, 0.0, -0.15, 0.04, 0.05, 0.04, Math.PI / 2, 0, s * 0.4); add(p.head, box(), am('respGlass', { color: 0x2a3a40, metal: 0.9, rough: 0.05, env: 1.6 }), 0, 0.13, -0.125, 0.18, 0.08, 0.02); },
     tank: (p) => { const m = am('tank', { color: 0xd8dcdf, metal: 0.8, rough: 0.25 }); add(p.torso, cyl(), m, 0, 0.3, 0.2, 0.09, 0.44, 0.09); add(p.torso, sph(), m, 0, 0.52, 0.2, 0.09, 0.05, 0.09); add(p.torso, box(), am('tankBand', { color: 0xe5c21c, rough: 0.6 }), 0, 0.3, 0.2, 0.19, 0.04, 0.19); },
     hood: (p) => { const m = am('fur', { color: 0xe7e2d8, rough: 1, metal: 0 }); add(p.head, sph(), am('parka', { color: 0xeef1f5, rough: 0.9 }), 0, 0.1, 0.02, 0.15, 0.17, 0.16); add(p.head, tor(), m, 0, 0.08, -0.08, 0.15, 0.17, 0.3, 0.2); },
+    mitznefet: (p) => {
+      const m = am('mitznefet', { map: 'woodland', rough: 1, metal: 0 });
+      add(p.head, sph(), m, 0, 0.16, 0.01, 0.15, 0.12, 0.155);
+      for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2 + 0.3; add(p.head, sph(), m, Math.cos(a) * 0.12, 0.15 + (i % 2) * 0.03, Math.sin(a) * 0.12, 0.05, 0.035, 0.05, i * 0.7, i, 0); }
+      add(p.head, box(), m, 0, 0.08, 0.13, 0.2, 0.12, 0.03, -0.25);
+    },
+    flagPatch: (p) => { add(p.torso, box(), am('flagPatch', { map: 'israel', rough: 0.8, metal: 0 }), 0.1, 0.4, -0.155, 0.1, 0.075, 0.008); },
     pauldrons: (p) => { const m = SUITPLATE(p); for (const s of [-1, 1]) add(p.torso, sph(), m, s * 0.28, 0.5, 0, 0.15, 0.09, 0.15, 0, 0, s * 0.3); },
     stealthHood: (p) => { add(p.head, sph(), am('shood', { color: 0x0a0b0c, rough: 1, metal: 0 }), 0, 0.12, 0.02, 0.15, 0.17, 0.16); add(p.head, sph(), glowMat(0.4, 4, 1), 0.05, 0.11, -0.13, 0.03, 0.03, 0.02); },
     oni: (p) => {

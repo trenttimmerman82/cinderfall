@@ -49,12 +49,14 @@ const SKINS = {
   // weapon finishes
   w_desert: ['w', 'common'], w_urban: ['w', 'common'], w_woodland: ['w', 'common'], w_arctic: ['w', 'common'],
   w_carbon: ['w', 'rare'], w_cobalt: ['w', 'rare'], w_tiger: ['w', 'rare'], w_redline: ['w', 'rare'],
+  w_negev: ['w', 'common'], w_israel: ['w', 'rare'], w_jerusalem: ['w', 'epic'],
   w_circuit: ['w', 'epic'], w_damascus: ['w', 'epic'], w_hologram: ['w', 'epic'], w_frostbite: ['w', 'epic'],
   w_inferno: ['w', 'legendary'], w_void: ['w', 'legendary'], w_dragon: ['w', 'legendary'],
   w_champion: ['w', 'champion'],
   // operative suits
   p_ranger: ['p', 'common'], p_urban: ['p', 'common'], p_sand: ['p', 'common'], p_navy: ['p', 'common'],
   p_hazmat: ['p', 'rare'], p_arctic: ['p', 'rare'], p_crimson: ['p', 'rare'], p_stealth: ['p', 'rare'],
+  p_idf: ['p', 'common'], p_israel: ['p', 'rare'],
   p_oni: ['p', 'epic'], p_chrome: ['p', 'epic'], p_samurai: ['p', 'epic'], p_cyber: ['p', 'epic'],
   p_phantom: ['p', 'legendary'], p_inferno: ['p', 'legendary'], p_mech: ['p', 'legendary'],
   p_champion: ['p', 'champion']
