@@ -45,7 +45,9 @@
     mailbox: { label: 'mailbox', surf: 'concrete', col: [0.4, 1.35, 0.5], parts: [['box', 'wood', 0, 0.525, 0, 0.1, 1.05, 0.1], ['cyl', 'paintGrey', 0, 1.18, 0, 0.16, 0.45, 0.16, Math.PI / 2], ['box', 'paintRed', 0.135, 1.325, -0.075, 0.03, 0.25, 0.05]] },
     grill: { label: 'barbecue grill', col: [0.66, 1.12, 0.66], parts: [['sphere', 'paintDark', 0, 0.82, 0, 0.33, 0.28, 0.33], ['sphere', 'chrome', 0, 1.1, 0, 0.04, 0.04, 0.04], ['box', 'chrome', -0.2, 0.35, 0.12, 0.04, 0.7, 0.04], ['box', 'chrome', 0.2, 0.35, 0.12, 0.04, 0.7, 0.04], ['box', 'chrome', 0, 0.35, -0.22, 0.04, 0.7, 0.04]] },
     cooler: { label: 'picnic cooler', col: [0.78, 0.6, 0.48], parts: [['box', 'paintRed', 0, 0.225, 0, 0.75, 0.45, 0.45], ['box', 'paintCream', 0, 0.49, 0, 0.78, 0.08, 0.48], ['box', 'chrome', 0, 0.56, 0, 0.4, 0.04, 0.04]] },
-    planter: { label: 'potted shrub', surf: 'concrete', col: [0.76, 1.1, 0.76], parts: [['box', 'stone', 0, 0.275, 0, 0.7, 0.55, 0.7], ['sphere', 'leaves', 0, 0.8, 0, 0.38, 0.35, 0.38]] }
+    planter: { label: 'potted shrub', surf: 'concrete', col: [0.76, 1.1, 0.76], parts: [['box', 'stone', 0, 0.275, 0, 0.7, 0.55, 0.7], ['sphere', 'leaves', 0, 0.8, 0, 0.38, 0.35, 0.38]] },
+    dustCrate: { label: 'wooden crate', surf: 'concrete', col: [1.2, 1.2, 1.2], parts: [['box', 'dustCrate', 0, 0.6, 0, 1.2, 1.2, 1.2]] },
+    dustCrateSmall: { label: 'small wooden crate', surf: 'concrete', col: [0.9, 0.9, 0.9], parts: [['box', 'dustCrate', 0, 0.45, 0, 0.9, 0.9, 0.9]] }
   };
   const KEYS = Object.keys(KINDS); // a disguise goes over the wire as its index here
   const PROP_LOADOUT = { label: 'Prop', weapons: { pistol: { mag: 0, reserve: 0 } }, current: 'pistol', grenades: 0, armor: 0, speed: 1 }; // never drawn: Props carry nothing

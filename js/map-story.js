@@ -124,6 +124,7 @@
     M.sign = new THREE.MeshStandardMaterial({ map: signTex(), roughness: 0.7 });
     return ADOBE;
   }
+  MS.materials = materials; // shared with Dust II (js/map-dust.js)
   function clockTex() {
     const c = CF.Tex.util.makeCanvas(256, 256), x = c.getContext('2d');
     x.fillStyle = '#efe6d2'; x.beginPath(); x.arc(128, 128, 124, 0, PI * 2); x.fill();

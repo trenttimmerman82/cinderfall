@@ -182,5 +182,28 @@
       (p.y > 3 && ((p.x > 11.4 && p.x < 15 && p.z > -29 && p.z < -10) || (p.x > -36.1 && p.x < -33.5 && p.z > -19 && p.z < -10))),
     menuCam: (t, cam) => { const a = t * 0.03 + 2.4; cam.position.set(-2 + Math.sin(a) * 48, 14 + Math.sin(a * 1.3) * 2.5, -16 + Math.cos(a) * 40); cam.lookAt(-2, 4, -18); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'sniper'];
+  // Dust II: hard desert afternoon; a high sun, pale haze, warm bounce off the sandstone
+  CF.Maps.dust2 = {
+    id: 'dust2', name: 'Dust II', mp: true, nav: false, blurb: 'A sandstone town: Long A, the catwalk, mid doors, the tunnels to B. Terrorists south, Counter-Terrorists north.',
+    bounds: { minX: -58, maxX: 58, minZ: -62, maxZ: 60 },
+    theme: base({
+      fog: [0.84, 0.77, 0.64], fogDensity: 0.0036,
+      hemi: [0xd6e0ee, 0x8a6a48, 0.66], moon: { color: 0xfff0d6, intensity: 2.0, dir: [0.45, 0.78, 0.36] },
+      sky: { zen: [0.2, 0.38, 0.68], hor: [0.88, 0.8, 0.66], glow: [0.52, 0.42, 0.26], glowDir: [0.45, 0.36], glow2: [0.12, 0.1, 0.06], glow2Dir: [-1, 0],
+        cloudDark: [0.82, 0.8, 0.78], cloudLit: [1.1, 1.05, 0.98], stars: 0, moon: 2.2 },
+      env: { top: [0.6, 0.7, 0.9], bottom: [0.55, 0.44, 0.3], band: [0.64, 0.56, 0.44], panels: [[1.45, 1.35, 1.15], [1.2, 1.25, 1.35], [1.35, 1.25, 1.05], [1.25, 1.2, 1.15]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 210, r1: 380, count: 44, hMin: 14, hMax: 50, rock: [0.4, 0.29, 0.19], snow: [0.66, 0.52, 0.36], haze: 0.0042, seed: 2 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.74, sat: 1.08, shadow: [0.004, 0.002, 0.006], high: [0.014, 0.006, -0.01], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapDust2.build(),
+    // the tunnels and the B window room are roofed
+    inside: (p) => (p.x > -34 && p.x < -26 && p.z > -6 && p.z < 26) || (p.x > -40 && p.x < -30 && p.z > -28 && p.z < -6) ||
+      (p.x > -26 && p.x < -6 && p.z > 2 && p.z < 8 && p.y < 1.4) || (p.x > -24 && p.x < -16 && p.z > -38 && p.z < -32),
+    menuCam: (t, cam) => { const a = t * 0.03 + 0.5; cam.position.set(Math.sin(a) * 52, 26 + Math.sin(a * 1.3) * 3, Math.cos(a) * 54); cam.lookAt(0, 1, -4); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'sniper'];
 })(window.CF);
