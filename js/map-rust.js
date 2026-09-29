@@ -262,7 +262,7 @@
       K.plane(A.h2s, 0.5, 0.5, x0 - hh - 0.02, L1 + 2.35, 1.5, -PI / 2, { alpha: true });
       deco(1.45, y1 - 0.08, 1.4, 2.05, y1, 1.9, 'steel'); deco(1.5, y1 - 0.11, 1.5, 2.0, y1 - 0.08, 1.8, 'lampCool');
       L.lamp(1.75, y1 - 0.4, 1.65, { color: 0xe8f0ff, intensity: 0.9, distance: 5, pool: false }); }
-    P('drum', -1.8, 3.3, 0.2, L1); P('crateSmall', 3.3, 1.2, 0.3, L1);
+    P('drum', -3.2, -3.2, 0.2, L1); P('crateSmall', 3.3, 1.2, 0.3, L1);
     K.plane(A.well, 2.1, 0.66, 0.8, L1 + 0.55, 3.99, 0);
     K.plane(A.noSmoke, 0.5, 0.62, 5.4 + 0.02, L1 + 1.3, -3.2, PI / 2);
 
