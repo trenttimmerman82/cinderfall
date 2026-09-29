@@ -32,6 +32,11 @@
       spreadHip: 0, spreadAds: 0, spreadMove: 0, spreadAir: 0, bloom: 0, bloomMax: 0, mag: 2, reserve: 2, maxReserve: 4,
       reload: 1.0, reloadEmpty: 1.0, magInAt: 0.6, falloff: [400, 500, 1], recoil: [1, 0.2, 0.02, 0.1], adsFov: 1, adsTime: 0.2,
       hip: [0.16, -0.16, -0.3], adsZ: -0.3, equip: 0.4, sound: 'throw', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 8 },
+    // multiplayer only (Gunner loadout): a belt-fed LMG. Big box, slow reload, steady once it's on target.
+    lmg: { id: 'lmg', name: 'HX-9 Warden', short: 'HX-9', auto: true, rpm: 760, dmg: 22, head: 1.7, pellets: 1,
+      spreadHip: 2.6, spreadAds: 0.3, spreadMove: 2.2, spreadAir: 4, bloom: 0.18, bloomMax: 2.0, mag: 100, reserve: 200, maxReserve: 300,
+      reload: 3.8, reloadEmpty: 4.3, magInAt: 0.6, falloff: [35, 80, 0.7], recoil: [0.55, 0.3, 0.028, 0.035], adsFov: 0.74, adsTime: 0.3,
+      hip: [0.14, -0.15, -0.32], adsZ: -0.28, equip: 0.7, sound: 'carbine', tracerEvery: 3, shell: 1, moveMul: 0.88, noise: 50 },
     // Revolver One-Shot mode only: slow, deliberate, deadly. Aim first; hip shots wander.
     revolver: { id: 'revolver', name: 'KF-44 Kingfisher', short: 'KF-44', auto: false, rpm: 72, dmg: 120, head: 2, pellets: 1, cylinder: true,
       spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: Infinity, maxReserve: Infinity,
@@ -39,9 +44,9 @@
       hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 }
   };
   // Player-vs-player damage scaling (multiplayer only)
-  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 1;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver']; // index is sent over the network: bump Net's PREFIX when this changes
-  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver'); // campaign number keys (the revolver is multiplayer-only)
+  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 1; DEFS.lmg.pvp = 0.9;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver', 'lmg']; // index is sent over the network: bump Net's PREFIX when this changes
+  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver' && id !== 'lmg'); // campaign number keys (the revolver and LMG are multiplayer-only)
 
   const S = U.Spring;
   const WP = CF.Weapons = {

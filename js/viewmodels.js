@@ -108,6 +108,42 @@
     return { root, gun, parts: P, sightY: 0.125, sightZ: -0.12 };
   }
 
+  function lmg(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    B(gun, M.metal, 0, 0.03, -0.1, 0.08, 0.1, 0.4);
+    B(gun, M.metal, 0, 0.088, -0.12, 0.07, 0.018, 0.3); // feed cover
+    B(gun, M.polymer, 0, 0.03, -0.45, 0.074, 0.082, 0.26);
+    for (let i = 0; i < 5; i++) B(gun, M.metal, 0, 0.074, -0.36 - i * 0.045, 0.078, 0.006, 0.018);
+    CZ(gun, M.steel, 0, 0.045, -0.7, 0.017, 0.32);
+    CZ(gun, M.metal, 0, 0.045, -0.87, 0.024, 0.06);
+    B(gun, M.polymer, 0, 0.16, -0.14, 0.012, 0.05, 0.03); // carry handle
+    B(gun, M.polymer, 0, 0.185, -0.14, 0.02, 0.012, 0.12);
+    B(gun, M.accent, 0.041, 0.02, -0.02, 0.003, 0.012, 0.12);
+    B(gun, M.metal, -0.012, 0.02, -0.76, 0.006, 0.14, 0.012, 0.2, 0, 0.25); // folded bipod
+    B(gun, M.metal, 0.012, 0.02, -0.76, 0.006, 0.14, 0.012, 0.2, 0, -0.25);
+    P.mag = new THREE.Group(); P.mag.position.set(0.0, -0.03, -0.12); gun.add(P.mag);
+    B(P.mag, M.grenade, 0, -0.055, 0, 0.1, 0.11, 0.13); // ammo box
+    B(P.mag, M.accent, 0.051, -0.055, 0, 0.002, 0.03, 0.08);
+    for (let i = 0; i < 4; i++) B(P.mag, M.brass, 0.04, 0.02 - i * 0.008, 0.0, 0.012, 0.006, 0.04);
+    B(gun, M.polymer, 0, -0.06, 0.04, 0.036, 0.1, 0.05, -0.3, 0, 0);
+    B(gun, M.polymer, 0, 0.025, 0.18, 0.05, 0.085, 0.18);
+    B(gun, M.polymer, 0, 0.012, 0.28, 0.054, 0.12, 0.025);
+    P.bolt = B(gun, M.steel, 0.045, 0.04, 0.02, 0.02, 0.014, 0.03);
+    redDot(gun, 0.13, -0.02);
+    P.muzzle = node(gun, 0, 0.045, -0.91);
+    P.eject = node(gun, 0.05, 0.04, -0.07);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.05, 0.055); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
+      forearm(gun, 0.02, -0.085, 0.11, 0.16, -0.32, 0.5);
+      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.01, -0.02, -0.45);
+      const hl = hand(M.glove, -1); hl.rotation.set(0.1, 0, 0.5); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.02, -0.22, -0.3, 0.32);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.13, sightZ: -0.02 };
+  }
+
   function shotgun(hands) {
     const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
     const P = {};
@@ -359,7 +395,7 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver };
+  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);

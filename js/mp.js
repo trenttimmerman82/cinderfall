@@ -14,9 +14,9 @@
     marksman: { label: 'Marksman', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.', weapons: { rail: { mag: 4, reserve: 16 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rail', grenades: 1, armor: 0, speed: 1 },
     heavy: { label: 'Heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.', weapons: { minigun: { mag: 150, reserve: 300 }, pistol: { mag: 12, reserve: Infinity } }, current: 'minigun', grenades: 1, armor: 50, speed: 0.9 },
     demo: { label: 'Demolition', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.', weapons: { rocket: { mag: 1, reserve: 3 }, satchel: { mag: 2, reserve: 2 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rocket', grenades: 1, armor: 0, speed: 1 },
-    runner: { label: 'Runner', desc: 'M7 Vanguard carbine and sidearm, one grenade. Moves 8% faster.', weapons: { carbine: { mag: 30, reserve: 120 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 1, armor: 0, speed: 1.08 }
+    gunner: { label: 'Gunner', desc: 'HX-9 Warden LMG and sidearm. A 100-round box, a long reload.', weapons: { lmg: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'lmg', grenades: 1, armor: 25, speed: 0.94 }
   };
-  const LO_KEYS = ['assault', 'breacher', 'marksman', 'runner', 'heavy', 'demo'];
+  const LO_KEYS = ['assault', 'breacher', 'marksman', 'gunner', 'heavy', 'demo'];
   // Sniper Valley: long-range kit only (the towers never meet, so shotguns, miniguns and grenades have nothing to do)
   const SNIPER = {
     deadeye: { label: 'Deadeye', desc: 'VX-3 rail rifle and the KF-44 revolver. The classic pairing.', weapons: { rail: { mag: 4, reserve: 24 }, revolver: { mag: 6, reserve: 36 } }, current: 'rail', grenades: 0, armor: 0, speed: 1 },
