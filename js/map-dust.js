@@ -82,10 +82,7 @@
       if (p1 - p0 < 0.01 || q1 - q0 < 0.01) return;
       if (axis === 'x') L.box(p0, q0, c - t / 2, p1, q1, c + t / 2, m, o); else L.box(c - t / 2, q0, p0, c + t / 2, q1, p1, m, o);
     };
-    const hs = holes.filter((h) => h[3] > y0 && h[2] < y1 && h[1] > a0 && h[0] < a1).sort((p, q) => p[0] - q[0]);
-    let a = a0;
-    for (const h of hs) { const h0 = Math.max(a0, h[0]), h1 = Math.min(a1, h[1]); B(a, h0, y0, y1); B(h0, h1, y0, Math.max(y0, h[2])); B(h0, h1, Math.min(y1, h[3]), y1); a = h1; }
-    B(a, a1, y0, y1);
+    K.holeSpans(a0, a1, y0, y1, holes, B);
   }
   /** Solid staircase. axis 'x' climbs along X over a0..a1 (b = the Z span); up = +1 rises toward a1, -1 toward a0. */
   function steps(axis, a0, a1, b0, b1, yBase, yTop, up, m, topM) {

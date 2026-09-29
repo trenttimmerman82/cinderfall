@@ -31,21 +31,19 @@
       if (p1 - p0 < 0.01 || q1 - q0 < 0.01) return;
       if (axis === 'x') L.box(p0, q0, c - t / 2, p1, q1, c + t / 2, m, o); else L.box(c - t / 2, q0, p0, c + t / 2, q1, p1, m, o);
     };
-    const hs = holes.filter((h) => h[3] > y0 && h[2] < y1 && h[1] > a0 && h[0] < a1).sort((p, q) => p[0] - q[0]);
-    let a = a0;
-    for (const h of hs) { const h0 = Math.max(a0, h[0]), h1 = Math.min(a1, h[1]); B(a, h0, y0, y1); B(h0, h1, y0, Math.max(y0, h[2])); B(h0, h1, Math.min(y1, h[3]), y1); a = h1; }
-    B(a, a1, y0, y1);
+    K.holeSpans(a0, a1, y0, y1, holes, B);
   }
   /** Steel frame round an opening on both faces; a hazard-striped threshold under doors, a concrete sill under windows. */
-  function frame(axis, h, c, yb) {
+  function frame(axis, h, c, yb, yt) {
     const f = T / 2 + 0.03, box = (a0, a1, y0, y1, cc, t, m) => axis === 'x' ? deco(a0, y0, cc - t, a1, y1, cc + t, m) : deco(cc - t, y0, a0, cc + t, y1, a1, m);
+    const ft = Math.abs(h[3] + 0.12 - yt) < 0.005 ? yt + 0.01 : h[3] + 0.12; // never flush with the wall top
     for (const sd of [-1, 1]) {
       const cc = c + sd * f;
-      box(h[0] - 0.12, h[0], h[2], h[3] + 0.12, cc, 0.03, 'plateOlive'); box(h[1], h[1] + 0.12, h[2], h[3] + 0.12, cc, 0.03, 'plateOlive');
-      box(h[0] - 0.12, h[1] + 0.12, h[3], h[3] + 0.12, cc, 0.03, 'plateOlive');
+      box(h[0] - 0.12, h[0], h[2], ft, cc, 0.03, 'plateOlive'); box(h[1], h[1] + 0.12, h[2], ft, cc, 0.03, 'plateOlive');
+      box(h[0] - 0.12, h[1] + 0.12, h[3], ft, cc, 0.03, 'plateOlive');
     }
     if (h[2] - yb < 0.3) box(h[0], h[1], h[2], h[2] + 0.012, c, T / 2 + 0.1, 'hazard');
-    else box(h[0] - 0.1, h[1] + 0.1, h[2] - 0.08, h[2], c, T / 2 + 0.08, 'bunkerDark');
+    else box(h[0] - 0.1, h[1] + 0.1, h[2] - 0.07, h[2] + 0.01, c, T / 2 + 0.08, 'bunkerDark'); // sill proud of the wall top, not flush
   }
   /** Bunker wall: exterior bands on the `out` side (+1/-1 along the other axis), interior bands inside; 0 = partition. */
   function wall(axis, a0, a1, c, y0, y1, holes, out, OUTB, INB) {
@@ -54,7 +52,7 @@
     const band = (bands, cc, t, ext) => { for (const b of bands) { const q0 = Math.max(y0, b[0]), q1 = Math.min(y1, b[1]); if (q1 > q0) cut(axis, a0 - ext, a1 + ext, cc, t, q0, q1, holes, b[2], {}); } };
     if (!out) band(INB, c, T, 0);
     else { band(OUTB, c + out * T / 4, T / 2, axis === 'x' ? T / 2 : 0); band(INB, c - out * T / 4, T / 2, 0); }
-    for (const h of holes) if (h[3] > y0 && h[2] < y1) frame(axis, h, c, y0);
+    for (const h of holes) if (h[3] > y0 && h[2] < y1 && (h[0] + h[1]) / 2 >= a0 && (h[0] + h[1]) / 2 < a1) frame(axis, h, c, y0, y1);
   }
   /** Solid staircase. axis 'x' climbs along X over a0..a1 (b = the Z span), 'z' climbs along Z. up = +1 rises toward a1, -1 toward a0. */
   function steps(axis, a0, a1, b0, b1, yBase, yTop, up, m, topM) {

@@ -163,6 +163,29 @@
   }
 
   // ------------------------------------------------------------ walls
+  /**
+   * Split the rectangle a0..a1 x y0..y1 around openings [a0, a1, y0, y1] and call B(p0, p1, q0, q1) for each solid piece.
+   * Cuts into columns at every hole edge, so openings that overlap along the wall (a door under a window, touching
+   * holes) never produce two coincident pieces; neighbouring columns with the same solid spans are merged back.
+   */
+  function holeSpans(a0, a1, y0, y1, holes, B) {
+    const hs = holes.filter((h) => h[3] > y0 && h[2] < y1 && h[1] > a0 && h[0] < a1);
+    const cuts = [...new Set([a0, a1, ...hs.flatMap((h) => [Math.max(a0, h[0]), Math.min(a1, h[1])])])].sort((p, q) => p - q);
+    const spans = (m0, m1) => {
+      const cut = hs.filter((h) => h[0] < m1 - 1e-6 && h[1] > m0 + 1e-6).map((h) => [Math.max(y0, h[2]), Math.min(y1, h[3])]).sort((p, q) => p[0] - q[0]);
+      const out = []; let y = y0;
+      for (const [c0, c1] of cut) { if (c0 > y) out.push([y, c0]); y = Math.max(y, c1); }
+      if (y < y1) out.push([y, y1]);
+      return out;
+    };
+    let runA = cuts[0], runS = null;
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const s = JSON.stringify(spans(cuts[i], cuts[i + 1]));
+      if (runS !== null && s !== runS) { for (const [q0, q1] of JSON.parse(runS)) B(runA, cuts[i], q0, q1); runA = cuts[i]; }
+      runS = s;
+    }
+    if (runS !== null) for (const [q0, q1] of JSON.parse(runS)) B(runA, cuts[cuts.length - 1], q0, q1);
+  }
   /** One layer of a wall with openings. axis 'x': runs along X at depth c; 'z': runs along Z at x = c. holes [a0, a1, y0, y1]. */
   function skin(axis, a0, a1, c, t, y0, y1, holes, m) {
     const B = (p0, p1, q0, q1) => {
@@ -170,13 +193,7 @@
       const o = { ao: q0 < 0.05 ? undefined : false };
       if (axis === 'x') L.box(p0, q0, c - t / 2, p1, q1, c + t / 2, m, o); else L.box(c - t / 2, q0, p0, c + t / 2, q1, p1, m, o);
     };
-    const hs = holes.filter((h) => h[3] > y0 && h[2] < y1 && h[1] > a0 && h[0] < a1).sort((p, q) => p[0] - q[0]);
-    let a = a0;
-    for (const h of hs) {
-      const h0 = Math.max(a0, h[0]), h1 = Math.min(a1, h[1]);
-      B(a, h0, y0, y1); B(h0, h1, y0, Math.max(y0, h[2])); B(h0, h1, Math.min(y1, h[3]), y1); a = h1;
-    }
-    B(a, a1, y0, y1);
+    holeSpans(a0, a1, y0, y1, holes, B);
   }
   /**
    * House wall: coloured exterior bands outside, interior bands (wallpaper, wainscot) inside.
@@ -187,7 +204,9 @@
     if (!out) { bandSkin(inBands, c, T, 0); return; }
     bandSkin(outBands, c + out * T / 4, T / 2, axis === 'x' ? T / 2 : 0);
     bandSkin(inBands, c - out * T / 4, T / 2, 0);
-    for (const h of holes) if (h[3] > y0 && h[2] < y1) dressHole(axis, h, c, out, h[2] - y0 < 0.3, dress || {});
+    // only dress openings centred on this run: maps split one wall into several runs that share a hole list, and
+    // dressing every hole on every run stacked identical trim, shutters and door leaves on top of each other
+    for (const h of holes) if (h[3] > y0 && h[2] < y1 && (h[0] + h[1]) / 2 >= a0 && (h[0] + h[1]) / 2 < a1) dressHole(axis, h, c, out, h[2] - y0 < 0.3, dress || {});
   }
   /** Trim around an opening on both faces, plus shutters beside windows and a swung-open door leaf inside. */
   function dressHole(axis, h, c, out, door, dress) {
@@ -196,7 +215,7 @@
       const cc = c + s * f;
       box(h[0] - 0.1, h[0], h[2], h[3] + 0.1, cc, 0.03, 'trim'); box(h[1], h[1] + 0.1, h[2], h[3] + 0.1, cc, 0.03, 'trim');
       box(h[0] - 0.1, h[1] + 0.1, h[3], h[3] + 0.12, cc, 0.03, 'trim');
-      if (!door) box(h[0] - 0.12, h[1] + 0.12, h[2] - 0.08, h[2], cc, 0.06, 'trim');
+      if (!door) box(h[0] - 0.12, h[1] + 0.12, h[2] - 0.07, h[2] + 0.01, cc, 0.06, 'trim'); // sill proud of the wall top, not flush
     }
     if (door) { // open door leaf, hinged on the h[0] side, swung inward
       if (dress.noLeaf) return;
@@ -617,7 +636,7 @@
 
   // the building kit, shared with the other daylight maps (js/map-oregon.js)
   MN.kit = {
-    put, sph, deco, solid, geo, blobGeo, extrude, discGeo, gableRoofGeo, hipRoofGeo, canvasTex, plane, art, skin, wall, stairs, railingX, railingZ, roofCap, gableRoof, hipRoof,
+    put, sph, deco, solid, geo, blobGeo, extrude, discGeo, gableRoofGeo, hipRoofGeo, canvasTex, plane, art, holeSpans, skin, wall, stairs, railingX, railingZ, roofCap, gableRoof, hipRoof,
     tree, cypress, pine, bush, hedge, wheels, car, mannequin, sandbags, powerPole, wire, streetLamp, hydrant, trashCan, mailbox, tires, woodpile, woodFenceX, woodFenceZ,
     latticeTower, painting, roomLight, couch, bed, table, chair, schoolBus
   };

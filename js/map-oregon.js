@@ -223,7 +223,7 @@
     for (const z of [1.2, 5.8]) { K.table(-10.5, z, -4.5, z + 1, G); for (const bz of [z - 0.7, z + 1.3]) L.box(-10.3, G, bz, -4.7, G + 0.45, bz + 0.4, 'wood'); }
     L.box(1.1, G, 5.9, 2 - T / 2, 0.95, 8.5, 'cabinet', { top: 'counter' });
     K.plane(art().chores, 1.3, 0.98, -6.2, 1.75, -2 + T / 2 + 0.015, 0);
-    K.painting(-2.5, 1.9, -2 + T / 2 + 0.03, 0, 1.1, 0.8);
+    K.painting(-0.4, 1.9, -2 + T / 2 + 0.03, 0, 1.1, 0.8);
     hangLamp(-7.5, F1, 3.5, 0.5); hangLamp(-2.5, F1, 3.5, 0.5);
     // --- kitchen: counters and stove on the east wall, island with stools, fridge, sink under the south window
     L.box(x1 - 0.7, G, -2 + T / 2, x1 - T / 2, 0.95, 1, 'cabinet', { top: 'counter' });
@@ -576,7 +576,7 @@
     mobileHome(-24, -32.5, -10, -28.2);
     for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; K.put('stone', K.blobGeo(i % 3), -3 + Math.cos(a) * 1.0, 0.12, -23 + Math.sin(a) * 1.0, 0.28, 0.2, 0.24, a); }
     solid(-4.2, 0, -24.2, -1.8, 0.35, -21.8); for (let i = 0; i < 3; i++) L.pipe('bark', -3.5 + i * 0.4, 0.15, -23.5, -2.6 + i * 0.2, 0.3, -22.6, 0.07);
-    for (const [x, z] of [[-6, -26.2], [-6.5, -20], [0.5, -20.2]]) P('chair', x, z, Math.atan2(-3 - x, -23 - z) + Math.PI);
+    for (const [x, z] of [[-6, -26.2], [-6.5, -20], [0.5, -20.2]]) P('campChair', x, z, Math.atan2(-3 - x, -23 - z) + Math.PI);
     for (const x of [-20, -13]) { L.pipe('chrome', x, 0, -22, x, 2.3, -22, 0.04); solid(x - 0.08, 0, -22.08, x + 0.08, 2.3, -21.92, 'metal'); }
     L.pipe('rubber', -20, 2.2, -22, -13, 2.2, -22, 0.01);
     const sheet = new THREE.MeshStandardMaterial({ color: 0xf0ebe0, roughness: 0.9, side: THREE.DoubleSide });

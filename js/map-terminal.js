@@ -60,10 +60,7 @@
       if (p1 - p0 < 0.01 || q1 - q0 < 0.01) return;
       if (axis === 'x') L.box(p0, q0, c - t / 2, p1, q1, c + t / 2, m, o); else L.box(c - t / 2, q0, p0, c + t / 2, q1, p1, m, o);
     };
-    const hs = holes.filter((h) => h[3] > y0 && h[2] < y1 && h[1] > a0 && h[0] < a1).sort((p, q) => p[0] - q[0]);
-    let a = a0;
-    for (const h of hs) { const h0 = Math.max(a0, h[0]), h1 = Math.min(a1, h[1]); B(a, h0, y0, y1); B(h0, h1, y0, Math.max(y0, h[2])); B(h0, h1, Math.min(y1, h[3]), y1); a = h1; }
-    B(a, a1, y0, y1);
+    K.holeSpans(a0, a1, y0, y1, holes, B);
   }
   /** Glass: players stop, bullets pass. */
   const glass = (axis, a0, a1, c, y0, y1, holes) => cut(axis, a0, a1, c, 0.04, y0, y1, holes || [], 'glassClear', glassO);
@@ -315,13 +312,13 @@
     const gHoles = [[-31, -29, 0, 2.6], [1, 3.4, 0, 2.6]], uHoles = [[-35.9, -33.7, UP, UP + 2.45], [12.1, 14.3, UP, UP + 2.45]];
     glass('x', X0 + 0.1, 20, Z0, FL, CE, gHoles); glass('x', X0 + 0.1, X1 - 0.1, Z0, UP, RT, uHoles);
     K.wall('x', 20, X1, Z0, 0, CE, [[23, 27, 0, 3.4]], [[0, 0.8, 'concreteDark'], [0.8, CE, 'metalSiding']], [[0, 1.2, 'greyClean'], [1.2, CE, 'wallClean']], -1, { noLeaf: true });
-    deco(X0, CE - 0.05, Z0 - 0.14, X1, UP + 0.12, Z0 + 0.02, 'paintDark');
+    deco(X0, CE - 0.05, Z0 - 0.14, X1, UP + 0.12, Z0 + 0.03, 'paintDark');
     const openAt = (x, y) => gHoles.concat(uHoles, [[23, 27, 0, 3.4]]).some((h) => x > h[0] - 0.08 && x < h[1] + 0.08 && y >= h[2] && y < h[3]);
     for (let x = X0 + 3; x < X1 - 0.5; x += 3) {
       if (!openAt(x, 1) && x < 20) deco(x - 0.05, 0, Z0 - 0.12, x + 0.05, CE, Z0 + 0.05, 'paintDark');
       if (!openAt(x, UP + 1)) deco(x - 0.05, UP, Z0 - 0.12, x + 0.05, RT, Z0 + 0.05, 'paintDark');
     }
-    deco(X0, 2.6, Z0 - 0.1, 20, 2.68, Z0 + 0.04, 'paintDark'); deco(X0, 7.05, Z0 - 0.1, X1, 7.13, Z0 + 0.04, 'paintDark'); deco(X0, RT - 0.3, Z0 - 0.16, X1, RT + 0.45, Z0 + 0.02, 'panelWhite');
+    deco(X0, 2.6, Z0 - 0.1, 20, 2.68, Z0 + 0.04, 'paintDark'); deco(X0, 7.05, Z0 - 0.1, X1, 7.13, Z0 + 0.04, 'paintDark'); deco(X0, RT - 0.3, Z0 - 0.16, X1, RT + 0.45, Z0 + 0.03, 'panelWhite');
     for (const [a, b] of [[-31, -29], [1, 3.4]]) { deco(a - 0.4, 2.75, Z0 - 1.4, b + 0.4, 2.9, Z0, 'paintDark'); deco(a - 0.9, FL, Z0 - 0.06, a - 0.1, 2.55, Z0 - 0.02, 'glassClear'); deco(b + 0.1, FL, Z0 - 0.06, b + 0.9, 2.55, Z0 - 0.02, 'glassClear'); }
     // south: the landside front with the entrances, a ribbon of clerestory glass upstairs
     const OUT = [[0, 0.8, 'concreteDark'], [0.8, RT, 'panelWhite']], IN = [[0, 0.15, 'paintDark'], [0.15, RT, 'wallClean']];
@@ -422,7 +419,7 @@
     // escalators: up the east side of the void, two lanes, landing on the gate lounge
     const ex0 = -15, ex1 = -6;
     steps('x', ex0, ex1, 0.1, 3.1, FL, UP, 1, 'steel', 'grate');
-    for (const z of [0.1, 3.1]) quad('greyClean', [ex0 - 0.6, 0, z], [ex1, 0, z], [ex1, UP, z], [ex0, FL + 0.02, z]);
+    for (const z of [0.08, 3.12]) quad('greyClean', [ex0 - 0.6, 0, z], [ex1, 0, z], [ex1, UP, z], [ex0, FL + 0.02, z]);
     for (const z of [0.12, 1.6, 3.08]) {
       const t = z === 1.6 ? 0.1 : 0.03;
       quad('glassClear', [ex0 - 1, FL + 0.1, z], [ex0, FL + 0.1, z], [ex0, FL + 1.0, z], [ex0 - 1, FL + 1.0, z]);
