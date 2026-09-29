@@ -205,5 +205,27 @@
       (p.x > -26 && p.x < -6 && p.z > 2 && p.z < 8 && p.y < 1.4) || (p.x > -24 && p.x < -16 && p.z > -38 && p.z < -32),
     menuCam: (t, cam) => { const a = t * 0.03 + 0.5; cam.position.set(Math.sin(a) * 52, 26 + Math.sin(a * 1.3) * 3, Math.cos(a) * 54); cam.lookAt(0, 1, -4); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'sniper'];
+  // The Pit: a clear afternoon over the Kenyan savanna; warm dusty light, ochre haze, the escarpment behind the north wall
+  CF.Maps.pit = {
+    id: 'pit', name: 'The Pit', mp: true, nav: false, blurb: 'A UNSC training facility: two bases with sniper towers, the Sword Room, the sunken live-fire Pit and the Long Hall.',
+    bounds: { minX: -56, maxX: 56, minZ: -34, maxZ: 30 },
+    theme: base({
+      fog: [0.8, 0.72, 0.58], fogDensity: 0.0032,
+      hemi: [0xd6dce8, 0x6e5a3e, 0.62], moon: { color: 0xffe8c4, intensity: 1.8, dir: [-0.5, 0.66, 0.4] },
+      sky: { zen: [0.2, 0.36, 0.64], hor: [0.84, 0.76, 0.62], glow: [0.56, 0.42, 0.24], glowDir: [-0.5, 0.4], glow2: [0.12, 0.1, 0.06], glow2Dir: [1, 0],
+        cloudDark: [0.76, 0.72, 0.68], cloudLit: [1.08, 1.02, 0.92], stars: 0, moon: 2.8 },
+      env: { top: [0.56, 0.66, 0.86], bottom: [0.44, 0.36, 0.26], band: [0.6, 0.52, 0.42], panels: [[1.6, 1.5, 1.4], [1.3, 1.4, 1.6], [1.5, 1.4, 1.2], [1.4, 1.4, 1.4]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 170, r1: 360, count: 42, hMin: 16, hMax: 56, rock: [0.3, 0.23, 0.16], snow: [0.3, 0.23, 0.16], haze: 0.005, seed: 117 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.8, sat: 1.08, shadow: [0, 0, 0.003], high: [0.012, 0.005, -0.008], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapPit.build(),
+    inside: (p) => { const u = Math.abs(p.x); return (u > 34 && u < 48 && p.z > -12 && p.z < 8) || (u < 30 && p.z > 19 && p.z < 25 && p.y < 4) || (u < 6 && p.z > 13 && p.z < 19 && p.y < 4) ||
+      (u < 8 && p.z > -30 && p.z < -17 && p.y < 8.5) || (u > 37.5 && u < 44.5 && p.z > -29.5 && p.z < -22.5 && p.y > 4 && p.y < 8.2); },
+    menuCam: (t, cam) => { const a = t * 0.03 + 1.1; cam.position.set(Math.sin(a) * 50, 19 + Math.sin(a * 1.3) * 2.5, -3 + Math.cos(a) * 36); cam.lookAt(0, 1, -4); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'sniper'];
 })(window.CF);

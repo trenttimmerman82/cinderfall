@@ -9,8 +9,9 @@
     grass: 1 / 5, sand: 1 / 6, dirt: 1 / 6, wallpaper: 0.5, wallpaper2: 0.5, checker: 0.5, carpetBeige: 0.5, stone: 0.5, sidingWhite: 0.25, sidingTeal: 0.25, boardYellow: 0.4, lattice: 1, stucco: 0.25, sidingBlue: 0.25, boardBrown: 0.4, woodDark: 0.5, trailerWhite: 0.4, sidingGreen: 0.25, sidingYellow: 0.25, roofing: 0.3, brick: 0.5, floorWood: 0.4, wood: 0.5, fence: 0.5, carpet: 0.5,
     snow: 1 / 7, snowDirty: 1 / 7, ice: 1 / 6, iceDark: 1 / 6, basalt: 1 / 4, panelOrange: 1 / 3, panelWhite: 1 / 3, panelRed: 1 / 3, panelBlue: 1 / 3, panelDark: 1 / 3, grate: 0.5,
     sidingBeige: 0.25, plankWall: 0.5, plywood: 0.4, forest: 1 / 5, metalSiding: 0.25, roofTin: 0.33, rust: 0.33, gravel: 1 / 5,
-    terrazzo: 1 / 4.8, ceilTile: 1 / 4.8, carpetBlue: 0.5, seatBlue: 0.5, vinylRed: 0.5, leather: 0.5, glassClear: 0.25 };
-  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal', metalSiding: 'metal', roofTin: 'metal', rust: 'metal', planeWhite: 'metal', planeBlue: 'metal', glassClear: 'metal', greyClean: 'metal' };
+    terrazzo: 1 / 4.8, ceilTile: 1 / 4.8, carpetBlue: 0.5, seatBlue: 0.5, vinylRed: 0.5, leather: 0.5, glassClear: 0.25,
+    bunker: 0.25, bunkerDark: 0.25, plateOlive: 0.33 };
+  const SURF = { snow: 'snow', snowDirty: 'snow', ice: 'ice', iceDark: 'ice', grate: 'metal', panelOrange: 'metal', panelWhite: 'metal', panelRed: 'metal', panelBlue: 'metal', panelDark: 'metal', metalFloor: 'metal', wall: 'metal', wallRust: 'metal', paintYellow: 'metal', paintGrey: 'metal', paintDark: 'metal', paintRed: 'metal', paintGreen: 'metal', steel: 'metal', hazard: 'metal', crate: 'metal', metalSiding: 'metal', roofTin: 'metal', rust: 'metal', planeWhite: 'metal', planeBlue: 'metal', glassClear: 'metal', greyClean: 'metal', plateOlive: 'metal' };
   const FACES = [
     { c: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]], n: [1, 0, 0], u: (x, y, z) => -z, v: (x, y) => y },
     { c: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], n: [-1, 0, 0], u: (x, y, z) => z, v: (x, y) => y },
@@ -116,6 +117,9 @@
     M.wallClean = std({ color: 0xe9e6df, metalness: 0, roughness: 0.82 }); M.greyClean = std({ color: 0x8b939c, metalness: 0.35, roughness: 0.42 });
     M.carpetBlue = tint(T.carpet, 0x3a4a6c); M.seatBlue = tint(T.carpet, 0x2f4c7e); M.vinylRed = tint(T.carpet, 0xb0282a); M.leather = tint(T.carpet, 0x6a4128);
     M.lineWhite = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.8, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    // military training facility (The Pit)
+    M.bunker = tint(T.concrete, 0xcbbfa6); M.bunkerDark = tint(T.concrete, 0x8a826f);
+    M.plateOlive = std(Object.assign(tri(T.paintMetal), { color: 0x646b55, metalness: 0.45 })); M.lampBlue = basic(0.5, 1.9, 7.5);
     // polar station (Whiteout)
     M.snow = std(Object.assign(tri(T.snow), { color: 0xf4f7ff, metalness: 0, envMapIntensity: 0.5 }));
     M.snowDirty = std(Object.assign(tri(T.snow), { color: 0xb9bcc0, metalness: 0, envMapIntensity: 0.4 }));
