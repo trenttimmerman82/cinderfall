@@ -36,7 +36,7 @@ It is set in a rain-soaked neon city.
   other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
   (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) or co-op
-  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) and **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), with six loadouts. Kill-streak drones
+  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B), **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range) and **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane), with six loadouts. Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.

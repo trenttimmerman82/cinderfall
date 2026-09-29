@@ -227,5 +227,27 @@
       (u < 8 && p.z > -30 && p.z < -17 && p.y < 8.5) || (u > 37.5 && u < 44.5 && p.z > -29.5 && p.z < -22.5 && p.y > 4 && p.y < 8.2); },
     menuCam: (t, cam) => { const a = t * 0.03 + 1.1; cam.position.set(Math.sin(a) * 50, 19 + Math.sin(a * 1.3) * 2.5, -3 + Math.cos(a) * 36); cam.lookAt(0, 1, -4); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'sniper'];
+  // Highrise: a clear, hazy afternoon eighty-one floors up; hard sun off the glass, the city lost in the haze below
+  CF.Maps.highrise = {
+    id: 'highrise', name: 'Highrise', mp: true, nav: false, blurb: 'A skyscraper roof: the helipad, two floors of offices, the mechanical well, the building site and the tower crane.',
+    bounds: { minX: -56, maxX: 56, minZ: -38, maxZ: 38 },
+    theme: base({
+      fog: [0.72, 0.78, 0.86], fogDensity: 0.0024,
+      hemi: [0xcad8ec, 0x6a6660, 0.66], moon: { color: 0xfff0d8, intensity: 1.8, dir: [0.55, 0.6, 0.45] },
+      sky: { zen: [0.17, 0.33, 0.64], hor: [0.78, 0.82, 0.86], glow: [0.54, 0.46, 0.32], glowDir: [0.55, 0.45], glow2: [0.1, 0.1, 0.1], glow2Dir: [-1, 0],
+        cloudDark: [0.74, 0.76, 0.8], cloudLit: [1.06, 1.04, 1.0], stars: 0, moon: 2.6 },
+      env: { top: [0.55, 0.66, 0.88], bottom: [0.4, 0.42, 0.44], band: [0.66, 0.66, 0.64], panels: [[1.5, 1.5, 1.5], [1.3, 1.4, 1.6], [1.45, 1.4, 1.3], [1.4, 1.4, 1.4]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.8, sat: 1.05, shadow: [0, 0, 0.004], high: [0.01, 0.004, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapHighrise.build(),
+    // the offices, the heliport lounge and the machine room are roofed
+    inside: (p) => (p.x > -24 && p.x < 24 && p.z > -32 && p.z < -8 && p.y < 8.4) || (p.x > -47 && p.x < -31 && p.z > -24 && p.z < -8 && p.y < 2.7) ||
+      (p.x > -50 && p.x < -36 && p.z > 18 && p.z < 32 && p.y < 4.2),
+    menuCam: (t, cam) => { const a = t * 0.03 + 0.9; cam.position.set(Math.sin(a) * 62, 30 + Math.sin(a * 1.3) * 3, Math.cos(a) * 50); cam.lookAt(0, 3, -4); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'highrise', 'sniper'];
 })(window.CF);
