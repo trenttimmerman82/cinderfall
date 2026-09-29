@@ -841,6 +841,12 @@
     for (let i = 0; i < 4; i++) { const x = 40 + i * 16, z = 58; L.box(x - 6, 0, z - 3.5, x + 6, 3.5, z + 3.5, 'bunker', { noCol: true }); K.put('roofTin', K.gableRoofGeo(13, 8, 1.6), x, 3.5, z, 1, 1, 1); }
   }
 
+  /** Stairs, guards, ramps, rails and yard clutter, shared with Rust (js/map-rust.js). */
+  MPIT.kit = function () {
+    K = CF.MapNuketown.kit;
+    return { steps, slopeGuard, ramp, poly, rail, bags, container, jersey, spool, pallets, flood, bulkhead, extinguisher, ammoBox, glowPlane };
+  };
+
   // ------------------------------------------------------------ build
   MPIT.build = function () {
     K = CF.MapNuketown.kit;

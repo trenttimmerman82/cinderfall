@@ -227,6 +227,29 @@
       (u < 8 && p.z > -30 && p.z < -17 && p.y < 8.5) || (u > 37.5 && u < 44.5 && p.z > -29.5 && p.z < -22.5 && p.y > 4 && p.y < 8.2); },
     menuCam: (t, cam) => { const a = t * 0.03 + 1.1; cam.position.set(Math.sin(a) * 50, 19 + Math.sin(a * 1.3) * 2.5, -3 + Math.cos(a) * 36); cam.lookAt(0, 1, -4); }
   };
+  // Rust: a hazy desert afternoon; a low orange sun through blowing dust, the sky bleached almost white at the horizon
+  CF.Maps.rust = {
+    id: 'rust', name: 'Rust', mp: true, nav: false, blurb: 'A small oil yard in the desert: the drilling tower, the pipelines, the office, the tank farm and the pump house.',
+    bounds: { minX: -38, maxX: 38, minZ: -38, maxZ: 38 },
+    theme: base({
+      fog: [0.78, 0.64, 0.46], fogDensity: 0.0062,
+      hemi: [0xd8cdb8, 0x7a5c3a, 0.62], moon: { color: 0xffddb0, intensity: 1.85, dir: [-0.55, 0.55, -0.5] },
+      sky: { zen: [0.32, 0.4, 0.54], hor: [0.92, 0.74, 0.5], glow: [0.7, 0.44, 0.2], glowDir: [-0.55, -0.5], glow2: [0.14, 0.1, 0.06], glow2Dir: [1, 0],
+        cloudDark: [0.74, 0.64, 0.54], cloudLit: [1.1, 0.96, 0.78], stars: 0, moon: 2.4 },
+      env: { top: [0.58, 0.62, 0.74], bottom: [0.56, 0.42, 0.28], band: [0.68, 0.54, 0.38], panels: [[1.5, 1.3, 1.05], [1.2, 1.2, 1.3], [1.4, 1.2, 0.95], [1.25, 1.15, 1.05]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 180, r1: 360, count: 40, hMin: 14, hMax: 52, rock: [0.42, 0.3, 0.2], snow: [0.56, 0.42, 0.28], haze: 0.0055, seed: 9 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.12, exposure: 0.76, sat: 1.04, shadow: [0.004, 0.002, 0.004], high: [0.016, 0.006, -0.012], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapRust.build(),
+    // the office, the pump house and the doghouse on the rig floor are roofed
+    inside: (p) => (p.x > -30 && p.x < -20 && p.z > -30 && p.z < -23 && p.y < 6) || (p.x > 18 && p.x < 28 && p.z > 20 && p.z < 28 && p.y < 3.4) ||
+      (p.x > 0.9 && p.x < 2.6 && p.z > 0.8 && p.z < 2.5 && p.y > 2.9 && p.y < 5.75),
+    menuCam: (t, cam) => { const a = t * 0.035 + 2.1; cam.position.set(Math.sin(a) * 40, 17 + Math.sin(a * 1.3) * 2.5, Math.cos(a) * 40); cam.lookAt(0, 5, 0); }
+  };
   // Highrise: a clear, hazy afternoon eighty-one floors up; hard sun off the glass, the city lost in the haze below
   CF.Maps.highrise = {
     id: 'highrise', name: 'Highrise', mp: true, nav: false, blurb: 'A skyscraper roof: the helipad, two floors of offices, the mechanical well, the building site and the tower crane.',
@@ -249,5 +272,5 @@
       (p.x > -50 && p.x < -36 && p.z > 18 && p.z < 32 && p.y < 4.2),
     menuCam: (t, cam) => { const a = t * 0.03 + 0.9; cam.position.set(Math.sin(a) * 62, 30 + Math.sin(a * 1.3) * 3, Math.cos(a) * 50); cam.lookAt(0, 3, -4); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'highrise', 'sniper'];
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'sniper'];
 })(window.CF);
