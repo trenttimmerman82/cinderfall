@@ -35,13 +35,27 @@
     scale: [0, 1, 4, 5, 7, 8, 10, 12, 13, 16], lead: [0, 2, 1, 0, 3, 2, 4, 3, 5, 4, 2, 1, 0, 1, 2, 0],
     bass: [0, 0, 0, 12, 0, 0, 7, 1]
   };
-  const THEMES = { neon: NEON, frost: FROST, desert: DESERT };
+  // Black Hawk Down (Story Act III): drop-D nu-metal / grunge. Quiet clean verses while walking, palm-muted chugs
+  // when contact starts, the full distorted riff and crashes when it gets loud. Dm – Bb – C – A (two bars each)
+  const GRUNGE = {
+    bpm: 100,
+    chords: [
+      { root: 38, tones: [62, 65, 69, 74] },   // D5 / Dm
+      { root: 46, tones: [58, 62, 65, 70] },   // Bb5
+      { root: 48, tones: [60, 64, 67, 72] },   // C5
+      { root: 45, tones: [57, 61, 64, 69] }    // A5
+    ],
+    // two-bar riff, one char per sixteenth: C power chord, m palm-muted chug, 3/5/6 chord that many semitones up, . rest
+    riff: 'C..mm.m.C..mm.mmC..mm.m.3.5.6.5.',
+    clean: [0, 1, 2, 1, 3, 1, 2, 1]
+  };
+  const THEMES = { neon: NEON, frost: FROST, desert: DESERT, grunge: GRUNGE };
 
   const M = CF.Music = {
     ctx: null, A: null, bus: null, lp: null, playing: false, timer: null,
     intensity: 0, target: 0, step: 0, nextTime: 0, bpm: 104, mode: 'menu', boss: false, theme: 'neon', T: NEON
   };
-  /** 'neon' (Cinder Foundry), 'frost' (Whiteout) or 'desert' (Story Campaign). */
+  /** 'neon' (Cinder Foundry), 'frost' (Whiteout), 'desert' (Story Campaign) or 'grunge' (Story Act III). */
   M.setTheme = function (name) {
     const T = THEMES[name] || NEON;
     if (this.T === T) return;
@@ -105,6 +119,7 @@
     const chord = T.chords[Math.floor(bar / 2) % 4];
     if (frost) { this.frostStep(s, t, six, I, chord, bar, inBar); return; }
     if (this.theme === 'desert') { this.desertStep(s, t, six, I, chord, bar, inBar); return; }
+    if (this.theme === 'grunge') { this.grungeStep(s, t, six, I, chord, bar, inBar); return; }
     if (s % 32 === 0) this.pad(chord, t, six * 32, I);
     if (I > 0.28 && inBar % 2 === 0) {
       const e = (inBar / 2) | 0;
@@ -152,6 +167,72 @@
     if (leadOn) this.pluck(60 + T.scale[T.lead[inBar] % T.scale.length] + (chord.root - 36), t, menu ? 0.04 : 0.05);
     if (this.boss && I > 0.9 && inBar === 0) this.stab(chord, t);
     if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  // ---------------------------------------------------------------- Black Hawk Down arrangement
+  M.grungeStep = function (s, t, six, I, chord, bar, inBar) {
+    const T = this.T, menu = this.mode === 'menu', r = chord.root;
+    const loud = I > 0.55, heavy = I > 0.82;
+    // quiet verse: a chorused clean guitar picking the chord in eighths
+    if ((menu || I < 0.62) && inBar % 2 === 0) this.cleanGtr(chord.tones[T.clean[inBar / 2]], t, menu ? 0.03 : 0.038 * (1 - Math.max(0, I - 0.4)));
+    if (!menu && I > 0.2 && inBar === 0) this.bass(r, t, six * (I > 0.4 ? 3.6 : 14), I);
+    if (!menu && I > 0.4 && inBar % 2 === 0 && inBar) this.bass(r + (T.riff[(bar % 2) * 16 + inBar] === 'C' ? 12 : 0), t, six * 1.7, I);
+    // guitar: palm mutes come in with contact, the open chords once it is loud
+    const c = T.riff[(bar % 2) * 16 + inBar];
+    if (!menu && I > 0.38 && c !== '.') {
+      if (c === 'm') this.chug(r, t, six * 0.9, loud ? 1 : 0.7);
+      else if (loud) this.powerChord(r + (c === 'C' ? 0 : +c), t, six * (c === 'C' ? 3.2 : 1.8), heavy ? 1 : 0.85);
+      else if (c === 'C') this.chug(r, t, six * 1.4, 0.85);
+      if (loud && (c === 'm' || c === 'C')) this.kick(t);
+    }
+    // drums
+    if (!menu && I > 0.3 && !loud && (inBar === 0 || inBar === 8)) this.kick(t);
+    if (!menu && I > 0.3 && (inBar === 4 || inBar === 12)) { if (I > 0.45) this.snare(t); else this.hat(t, 0.05); }
+    if (!menu && I > 0.25) {
+      if (heavy ? true : inBar % 2 === 0) this.hat(t, inBar % 4 === 2 ? 0.045 : 0.024, heavy && inBar === 14);
+    }
+    if (loud && inBar === 0 && bar % 2 === 0) this.crash(t, heavy ? 0.1 : 0.07);
+    if (heavy && bar % 4 === 3 && inBar >= 12) { this.kick(t); if (inBar % 2) this.snare(t); }   // fill into the next phrase
+    if (heavy && (this.boss || I > 0.9) && bar % 4 === 2 && inBar === 0) this.squeal(r + 36, t, six * 14);
+    if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  /** Shared amp for the distorted guitar: drive into a soft clipper, then a cabinet-ish band. Built on first use. */
+  M.amp = function () {
+    if (this._amp) return this._amp;
+    const ctx = this.ctx, drive = ctx.createGain(); drive.gain.value = 5;
+    const sh = ctx.createWaveShaper(), n = 1024, curve = new Float32Array(n), k = 40;
+    for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; curve[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
+    sh.curve = curve; sh.oversample = '2x';
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 90;
+    const cab = ctx.createBiquadFilter(); cab.type = 'lowpass'; cab.frequency.value = 3400; cab.Q.value = 0.9;
+    const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 800; mid.gain.value = -5; mid.Q.value = 0.8;   // scooped mids
+    const out = ctx.createGain(); out.gain.value = 0.085;
+    drive.connect(sh); sh.connect(hp); hp.connect(mid); mid.connect(cab); cab.connect(out); out.connect(this.bus);
+    const wide = ctx.createGain(); wide.gain.value = 0.25; out.connect(wide); wide.connect(this.rev);
+    return (this._amp = drive);
+  };
+  M.chug = function (note, t, dur, g) {   // palm mute: dark, tight, low
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520; f.connect(this.amp());
+    this.osc('sawtooth', mtof(note), t, dur, 0.12 * g, f, 0.003, dur * 0.6, -8);
+    this.osc('sawtooth', mtof(note + 7), t, dur, 0.06 * g, f, 0.003, dur * 0.6, 8);
+  };
+  M.powerChord = function (note, t, dur, g) {   // root, fifth, octave, doubled left and right
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(1400, t + dur); f.connect(this.amp());
+    for (const [n, v] of [[0, 0.1], [7, 0.075], [12, 0.05]]) for (const dt of [-11, 11]) this.osc('sawtooth', mtof(note + n), t, dur, v * g, f, 0.004, dur * 0.4, dt);
+  };
+  M.cleanGtr = function (note, t, gain) {
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3000, t); f.frequency.exponentialRampToValueAtTime(1100, t + 0.4); f.connect(this.echoIn); f.connect(this.rev);
+    this.osc('triangle', mtof(note), t, 0.9, gain, f, 0.003, 0.85, -9);
+    this.osc('square', mtof(note), t, 0.5, gain * 0.25, f, 0.003, 0.45, 9);
+  };
+  M.squeal = function (note, t, dur) {   // pinch harmonic: bend up a tone and scream with vibrato
+    const ctx = this.ctx, o = this.osc('sawtooth', mtof(note), t, dur, 0.05, this.amp(), 0.02, dur * 0.5);
+    o.frequency.setValueAtTime(mtof(note), t); o.frequency.exponentialRampToValueAtTime(mtof(note + 2), t + 0.18);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 6.2; const lg = ctx.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(40, t + 0.5);
+    lfo.connect(lg); lg.connect(o.detune); lfo.start(t); lfo.stop(t + dur + 0.1);
+  };
+  M.crash = function (t, gain) {
+    this.A.noise(this.bus, t, { type: 'highpass', f0: 4200, dur: 1.4, gain: gain });
+    this.A.noise(this.rev, t, { type: 'bandpass', f0: 6000, dur: 1.2, gain: gain * 0.6, Q: 0.6 });
   };
   M.strings = function (chord, t, dur, I) {
     const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.7;

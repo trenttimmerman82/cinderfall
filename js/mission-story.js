@@ -85,6 +85,7 @@
       orders: ['Get to the stadium', 'Hold the landing zone', 'Get everyone aboard'] }
   ];
   const TITLES = ['Drop Zone', 'Contact', 'Ghost Protocol', 'Breach', 'Shot Down', 'The Long Walk', 'Last Block', 'Extraction'];
+  const ACT3 = (i) => i >= 4;   // Black Hawk Down gets its own score
   const TIME = ['dawn', 'day', 'night', 'dawn', 'day', 'afternoon', 'dusk', 'night'];
   const num = (i) => 'Mission ' + String(i + 1).padStart(2, '0');
   const tag = () => num(MS.idx) + ' · ' + TITLES[MS.idx];
@@ -757,6 +758,7 @@
   MS.begin = function (i, retry, brief) {
     const G = CF.Game;
     this.idx = i; this.phase = PH[i]; this.busy = false;
+    CF.Music.setTheme(ACT3(i) ? 'grunge' : 'desert');
     resetWorld(); this.spawner = null; this.timers = []; this.s = {};
     if (!brief) { this.enter(i, retry); return; }
     G.state = 'briefing'; CF.Input.active = false; CF.Input.clearAll(); CF.HUD.show(false); CF.HUD.clearRadio();
@@ -776,6 +778,7 @@
     this.idx = i; this.phase = PH[i]; this.t = 0; this.s = {}; this.spawner = null; this.timers = []; this.entered = true;
     resetWorld();
     MAP().setTime(TIME[i]);
+    CF.Music.setTheme(ACT3(i) ? 'grunge' : 'desert');
     CF.Music.setIntensity(0.2);
     if (this.st.stage === 'start') { giveKit(i); place(PH[i].cp()); }
     else CF.Weapons.setSuppressed(!!KIT[i].quiet);
