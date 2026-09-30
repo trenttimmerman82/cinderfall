@@ -276,7 +276,7 @@
     K.table(5, -7.5, 8, -6, F);
     for (let i = 0; i < 6; i++) deco(5.2 + i * 0.45, F + 0.78, -7.2, 5.5 + i * 0.45, F + 0.98, -6.4, i % 2 ? 'olive' : 'paintGreen');
     for (let z = -7.8; z < -4.6; z += 0.66) { L.box(x1 - 0.6, F, z, x1 - T / 2, F + 2, z + 0.62, 'paintGreen', { ao: false }); deco(x1 - 0.62, F + 1.5, z + 0.1, x1 - 0.6, F + 1.8, z + 0.5, 'paintDark'); }
-    P('crate', 3, -4, 0.2, F); P('crateSmall', 10.4, -9.6, 0.3, F); P('crateSmall', 3.2, -5.3, -0.2, F);
+    P('crate', 1.9, -8.4, 0.2, F); P('crateSmall', 10.4, -9.6, 0.3, F); P('crateSmall', 1.8, -6.9, -0.2, F);
     K.roomLight(6.5, H2, -7);
   }
 
@@ -388,7 +388,7 @@
     // ground floor: storage
     L.box(-23.2, G, -12, x1 - T / 2, 2.2, -10.2, 'woodDark');
     const P = (kind, x, z, ry, y) => CF.PH.place(kind, x, y || 0, z, ry || 0);
-    P('crate', -28.9, -11.2, 0.1, G); P('boxStack', -27.8, -15.3, 0.3, G); P('drum', -23.2, -15.4, 0, G);
+    P('crate', -28.9, -11.2, 0.1, G); P('boxStack', -23.4, -13.3, 0.3, G); P('drum', -23.2, -15.4, 0, G);
     K.roomLight(-26, F1, -13);
     // middle floor: radio desk and the valley map
     K.table(x0 + T / 2 + 0.05, -13.8, -28.9, -11.2, F); K.chair(-28.3, -12.5, F);
@@ -429,7 +429,7 @@
     for (let i = 0; i < 9; i++) deco(14.3 + i * 0.52, 1.5 + (i % 3) * 0.28, z0 + T / 2 + 0.03, 14.4 + i * 0.52, 1.9 + (i % 3) * 0.28, z0 + T / 2 + 0.07, i % 2 ? 'paintRed' : 'steel');
     deco(15, 0.95, -7.7, 15.6, 1.15, -7.4, 'paintRed'); deco(17.2, 0.95, -7.75, 17.5, 1.3, -7.45, 'paintGrey');
     shelf(x1 - 0.7, 4.5, x1 - T / 2, 9.3, 0.1, 2.3, rnd);
-    K.tires(24.6, -6.6, 4); P('drum', 23.4, -6.9, 0, 0.1); P('barrel', 22.6, -6.5, 0, 0.1);
+    K.tires(24.6, -6.6, 4); P('drum', 19.7, -6.9, 0, 0.1); P('barrel', 20.5, -7.2, 0, 0.1);
     // engine hoist
     L.pipe('steel', 21.4, 0.1, 1.2, 21.4, 2.4, 1.2, 0.05); L.pipe('steel', 21.4, 2.4, 1.2, 19.4, 2.2, 1.2, 0.04); L.pipe('steel', 20.6, 0.12, 0.6, 22.2, 0.12, 0.6, 0.04);
     L.pipe('steel', 20.6, 0.12, 1.8, 22.2, 0.12, 1.8, 0.04); L.pipe('rubber', 19.4, 2.2, 1.2, 19.4, 1.4, 1.2, 0.01); solid(21.2, 0.1, 1.0, 21.6, 2.4, 1.4, 'metal');
