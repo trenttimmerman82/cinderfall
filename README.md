@@ -49,9 +49,9 @@ It is set in a rain-soaked neon city.
 
 ## Multiplayer
 
-1. One player picks **Multiplayer**, chooses a map and mode, and clicks **Host match**. A 5-character room code appears.
+1. One player picks **Multiplayer**, chooses a map (a big screenshot preview and a thumbnail gallery show what each one looks like) and a mode, and clicks **Host match**. A 5-character room code appears.
 2. Friends open the same page, pick **Multiplayer**, type the code and click **Join match**.
-3. Everyone picks a loadout and clicks **Deploy**.
+3. In the lobby everyone picks a loadout and clicks **Deploy**.
 
 Up to 8 players. Players first try a direct peer-to-peer link (WebRTC through [PeerJS](https://peerjs.com)). If a router or
 school/office Wi-Fi blocks it, they switch to the relay on the Cinderfall server after a few seconds (see **Game server** below).

@@ -21,6 +21,9 @@ for url in LIBS:
     assert tag in s, url
     lib = urllib.request.urlopen(url).read().decode('utf-8')
     s = s.replace(tag, inline(lib))
+# map thumbnails on the multiplayer screen: inlined as data URIs so the offline file still shows them
+import base64
+s = re.sub(r'src="(img/[\w/\-]+\.webp)"', lambda m: 'src="data:image/webp;base64,' + base64.b64encode(open(m.group(1), 'rb').read()).decode() + '"', s)
 s, n = re.subn(r'<script src="(js/[a-z\-]+\.js)"></script>',
                lambda m: inline('/* ' + m.group(1) + ' */\n' + open(m.group(1), encoding='utf-8').read()), s)
 # optional content the game loads on demand (CF.lazy): carried along as inert text so the offline file still has it

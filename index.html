@@ -535,61 +535,72 @@
   </section>
 
   <section class="screen panel-screen" id="screen-mp" hidden>
-    <div class="panel wide">
+    <div class="panel wide mp-setup">
       <header class="panel-head"><span class="eyebrow">Multiplayer · online with friends, or offline against bots</span><h2>Deploy online</h2></header>
       <div class="mp-grid">
-        <div class="mp-col">
-          <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>
-          <h3 class="mp-h">Host a match</h3>
-          <div class="card-row" id="mpCampRow" hidden>
-            <button class="card" data-map="foundry"><b>Cinder Foundry</b><span>Co-op: the whole campaign for two. Clear the yard, restore power, hold the uplink, take down the Warden.</span></button>
-            <button class="card" data-map="halden"><b>Whiteout</b><span>Co-op: Halden Deep for two. Find Varga, restore comms, cross the whiteout, kill the Rime Heart, outrun the ice.</span></button>
+        <div class="mp-col mp-pickcol">
+          <h3 class="mp-h"><i class="mp-step">1</i>Map</h3>
+          <figure class="map-feature" id="mpMapFeature">
+            <img id="mpMapImg" alt="" draggable="false">
+            <figcaption><b id="mpMapName"></b><span class="map-tags" id="mpMapTags"></span></figcaption>
+          </figure>
+          <p class="map-desc" id="mpMapDesc"></p>
+          <div class="map-grid" id="mpCampRow" hidden>
+            <button class="map-tile" data-map="foundry" data-tags="Co-op campaign,Night,Rain" data-desc="Co-op: the whole campaign for two. Clear the yard, restore power, hold the uplink, take down the Warden."><img src="img/maps/foundry.webp" alt="" draggable="false"><b>Cinder Foundry</b></button>
+            <button class="map-tile" data-map="halden" data-tags="Co-op campaign,Snow,Aurora" data-desc="Co-op: Halden Deep for two. Find Varga, restore comms, cross the whiteout, kill the Rime Heart, outrun the ice."><img src="img/maps/halden.webp" alt="" draggable="false"><b>Whiteout</b></button>
           </div>
-          <div class="card-row" id="mpMapRow">
-            <button class="card" data-map="market"><b>Neon Market</b><span>Tight streets, alleys and balconies around a holographic plaza.</span></button>
-            <button class="card" data-map="rooftops"><b>Skyline</b><span>Five rooftops, stairways and catwalks, 60 metres above the street.</span></button>
-            <button class="card" data-map="nuketown"><b>Nuketown</b><span>Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac. An RC-XD chest waits in the middle.</span></button>
-            <button class="card" data-map="oregon"><b>Oregon</b><span>A fenced compound in the Oregon woods. Dorms and an armory upstairs, a basement below, the meeting hall catwalk, the Big Tower and the garage roof.</span></button>
-            <button class="card" data-map="terminal"><b>Terminal</b><span>An airport on a sunny afternoon. Security lanes, Burger Town, the bookstore and the gate lounge inside; out on the apron, an airliner you can walk through from the jet bridge to the rear stairs.</span></button>
-            <button class="card" data-map="dust2"><b>Dust II</b><span>A sandstone town under a hard desert sun. Long A and the pit, the catwalk up to Short, mid doors, the dark tunnels to B, the B window and the back plat.</span></button>
-            <button class="card" data-map="pit"><b>The Pit</b><span>A UNSC training facility in the Kenyan savanna. Blue and Red bases with sniper towers, the Sword Room over the yard, the sunken live-fire Pit and the Long Hall with its roof. Built for Capture the Flag.</span></button>
-            <button class="card" data-map="rust"><b>Rust</b><span>An oil yard in the desert haze. Climb the drilling tower to the top platform, walk under the arched pipeline, fight through the office, the tank farm, the pump house roof and the shed by the nodding pumpjack.</span></button>
-            <button class="card" data-map="highrise"><b>Highrise</b><span>The roof of a skyscraper, eighty-one floors up. The helipad and its lounge, two floors of offices with a balcony, the sunken mechanical well, the building site and the tower crane.</span></button>
-            <button class="card card-sniper" data-map="sniper"><b>Sniper Valley</b><span>Two teams, two rooftops, a 60 m drop between them. Rail rifles only; team deathmatch, first to 25.</span></button>
+          <div class="map-grid" id="mpMapRow">
+            <button class="map-tile" data-map="market" data-tags="Night,Rain,Close quarters" data-desc="Tight streets, alleys and balconies around a holographic plaza."><img src="img/maps/market.webp" alt="" draggable="false"><b>Neon Market</b></button>
+            <button class="map-tile" data-map="rooftops" data-tags="Night,Rain,Rooftops" data-desc="Five rooftops, stairways and catwalks, 60 metres above the street."><img src="img/maps/rooftops.webp" alt="" draggable="false"><b>Skyline</b></button>
+            <button class="map-tile" data-map="nuketown" data-tags="Daylight,Small,Fast" data-desc="Two houses, a school bus and a moving truck in a 1950s desert cul-de-sac. An RC-XD chest waits in the middle."><img src="img/maps/nuketown.webp" alt="" draggable="false"><b>Nuketown</b></button>
+            <button class="map-tile" data-map="oregon" data-tags="Daylight,Woods,Buildings" data-desc="A fenced compound in the Oregon woods. Dorms and an armory upstairs, a basement below, the meeting hall catwalk, the Big Tower and the garage roof."><img src="img/maps/oregon.webp" alt="" draggable="false"><b>Oregon</b></button>
+            <button class="map-tile" data-map="terminal" data-tags="Daylight,Large,Airliner" data-desc="An airport on a sunny afternoon. Security lanes, Burger Town, the bookstore and the gate lounge inside; out on the apron, an airliner you can walk through from the jet bridge to the rear stairs."><img src="img/maps/terminal.webp" alt="" draggable="false"><b>Terminal</b></button>
+            <button class="map-tile" data-map="dust2" data-tags="Daylight,Desert,Tunnels" data-desc="A sandstone town under a hard desert sun. Long A and the pit, the catwalk up to Short, mid doors, the dark tunnels to B, the B window and the back plat."><img src="img/maps/dust2.webp" alt="" draggable="false"><b>Dust II</b></button>
+            <button class="map-tile" data-map="pit" data-tags="Daylight,Large,Capture the Flag" data-desc="A UNSC training facility in the Kenyan savanna. Blue and Red bases with sniper towers, the Sword Room over the yard, the sunken live-fire Pit and the Long Hall with its roof. Built for Capture the Flag."><img src="img/maps/pit.webp" alt="" draggable="false"><b>The Pit</b></button>
+            <button class="map-tile" data-map="rust" data-tags="Daylight,Desert,Open yard" data-desc="An oil yard in the desert haze. Climb the drilling tower to the top platform, walk under the arched pipeline, fight through the office, the tank farm, the pump house roof and the shed by the nodding pumpjack."><img src="img/maps/rust.webp" alt="" draggable="false"><b>Rust</b></button>
+            <button class="map-tile" data-map="highrise" data-tags="Daylight,Large,Vertical" data-desc="The roof of a skyscraper, eighty-one floors up. The helipad and its lounge, two floors of offices with a balcony, the sunken mechanical well, the building site and the tower crane."><img src="img/maps/highrise.webp" alt="" draggable="false"><b>Highrise</b></button>
+            <button class="map-tile card-sniper" data-map="sniper" data-tags="Night,Long range,Rail rifles only" data-desc="Two teams, two rooftops, a 60 m drop between them. Rail rifles only; team deathmatch, first to 25."><img src="img/maps/sniper.webp" alt="" draggable="false"><b>Sniper Valley</b></button>
           </div>
-          <div class="card-row">
-            <button class="card" data-mode="ffa"><b>Free for all</b><span>Everyone for themselves. First to 20 kills, 8 minutes.</span></button>
-            <button class="card" data-mode="tdm"><b>Team deathmatch</b><span>Voltage vs Ronin. First team to 40 kills, 10 minutes.</span></button>
-            <button class="card" data-mode="ctf"><b>Capture the Flag</b><span>Voltage vs Ronin. Grab the enemy flag and bring it home while yours is safe. First to 3 captures, 10 minutes.</span></button>
-            <button class="card card-revolver" data-mode="revolver"><b>Revolver One-Shot</b><span>Six-shot revolvers only. Every hit kills. First to 15, 6 minutes. Best on Nuketown or Neon Market.</span></button>
-            <button class="card card-prophunt" data-mode="prophunt"><b>Prop Hunt</b><span>Props get 15 s to disguise as crates, barrels and chairs; Hunters have 5 minutes to find them all. 2+ players.</span></button>
-            <button class="card card-zombies" data-mode="zombies"><b>Zombies</b><span>Co-op survival against growing waves of infected. Revive downed teammates. 2+ players; best on Neon Market.</span></button>
-            <button class="card card-coop" data-mode="coop"><b>Co-op Campaign</b><span>Two players through Cinder Foundry or Whiteout, sharing every objective. Revive each other when down.</span></button>
+          <h3 class="mp-h"><i class="mp-step">2</i>Mode</h3>
+          <div class="mode-row" id="mpModeRow">
+            <button class="card" data-mode="ffa" data-desc="Everyone for themselves. First to 20 kills, 8 minutes."><b>Free for all</b></button>
+            <button class="card" data-mode="tdm" data-desc="Voltage vs Ronin. First team to 40 kills, 10 minutes."><b>Team deathmatch</b></button>
+            <button class="card" data-mode="ctf" data-desc="Voltage vs Ronin. Grab the enemy flag and bring it home while yours is safe. First to 3 captures, 10 minutes."><b>Capture the Flag</b></button>
+            <button class="card card-revolver" data-mode="revolver" data-desc="Six-shot revolvers only. Every hit kills. First to 15, 6 minutes. Best on Nuketown or Neon Market."><b>Revolver One-Shot</b></button>
+            <button class="card card-prophunt" data-mode="prophunt" data-desc="Props get 15 s to disguise as crates, barrels and chairs; Hunters have 5 minutes to find them all. 2+ players."><b>Prop Hunt</b></button>
+            <button class="card card-zombies" data-mode="zombies" data-desc="Co-op survival against growing waves of infected. Revive downed teammates. 2+ players; best on Neon Market."><b>Zombies</b></button>
+            <button class="card card-coop" data-mode="coop" data-desc="Two players through Cinder Foundry or Whiteout, sharing every objective. Revive each other when down."><b>Co-op Campaign</b></button>
           </div>
+          <p class="map-desc" id="mpModeDesc"></p>
           <p class="mp-mode-note" id="mpModeNote" hidden>Sniper Valley plays its own mode: team deathmatch with rail-rifle loadouts only.</p>
           <p class="mp-mode-note" id="mpCoopNote" hidden></p>
-          <label class="set-row toggle diff-mod mp-public"><span><b>Public match</b> Anyone can find it under Find public games and join. Leave off for a private room only people with the code can join.</span><input type="checkbox" id="mpPublic"></label>
-          <button class="btn" data-act="mphost">Host match</button>
         </div>
-        <div class="mp-col">
-          <h3 class="mp-h">Join a friend</h3>
-          <label class="field"><span>Room code</span><input id="mpCode" class="code-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false"></label>
-          <button class="btn" data-act="mpjoin">Join match</button>
-          <button class="btn-ghost" data-act="mpbrowse">Find public games</button>
-          <h3 class="mp-h">Practice vs bots <small>offline</small></h3>
-          <p class="mp-mode-note">Plays the map and mode picked on the left against computer players, on this computer only. Esc pauses.</p>
-          <div class="bot-opts">
-            <span>Bots</span><div class="seg"><button data-bots="1" aria-pressed="false">1</button><button data-bots="3" aria-pressed="false">3</button><button data-bots="5" aria-pressed="true">5</button><button data-bots="7" aria-pressed="false">7</button></div>
-            <span>Skill</span><div class="seg"><button data-botskill="easy" aria-pressed="false">Easy</button><button data-botskill="normal" aria-pressed="true">Normal</button><button data-botskill="hard" aria-pressed="false">Hard</button></div>
-          </div>
-          <p class="mp-mode-note" id="mpBotNote" hidden></p>
-          <button class="btn" data-act="mpbots" id="mpBotsBtn">Play vs bots</button>
-          <h3 class="mp-h">Loadout</h3>
-          <div class="lo-grid" data-lo-grid></div>
+        <div class="mp-col mp-actcol">
+          <label class="field"><span>Your callsign</span><input id="mpName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+          <p class="mp-pick" id="mpPick"></p>
+          <section class="mp-box">
+            <h3 class="mp-h">Host a match</h3>
+            <label class="set-row toggle mp-public"><span><b>Public match</b> Anyone can find it under Find public games. Leave off for a private room only people with the code can join.</span><input type="checkbox" id="mpPublic"></label>
+            <button class="btn" data-act="mphost">Host match</button>
+          </section>
+          <section class="mp-box">
+            <h3 class="mp-h">Join a friend</h3>
+            <label class="field"><span>Room code</span><input id="mpCode" class="code-input" maxlength="5" placeholder="ABCDE" autocomplete="off" spellcheck="false"></label>
+            <div class="mp-btnrow"><button class="btn" data-act="mpjoin">Join match</button><button class="btn-ghost" data-act="mpbrowse">Find public games</button></div>
+          </section>
+          <section class="mp-box">
+            <h3 class="mp-h">Practice vs bots <small>offline</small></h3>
+            <div class="bot-opts">
+              <span>Bots</span><div class="seg"><button data-bots="1" aria-pressed="false">1</button><button data-bots="3" aria-pressed="false">3</button><button data-bots="5" aria-pressed="true">5</button><button data-bots="7" aria-pressed="false">7</button></div>
+              <span>Skill</span><div class="seg"><button data-botskill="easy" aria-pressed="false">Easy</button><button data-botskill="normal" aria-pressed="true">Normal</button><button data-botskill="hard" aria-pressed="false">Hard</button></div>
+            </div>
+            <p class="mp-mode-note" id="mpBotNote" hidden></p>
+            <button class="btn" data-act="mpbots" id="mpBotsBtn">Play vs bots</button>
+          </section>
         </div>
       </div>
       <p class="mp-status" id="mpStatus" aria-live="polite"></p>
-      <p class="mp-note">The host shares the 5-character room code. Friends open the same game page, pick <b>Multiplayer</b> and enter it, or tick <b>Public match</b> so anyone can find it under <b>Find public games</b>. Up to 8 players; the host's connection carries the match.</p>
+      <p class="mp-note">The host shares the 5-character room code. Friends open the same game page, pick <b>Multiplayer</b> and enter it, or tick <b>Public match</b> so anyone can find it under <b>Find public games</b>. Up to 8 players; the host's connection carries the match. You pick your loadout in the lobby, right before you deploy.</p>
       <footer class="panel-foot"><button class="btn-ghost" data-act="back">Back</button></footer>
     </div>
   </section>

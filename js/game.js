@@ -1086,6 +1086,19 @@
     for (const b of document.querySelectorAll('[data-map]')) b.classList.toggle('sel', b.dataset.map === this.mpSel.map);
     for (const b of document.querySelectorAll('[data-mode]')) { b.classList.toggle('sel', !sniper && b.dataset.mode === this.mpSel.mode); b.disabled = sniper; }
     const note = $('mpModeNote'); if (note) note.hidden = !sniper;
+    // the big preview shows the picked map (a screenshot, its blurb and tags); the picked mode's rules sit under the mode row
+    const tile = document.querySelector('[data-map="' + this.mpSel.map + '"]'), mcard = document.querySelector('[data-mode="' + this.mpSel.mode + '"]');
+    if (tile) {
+      const img = $('mpMapImg'), src = tile.querySelector('img').getAttribute('src');
+      if (img.getAttribute('src') !== src) img.src = src;
+      $('mpMapName').textContent = tile.querySelector('b').textContent;
+      const tags = $('mpMapTags'); tags.textContent = '';
+      for (const t of tile.dataset.tags.split(',')) { const s = document.createElement('span'); s.textContent = t; tags.appendChild(s); }
+      $('mpMapDesc').textContent = tile.dataset.desc;
+    }
+    $('mpModeDesc').textContent = sniper ? '' : mcard ? mcard.dataset.desc : '';
+    $('mpModeDesc').hidden = sniper;
+    $('mpPick').textContent = (tile ? tile.querySelector('b').textContent : '') + ' · ' + (sniper ? 'Team deathmatch · rail rifles' : mcard ? mcard.querySelector('b').textContent : '');
     // practice: bots play every mode but Prop Hunt and the co-op campaign; Zombies is just you against the waves
     const mode = sniper ? 'sniper' : this.mpSel.mode, noBots = mode === 'prophunt' || mode === 'coop';
     for (const b of document.querySelectorAll('[data-bots]')) { b.setAttribute('aria-pressed', String(+b.dataset.bots === this.mpSel.bots)); b.disabled = mode === 'zombies'; }
