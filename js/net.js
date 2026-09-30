@@ -172,6 +172,13 @@
 
   Net.send = function (msg) { const c = Net.host; if (c && c.open) { c.send(msg); countOut(msg); } };
   Net.sendTo = function (id, msg) { const c = Net.conns[id]; if (c && c.open) { c.send(msg); countOut(msg); } };
+  /** Host: cut one player's link (a kick). The relay server disconnects relayed players itself. */
+  Net.drop = function (id) {
+    const c = Net.conns[id]; if (!c) return;
+    delete Net.conns[id];
+    if (c.relay) { const ws = Net.relay; if (ws && ws.readyState === 1) ws.send(JSON.stringify({ kick: id })); }
+    else try { c.close(); } catch (e) { /* already closed */ }
+  };
   Net.broadcast = function (msg, except) {
     let relayed = false;
     for (const id in Net.conns) { if (id === except) continue; const c = Net.conns[id]; if (c.relay) relayed = true; else if (c.open) { c.send(msg); countOut(msg); } }

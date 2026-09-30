@@ -1226,6 +1226,7 @@
     const tn = M.teamNote();
     $('mpTeamNote').textContent = tn.text; $('mpTeamNote').style.color = tn.css;
     M.renderBoard($('mpBoard'));
+    CF.AC.renderPanel();
     this.renderLoadouts();
   };
   G.mpResume = function () {
@@ -1300,7 +1301,7 @@
       if (this.ui.hm !== h.mode) { $('mpbMode').textContent = h.mode; this.ui.hm = h.mode; }
       if (this.ui.ht !== h.time) { $('mpbTime').textContent = h.time; this.ui.ht = h.time; }
       if (this.ui.hs !== h.score) { $('mpbScore').textContent = h.score; this.ui.hs = h.score; }
-      if (this.state === 'mpmenu' && this.screen === 'mpmenu') M.renderBoard($('mpBoard'));
+      if (this.state === 'mpmenu' && this.screen === 'mpmenu') { M.renderBoard($('mpBoard')); CF.AC.renderPanel(); }
     }
   };
   G.ui = {};

@@ -378,6 +378,7 @@ export class Room extends DurableObject {
     const tag = this.ctx.getTags(ws)[0];
     if (tag === 'host') {
       let m; try { m = JSON.parse(raw); } catch (e) { return; }
+      if (m.kick) { for (const c of this.ctx.getWebSockets(String(m.kick))) try { c.close(4002, 'Kicked'); } catch (e) { /* ignore */ } return; } // the host removed this player
       const d = JSON.stringify(m.d);
       if (m.b) { for (const c of this.ctx.getWebSockets()) { const t = this.ctx.getTags(c)[0]; if (t !== 'host' && t !== m.x) this.trySend(c, d); } }
       else for (const c of this.ctx.getWebSockets(String(m.to))) this.trySend(c, d);

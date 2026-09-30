@@ -298,6 +298,7 @@
     MP.remotes = {}; MP.players = {}; MP.teamScores = [0, 0]; MP.ended = false; MP.lastHit = null; MP.colorIdx = 0;
     if (CF.Coop) CF.Coop.reset(); if (CF.ZM) CF.ZM.reset();
     if (CF.Bots) CF.Bots.clear();
+    if (CF.AC) CF.AC.reset();
     MP.ping = 0; MP.pingT = 0; MP.shotT = -99;
   };
   MP.leave = function (reason) {
@@ -390,6 +391,7 @@
 
   // ------------------------------------------------------------ host side
   MP.onHostMsg = function (from, msg, local) {
+    if (!CF.AC.inspect(from, msg, local)) return; // anticheat: checks what players send, drops kicked players (js/anticheat.js)
     const pl = MP.players[from];
     switch (msg.t) {
       case 'hello': {
@@ -422,14 +424,15 @@
       case 'use': if (!local && CF.CoopCampaign) CF.CoopCampaign.onUse(from, msg); return;
     }
   };
-  MP.playerLeft = function (id) {
+  /** kicked: the host removed them from the Players panel (js/anticheat.js). */
+  MP.playerLeft = function (id, kicked) {
     const pl = MP.players[id]; if (!pl) return;
-    delete MP.players[id];
+    delete MP.players[id]; CF.AC.forget(id);
     if (MP.remotes[id]) { MP.remotes[id].remove(); delete MP.remotes[id]; }
     CF.RC.dropRemote(id); CF.RC.hostEnded(id); CF.CTF.dropFrom(id);
-    CF.HUD.killfeed(pl.name + ' left', '');
+    CF.HUD.killfeed(pl.name + (kicked ? ' was removed by the host' : ' left'), '');
     MP.announce();
-    CF.Net.broadcast({ t: 'leave', id });
+    CF.Net.broadcast({ t: 'leave', id, k: kicked ? 1 : 0 });
   };
 
   // ------------------------------------------------------------ client side
@@ -448,7 +451,8 @@
         return;
       }
       case 'join': MP.players[msg.id] = msg.p; MP.addRemote(msg.id, msg.p); CF.HUD.killfeed(msg.p.name + ' joined', ''); return;
-      case 'leave': { const pl = MP.players[msg.id]; delete MP.players[msg.id]; if (MP.remotes[msg.id]) { MP.remotes[msg.id].remove(); delete MP.remotes[msg.id]; } CF.RC.dropRemote(msg.id); if (pl) CF.HUD.killfeed(pl.name + ' left', ''); return; }
+      case 'leave': { const pl = MP.players[msg.id]; delete MP.players[msg.id]; if (MP.remotes[msg.id]) { MP.remotes[msg.id].remove(); delete MP.remotes[msg.id]; } CF.RC.dropRemote(msg.id); if (pl) CF.HUD.killfeed(pl.name + (msg.k ? ' was removed by the host' : ' left'), ''); return; }
+      case 'kicked': MP.leave('The host removed you from the match.'); return;
       case 'st': { const r = MP.remotes[msg.id]; if (r) r.applyState(msg); return; }
       case 'pong': { const rtt = performance.now() - (+msg.c || 0); if (rtt >= 0 && rtt < 10000) MP.ping = MP.ping ? Math.round(MP.ping * 0.7 + rtt * 0.3) : Math.round(rtt); return; }
       case 'hit': MP.applyHit(msg); return;
