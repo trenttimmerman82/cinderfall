@@ -11,7 +11,7 @@
 (function (CF) {
   const U = CF.U, A = CF.Audio;
   const $ = (id) => document.getElementById(id);
-  const AC = CF.AC = { players: {}, banned: {}, bannedPub: {}, armed: null, armedT: 0, sig: '' };
+  const AC = CF.AC = { players: {}, aim: {}, banned: {}, bannedPub: {}, armed: null, armedT: 0, sig: '' };
   const SUSPECT = 10, LIKELY = 30; // score at which the host is warned, and warned again
   // most damage one hit message can carry for things that aren't hitscan guns (explosions deal it once, falling off)
   const OTHER_MAX = { rocket: 158, satchel: 173, frag: 150, rc: 260, melee: 170, drone: 20 };
@@ -44,8 +44,8 @@
     }
   }
 
-  AC.reset = function () { AC.players = {}; AC.banned = {}; AC.bannedPub = {}; AC.armed = null; AC.sig = ''; };
-  AC.forget = function (id) { delete AC.players[id]; AC.sig = ''; };
+  AC.reset = function () { AC.players = {}; AC.aim = {}; AC.banned = {}; AC.bannedPub = {}; AC.armed = null; AC.sig = ''; };
+  AC.forget = function (id) { delete AC.players[id]; delete AC.aim[id]; AC.sig = ''; };
 
   /** The host's view of a player: [x, y, z] feet, alive, shielded. */
   function stateOf(id) {
@@ -182,6 +182,77 @@
     return true;
   };
 
+  // ------------------------------------------------------------ aim lock (every player runs this, not just the host)
+  /* Aim help that pulls smoothly onto heads never snaps, so the flick check above misses it. Instead, every position
+     update carries the sender's aim: compare it with where each enemy's head was over the last moment (they see others
+     slightly in the past, so the whole recent path counts). An aimbot sits within a fraction of a degree of a moving
+     head almost all the time it is tracking one; a person's crosshair wobbles around it. Every browser keeps its own
+     tally, so a player who isn't hosting (or a cheating host) is still caught and shown in the Players panel. */
+  const LAGS = 26, LAG_STEP = 0.024, LOCK = 0.003, NEAR = 0.17, AIM_MIN = 60; // delays tried (0-0.6 s), "on the head" (~0.17°), "tracking" (~10°), samples before judging
+  AC.watching = () => { const MP = CF.MP; return MP.active && !MP.solo && MP.mode !== 'coop' && MP.mode !== 'zombies' && MP.mode !== 'prophunt'; };
+  const aimOf = (id) => AC.aim[id] || (AC.aim[id] = { hist: [], off: null, n: new Array(LAGS).fill(0), lock: new Array(LAGS).fill(0), named: false });
+  function aimErr(eye, yaw, pitch, q) {
+    const dx = q[0] - eye[0], dy = q[1] - eye[1], dz = q[2] - eye[2], flat = Math.hypot(dx, dz);
+    return Math.hypot(U.wrapAngle(Math.atan2(-dx, -dz) - yaw), Math.atan2(dy, flat) - pitch);
+  }
+  /** Where a player's head was at time t (our clock), between their updates; null if we have nothing that old. */
+  function headAt(h, t) {
+    if (!h.length || t < h[0].t || t > h[h.length - 1].t + 0.05) return null;
+    let i = 1; while (i < h.length && h[i].t < t) i++;
+    const b = h[Math.min(i, h.length - 1)], p = h[i - 1], f = b.t > p.t ? U.clamp((t - p.t) / (b.t - p.t), 0, 1) : 1;
+    if (!p.a || !b.a) return null;
+    return [p.x + (b.x - p.x) * f, p.y + (b.y - p.y) * f + 1.59 - (p.c + (b.c - p.c) * f) * 0.6, p.z + (b.z - p.z) * f]; // aim help points just under eye height (js/mp.js autoAim)
+  }
+  /** A position update from player id (anyone's, our own included, since we're someone's target too). */
+  AC.observe = function (id, msg) {
+    if (!AC.watching() || !num3(msg.p) || !(+msg.k >= 0)) return;
+    const MP = CF.MP, a = aimOf(id), h = a.hist, k = +msg.k, arrive = performance.now();
+    // the sender's clock on ours, like Remote.applyState: the smallest (arrival - sent) seen, so network jitter drops out
+    const gap = arrive - k; a.off = a.off == null || Math.abs(gap - a.off) > 5000 ? gap : Math.min(gap, a.off + 0.5);
+    const t = (k + a.off) / 1000;
+    if (h.length && t <= h[h.length - 1].t) { if (h[h.length - 1].t - t > 5) h.length = 0; else return; } // late or out of order (a big jump back: page reloaded)
+    h.push({ t, x: +msg.p[0], y: +msg.p[1], z: +msg.p[2], c: msg.c ? 1 : 0, a: !!msg.a });
+    while (h.length > 2 && t - h[0].t > LAGS * LAG_STEP + 0.4) h.shift();
+    if (id === MP.myId) return;
+    const pl = MP.players[id];
+    if (!a.named && pl) {
+      a.named = true;
+      const nm = String(pl.name || '').trim();
+      if (nm.endsWith('!')) flag(id, 'callsign', LIKELY, 'Using the built-in aimbot callsign (name ends in "!")', true);
+      else if (nm.toLowerCase() === 'scott') flag(id, 'assist', SUSPECT, 'Using the built-in aim-assist callsign "Scott"', true);
+    }
+    if (!msg.a || msg.s || msg.d || !Number.isFinite(+msg.y) || !Number.isFinite(+msg.x)) return;
+    const me = h[h.length - 1], eye = [me.x, me.y + 1.65 - me.c * 0.6, me.z], yaw = +msg.y, pitch = +msg.x;
+    // the enemy they're tracking: the one nearest the crosshair
+    let tgt = null, tErr = 0.4;
+    for (const oid in AC.aim) {
+      if (oid === id) continue;
+      const o = MP.players[oid]; if (!o || (MP.teamMode() && pl && o.team === pl.team)) continue;
+      const th = AC.aim[oid].hist, q = headAt(th, t - 0.15); if (!q) continue;
+      const e = aimErr(eye, yaw, pitch, q); if (e < tErr) { tErr = e; tgt = th; }
+    }
+    if (!tgt) return;
+    // the delay between what they see and what we have differs per player but stays steady, so try every delay and keep a
+    // tally for each: an aimbot is on the head at its delay nearly every time; a person's aim wobbles off it at all of them
+    const errs = new Array(LAGS); let best = Infinity, head0 = null, head1 = null;
+    for (let i = 0; i < LAGS; i++) {
+      const q = headAt(tgt, t - i * LAG_STEP); errs[i] = q ? aimErr(eye, yaw, pitch, q) : Infinity;
+      if (errs[i] < best) best = errs[i];
+      if (q) { if (!head0) head0 = q; head1 = q; }
+    }
+    if (best > NEAR || !head0) return;
+    // only a target sweeping across the view counts: anyone can hold still on a head that isn't moving
+    const sweep = Math.abs(U.wrapAngle(Math.atan2(-(head0[0] - eye[0]), -(head0[2] - eye[2])) - Math.atan2(-(head1[0] - eye[0]), -(head1[2] - eye[2]))));
+    if (sweep < 0.03 || !CF.World.segmentClear(eye[0], eye[1], eye[2], head0[0], head0[1], head0[2])) return;
+    for (let i = 0; i < LAGS; i++) if (errs[i] < Infinity) { a.n[i]++; if (errs[i] < LOCK) a.lock[i]++; }
+    let r = 0, n = 0;
+    for (let i = 0; i < LAGS; i++) if (a.n[i] >= AIM_MIN && a.lock[i] / a.n[i] > r) { r = a.lock[i] / a.n[i]; n = a.n[i]; }
+    if (!n) return;
+    const text = 'Crosshair locked on moving heads ' + Math.round(r * 100) + '% of the time over ' + n + ' tracking samples';
+    if (r > 0.55) flag(id, 'aimlock', SUSPECT, text, true);
+    if (r > 0.7 && n >= AIM_MIN * 2) flag(id, 'aimlock2', LIKELY - SUSPECT, 'Aim lock held for ' + n + ' samples, far past what a person manages', true);
+  };
+
   // ------------------------------------------------------------ kicking (host decides; nothing here kicks on its own)
   AC.kick = function (id) {
     const MP = CF.MP, pl = MP.players[id];
@@ -202,13 +273,14 @@
   }
   AC.renderPanel = function () {
     const MP = CF.MP, box = $('mpAdmin'), el = $('mpAdminList'); if (!box || !el) return;
-    const show = MP.active && MP.isHost() && !MP.solo;
+    const show = MP.active && !MP.solo, host = MP.isHost();
     box.hidden = !show; if (!show) return;
+    const note = box.querySelector('small'); if (note) note.textContent = host ? 'anticheat flags them, only you can kick' : 'anticheat flags them, only the host can kick';
     if (AC.armed && performance.now() > AC.armedT) AC.armed = null;
     const ids = Object.keys(MP.players).filter((id) => id !== MP.myId);
     const rows = ids.map((id) => ({ id, name: MP.players[id].name, st: status(id) }));
     rows.sort((a, b) => (b.st.score || 0) - (a.st.score || 0));
-    const sig = JSON.stringify([rows, AC.armed, MP.mode]);
+    const sig = JSON.stringify([rows, AC.armed, MP.mode, host]);
     if (sig === AC.sig) return; // rebuilding the buttons under the mouse would eat clicks
     AC.sig = sig; el.textContent = '';
     if (!rows.length) { const d = document.createElement('div'); d.className = 'ac-row ac-empty'; d.textContent = 'Nobody else has joined yet.'; el.appendChild(d); return; }
@@ -218,7 +290,7 @@
       const st = document.createElement('span'); st.textContent = (r.st.cls ? (r.st.cls === 'likely' ? '⚠ Very likely cheating · ' : r.st.cls === 'suspect' ? '⚠ Suspicious · ' : '') : '') + r.st.text;
       const k = document.createElement('button'); k.className = 'btn-ghost danger ac-kick'; k.dataset.kick = r.id;
       k.textContent = AC.armed === r.id ? 'Confirm kick' : 'Kick';
-      d.append(n, st, k); el.appendChild(d);
+      d.append(n, st); if (host) d.append(k); el.appendChild(d);
     }
   };
   document.addEventListener('click', (e) => {

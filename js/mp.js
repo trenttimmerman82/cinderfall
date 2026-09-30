@@ -386,6 +386,7 @@
     if (Math.abs(P.lean * P.leanReach) > 0.05) msg.l = +(P.lean * P.leanReach).toFixed(2);
     if (MP.mode === 'prophunt') CF.PH.stateFields(msg); // ph: disguise, pr: its facing
     if (CF.Coop.downed) msg.dn = 1;
+    if (MP.role === 'client') CF.AC.observe(MP.myId, msg); // we're a target in everyone's aim check, our own included (the host's goes through onHostMsg)
     MP.postFast(msg);
   };
 
@@ -407,7 +408,7 @@
         MP.announce();
         return;
       }
-      case 'st': if (!pl) return; if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcastFast(msg, from); return;
+      case 'st': if (!pl) return; CF.AC.observe(from, msg); if (!local) { const r = MP.remotes[from]; if (r) r.applyState(msg); } msg.id = from; CF.Net.broadcastFast(msg, from); return;
       case 'ping': if (pl) { pl.ping = +msg.r || 0; CF.Net.sendToFast(from, { t: 'pong', c: msg.c }); } return;
       case 'hit': if (MP.ended) return; msg.by = from; if (msg.to === MP.myId) MP.applyHit(msg); else if (!CF.Bots.hit(msg)) CF.Net.sendTo(msg.to, msg); return;
       case 'died': { if (MP.ended) return; const k = { t: 'kill', killer: msg.killer, victim: from, w: msg.w, head: msg.head }; MP.recordKill(k); CF.Net.broadcast(k); return; }
@@ -453,7 +454,7 @@
       case 'join': MP.players[msg.id] = msg.p; MP.addRemote(msg.id, msg.p); CF.HUD.killfeed(msg.p.name + ' joined', ''); return;
       case 'leave': { const pl = MP.players[msg.id]; delete MP.players[msg.id]; if (MP.remotes[msg.id]) { MP.remotes[msg.id].remove(); delete MP.remotes[msg.id]; } CF.RC.dropRemote(msg.id); if (pl) CF.HUD.killfeed(pl.name + (msg.k ? ' was removed by the host' : ' left'), ''); return; }
       case 'kicked': MP.leave('The host removed you from the match.'); return;
-      case 'st': { const r = MP.remotes[msg.id]; if (r) r.applyState(msg); return; }
+      case 'st': { const r = MP.remotes[msg.id]; if (r) r.applyState(msg); CF.AC.observe(msg.id, msg); return; }
       case 'pong': { const rtt = performance.now() - (+msg.c || 0); if (rtt >= 0 && rtt < 10000) MP.ping = MP.ping ? Math.round(MP.ping * 0.7 + rtt * 0.3) : Math.round(rtt); return; }
       case 'hit': MP.applyHit(msg); return;
       case 'kill': MP.recordKill(msg); return;
