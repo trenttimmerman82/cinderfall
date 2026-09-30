@@ -4,10 +4,13 @@
    reskinned in sick green. Waves grow in size and toughness; a short break between them restocks the map's ammo and
    armor and brings the fallen back. Enemy count, health and damage scale with the number of players. A player who
    runs out of health goes down (js/coop.js) and bleeds out after 30 s unless revived; the game ends when nobody is
-   left standing. The host runs the waves and the enemies and sends 'zw' updates through the normal relay. */
+   left standing. The host runs the waves and the enemies and sends 'zw' updates through the normal relay.
+   Points: each player earns their own (hits, kills, cleared waves, revives) and spends them in the shop, which opens
+   during a break: max ammo, armor, weapons off the wall and weapon upgrades (Mk II to Mk IV). Points live in each
+   player's browser; others see them on the scoreboard. */
 (function (CF) {
   const U = CF.U, W = CF.World, A = CF.Audio;
-  const FIRST_BREAK = 12, BREAK = 18, SPAWN_MIN_DIST = 15;
+  const FIRST_BREAK = 15, BREAK = 25, SPAWN_MIN_DIST = 15; // long enough breaks to shop in
   const MP = () => CF.MP;
 
   // ------------------------------------------------------------ the infected
@@ -31,7 +34,7 @@
   for (const k in INFECTED) CF.EnemyModels[k] = () => infect(CF.EnemyModels[INFECTED[k]](), k);
 
   // ------------------------------------------------------------ state
-  const ZM = CF.ZM = { phase: 'wait', wave: 0, t: 0, left: 0, kills: 0, toSpawn: 0, spawnT: 0, sendT: 0, deaths: 0, best: 0 };
+  const ZM = CF.ZM = { phase: 'wait', wave: 0, t: 0, left: 0, kills: 0, toSpawn: 0, spawnT: 0, sendT: 0, deaths: 0, best: 0, points: 0, shopOpen: false };
   ZM.on = () => MP().active && MP().mode === 'zombies';
   const playerCount = () => Math.max(1, Object.keys(MP().players).length);
   /** Wave size, enemy health and damage for this wave and team size (tune here). */
@@ -52,6 +55,7 @@
   }
   ZM.reset = function () {
     ZM.phase = 'wait'; ZM.wave = 0; ZM.t = 0; ZM.left = 0; ZM.kills = 0; ZM.toSpawn = 0; ZM.deaths = 0; ZM.brutes = 0;
+    ZM.setPoints(START_POINTS); ZM.closeShop(); ZM.hitShot = -1;
     for (const e of CF.Enemies.list.slice()) if (!e.net) { e.alive = false; e.remove(); }
     CF.Enemies.proj.length = 0;
   };
@@ -145,27 +149,124 @@
     ZM.phase = msg.p; ZM.wave = msg.w; ZM.left = msg.l; ZM.kills = msg.k;
     if (was !== msg.p || msg.rs || msg.go || Math.abs(msg.s - ZM.t) > 1.2) ZM.t = msg.s;
     const G = CF.Game;
-    if (msg.cleared) { CF.HUD.popup('Wave ' + msg.w + ' cleared', G.pts(250), 'obj'); G.addScore(G.pts(250)); CF.Music.sting('objective'); }
+    if (msg.cleared) { CF.HUD.popup('Wave ' + msg.w + ' cleared', G.pts(250), 'obj'); G.addScore(G.pts(250)); CF.Music.sting('objective'); ZM.earn(Math.min(500, 100 + 50 * msg.w)); }
     if (msg.rs) { // the break: the fallen come back, the downed get up, pickups are restocked
       if (!MP().isHost()) ZM.restock();
       CF.Coop.revived(null);
       if (G.state === 'mpdead' && !G.mpLobby) G.mpSpawn();
       if (was !== 'break') CF.HUD.popup(wasWave ? 'Break · ammo and armor restocked' : 'Get ready · the first wave is coming', 0, '');
+      if (was !== 'break') CF.HUD.popup('Shop open · press ' + CF.Keys.label('shop'), 0, 'obj');
     }
+    if (msg.go && ZM.shopOpen) ZM.closeShop();
     if (msg.go) { CF.HUD.phaseCard('Wave ' + msg.w, msg.w % 5 === 0 ? 'Brutes incoming' : 'The infected are coming', msg.l + ' infected'); A.play('alert', null, { ui: true }); CF.Music.setIntensity(0.8); }
     if (was === 'wave' && msg.p !== 'wave') CF.Music.setIntensity(0.2);
   };
   ZM.update = function (dt) {
-    if (!ZM.on()) return;
+    if (!ZM.on()) { if (ZM.shopOpen) ZM.closeShop(); return; }
     if (MP().isHost()) ZM.hostUpdate(dt);
     else ZM.t = Math.max(0, ZM.t - dt);
     const G = CF.Game;
+    shopUpdate(G, dt);
     if (G.state === 'playing' && ZM.phase === 'wait') CF.HUD.hint('Zombies · waiting for a second player (room ' + CF.Net.code + ')');
-    else if (G.state === 'playing' && ZM.phase === 'break' && !CF.Coop.downed) CF.HUD.hint((ZM.wave ? 'Break' : 'Get ready') + ' · wave ' + (ZM.wave + 1) + ' in ' + Math.ceil(ZM.t) + ' s');
+    else if (G.state === 'playing' && ZM.phase === 'break' && !CF.Coop.downed) CF.HUD.hint((ZM.wave ? 'Break' : 'Get ready') + ' · wave ' + (ZM.wave + 1) + ' in ' + Math.ceil(ZM.t) + ' s' + (ZM.shopOpen ? '' : ' · ' + CF.Keys.label('shop') + ' shop'));
   };
   /** Players who bled out come back at the next break, not on a timer. */
   ZM.canRespawn = () => ZM.phase !== 'wave';
   ZM.onDeath = function () { if (MP().isHost()) ZM.deaths++; };
+
+  // ------------------------------------------------------------ points
+  const START_POINTS = 500, HIT_POINTS = 10, HEAD_BONUS = 50, REVIVE_POINTS = 100;
+  const $ = (id) => document.getElementById(id);
+  ZM.setPoints = function (n) {
+    ZM.points = Math.max(0, Math.round(n));
+    const el = $('mpbPts'); if (el) el.textContent = ZM.points.toLocaleString('en-US') + ' pts';
+    if (ZM.shopOpen) renderShop();
+  };
+  ZM.earn = function (n) { if (ZM.on() && n > 0) ZM.setPoints(ZM.points + n); };
+  /** Our shot hit an infected: once per shot, so a shotgun's ten pellets pay like one hit. */
+  ZM.onHit = function () {
+    if (!ZM.on()) return;
+    const shot = CF.Weapons.shotCount;
+    if (shot === ZM.hitShot) return;
+    ZM.hitShot = shot; ZM.earn(HIT_POINTS);
+  };
+  /** We killed one (the host's own kill, or a kill the host credited back to us). */
+  ZM.onOwnKill = function (score, head) { ZM.earn((score || 100) + (head ? HEAD_BONUS : 0)); };
+  ZM.onRevive = function () { ZM.earn(REVIVE_POINTS); };
+
+  // ------------------------------------------------------------ the shop (breaks only)
+  // Weapons off the wall: buying one you own refills it for half price.
+  const WALL = [['revolver', 1000], ['shotgun', 1250], ['rail', 1750], ['lmg', 2000], ['rocket', 2500], ['minigun', 3000]];
+  const UPGRADE_COST = [2000, 4000, 7000];
+  const AMMO_COST = 500, ARMOR_COST = 750;
+  /** What's on sale right now: { name, note, cost, off (why it can't be bought), buy() }. */
+  function items() {
+    const WP = CF.Weapons, P = CF.Player, cur = WP.cur, list = [];
+    list.push({ name: 'Max ammo', note: 'Every magazine, reserve and grenade', cost: AMMO_COST, buy: () => WP.maxAmmo() });
+    list.push({ name: 'Armor', note: 'Plates up to 100', cost: ARMOR_COST, off: P.armor >= 100 ? 'Full' : '', buy: () => P.heal(0, 100) });
+    const lvl = cur ? cur.def.lvl || 0 : WP.MAX_UPGRADE;
+    list.push(lvl >= WP.MAX_UPGRADE
+      ? { name: 'Upgrade ' + (cur ? cur.def.short : 'weapon'), note: 'Fully upgraded', cost: 0, off: 'Maxed' }
+      : { name: 'Upgrade ' + cur.def.short + ' → ' + WP.upgradeDef(WP.curId, lvl + 1).short, note: 'More damage, bigger magazine, faster reload', cost: UPGRADE_COST[lvl], buy: () => WP.upgrade(WP.curId) });
+    for (const [id, cost] of WALL) {
+      const d = WP.defs[id], own = WP.inv[id];
+      if (own) list.push({ name: own.def.short + ' ammo', note: 'Refill your ' + d.name, cost: cost / 2, off: own.reserve === Infinity || (own.reserve >= own.def.maxReserve && own.mag >= own.def.mag) ? 'Full' : '', buy: () => { own.mag = own.def.mag; own.reserve = own.def.maxReserve; WP.hudAmmo(); } });
+      else list.push({ name: d.name, note: 'Buy and equip', cost, buy: () => WP.give(id) });
+    }
+    return list;
+  }
+  ZM.canShop = () => ZM.on() && ZM.phase === 'break' && CF.Game.state === 'playing' && CF.Player.alive && !CF.Coop.downed;
+  ZM.openShop = function () {
+    if (!ZM.canShop()) return;
+    ZM.shopOpen = true; $('zmShop').hidden = false; renderShop();
+    A.play('uiClick', null, { ui: true });
+  };
+  ZM.closeShop = function () {
+    ZM.shopOpen = false;
+    const el = $('zmShop'); if (el) el.hidden = true;
+  };
+  ZM.buy = function (i) {
+    const it = items()[i]; if (!it || !ZM.shopOpen) return;
+    if (it.off) { A.play('dry', null, { ui: true }); return; }
+    if (ZM.points < it.cost) { A.play('dry', null, { ui: true }); CF.HUD.popup('Not enough points · ' + it.cost.toLocaleString('en-US') + ' needed', 0, ''); return; }
+    ZM.points -= it.cost; // setPoints below redraws
+    it.buy();
+    A.play(i === 0 ? 'ammo' : i === 1 ? 'armor' : 'weaponGet', null, { ui: true });
+    CF.HUD.popup(it.name, 0, 'obj');
+    ZM.setPoints(ZM.points);
+  };
+  function renderShop() {
+    const el = $('zsList'); if (!el) return;
+    $('zsPts').textContent = ZM.points.toLocaleString('en-US') + ' pts';
+    el.textContent = '';
+    items().forEach((it, i) => {
+      const row = document.createElement('div');
+      row.className = 'zs-item' + (it.off ? ' off' : ZM.points < it.cost ? ' poor' : '');
+      const k = document.createElement('kbd'); k.textContent = String(i + 1);
+      const n = document.createElement('span'); n.className = 'zs-name'; n.textContent = it.name;
+      const d = document.createElement('span'); d.className = 'zs-note'; d.textContent = it.note;
+      const c = document.createElement('b'); c.textContent = it.off || it.cost.toLocaleString('en-US');
+      row.append(k, n, c, d); el.appendChild(row);
+    });
+    $('zsFoot').textContent = 'Number keys buy · ' + CF.Keys.label('shop') + ' closes · wave ' + (ZM.wave + 1) + ' in ' + Math.ceil(ZM.t) + ' s';
+  }
+  function shopUpdate(G, dt) {
+    if (G.state === 'playing' && CF.Input.hit('Shop')) {
+      if (ZM.shopOpen) ZM.closeShop();
+      else if (ZM.canShop()) ZM.openShop();
+      else CF.HUD.popup('The shop opens between waves', 0, '');
+    }
+    if (!ZM.shopOpen) return;
+    if (!ZM.canShop()) { ZM.closeShop(); return; }
+    ZM.shopT = (ZM.shopT || 0) - dt;
+    if (ZM.shopT <= 0) { ZM.shopT = 0.25; renderShop(); } // the countdown, and the current weapon's upgrade after a switch
+  }
+  // number keys straight from the keyboard (whatever they're bound to), 1-9 on the row or the keypad
+  window.addEventListener('keydown', (e) => {
+    if (!ZM.shopOpen || e.repeat) return;
+    const m = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+    if (m) { e.preventDefault(); ZM.buy(+m[1] - 1); }
+  });
 
   // ------------------------------------------------------------ UI
   ZM.hudText = function () {
@@ -183,7 +284,9 @@
     const b = document.createElement('b'); b.style.color = '#ffe14d'; b.textContent = ZM.kills + ' kills';
     top.append(a, b); el.appendChild(top);
     const head = document.createElement('div'); head.className = 'sb-row sb-head';
-    head.innerHTML = '<span>Operative</span><span>Kills</span><span>Deaths</span>';
+    const pts = ZM.on(); // the co-op campaign shares this board but has no points
+    el.classList.toggle('zm', pts);
+    head.innerHTML = '<span>Operative</span><span>Kills</span><span>Deaths</span>' + (pts ? '<span>Points</span>' : '');
     el.appendChild(head);
     const rows = Object.keys(M.players).map((id) => Object.assign({ id }, M.players[id])).sort((x, y) => (y.kills || 0) - (x.kills || 0));
     for (const r of rows) {
@@ -191,7 +294,9 @@
       const n = document.createElement('span'); n.textContent = r.name; n.style.borderLeftColor = '#8dff6a';
       const k = document.createElement('span'); k.textContent = r.kills || 0;
       const de = document.createElement('span'); de.textContent = r.deaths || 0;
-      d.append(n, k, de); el.appendChild(d);
+      d.append(n, k, de);
+      if (pts) { const pe = document.createElement('span'); pe.textContent = (r.id === M.myId ? ZM.points : M.remotes[r.id] ? M.remotes[r.id].zp || 0 : 0).toLocaleString('en-US'); d.appendChild(pe); }
+      el.appendChild(d);
     }
   };
 })(window.CF);

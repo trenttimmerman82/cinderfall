@@ -18,7 +18,7 @@
     hard: { label: 'Hard', react: 0.24, err: 0.024, turn: 9, head: 0.3, sight: 100, fov: 2.5, burst: [5, 10], pause: [0.15, 0.35], semi: [0.04, 0.14] }
   };
   // how far each gun likes to fight from, and the furthest it bothers shooting
-  const RANGE = { carbine: [14, 70], minigun: [12, 50], shotgun: [5, 22], pistol: [10, 45], rail: [30, 200], lmg: [14, 65], revolver: [18, 80] };
+  const RANGE = { carbine: [14, 70], minigun: [12, 50], shotgun: [5, 22], pistol: [10, 45], rail: [30, 200], lmg: [14, 65], revolver: [18, 80], flamer: [4, 10] };
   const Bots = CF.Bots = { list: [], skill: 'normal', SKILL, killY: -30 };
   const _eye = new THREE.Vector3(), _aim = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _e = new THREE.Vector3(), _m = new THREE.Vector3();
   const UP = new THREE.Vector3(0, 1, 0);
@@ -40,7 +40,7 @@
     const M = MP();
     if (M.mode === 'revolver') return M.REVOLVER;
     if (M.mode === 'sniper') return M.SNIPER[pick(M.SNIPER_KEYS)];
-    return M.LOADOUTS[pick(['assault', 'assault', 'breacher', 'marksman', 'gunner', 'heavy'])]; // no Demolition: rockets and satchels need aiming bots can't do
+    return M.LOADOUTS[pick(['assault', 'assault', 'breacher', 'marksman', 'gunner', 'heavy', 'gunslinger', 'pyro'])]; // no Demolition: rockets and satchels need aiming bots can't do
   }
 
   class Bot extends CF.MP.Remote {
@@ -323,8 +323,8 @@
         } else {
           // a miss flies on until it hits the map
           _m.subVectors(_e, _eye).normalize();
-          const h = W.raycast(_eye.x, _eye.y, _eye.z, _m.x, _m.y, _m.z, 150);
-          _e.copy(_eye).addScaledVector(_m, h ? h.t : 150);
+          const far = def.range || 150, h = W.raycast(_eye.x, _eye.y, _eye.z, _m.x, _m.y, _m.z, far);
+          _e.copy(_eye).addScaledVector(_m, h ? h.t : far);
           if (t.id === M.myId && Math.hypot(mx, my) < 2.5) whiz = true;
         }
         if (ends.length < 4) ends.push(rv(_e));

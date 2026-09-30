@@ -144,6 +144,11 @@
     A.noise(d, t + 0.015, { type: 'bandpass', f0: 520, f1: 210, dur: 0.5, gain: 0.14, Q: 0.6 });
     A.tone(d, t, { type: 'square', f0: 2300, f1: 1600, dur: 0.02, gain: 0.05 });
   };
+  R.flamer = (d, t) => { // one puff of the flamethrower's roar: at ten a second they run together into a steady rush
+    A.noise(d, t, { type: 'lowpass', f0: 1500, f1: 600, dur: 0.16, gain: 0.5, attack: 0.03, Q: 0.7 });
+    A.noise(d, t, { type: 'bandpass', f0: U.rand(2500, 4200), dur: 0.04, gain: 0.08, Q: 2 }); // crackle
+    A.tone(d, t, { f0: 70, f1: 50, dur: 0.15, gain: 0.22, attack: 0.03 });
+  };
   R.pistol = (d, t) => {
     A.noise(d, t, { type: 'highpass', f0: 3000, dur: 0.03, gain: 0.6 });
     A.noise(d, t, { type: 'lowpass', f0: 8000, f1: 1200, dur: 0.11, gain: 0.8, Q: 0.9 });

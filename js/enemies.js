@@ -119,6 +119,7 @@
       const killed = this.hp <= 0;
       if (info.source === 'player') {
         CF.HUD.hitmarker(killed ? 'kill' : tag === 'head' ? 'head' : tag === 'weak' ? 'head' : 'hit');
+        if (CF.ZM) CF.ZM.onHit();
         if (info.point) CF.HUD.dmgNumber(info.point, dmg, tag === 'head' ? 'head' : tag === 'weak' ? 'weak' : '');
         A.play(tag === 'head' || tag === 'weak' ? 'headshot' : 'hit', null, { ui: true });
       }

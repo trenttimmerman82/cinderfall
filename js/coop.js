@@ -203,6 +203,7 @@
     if (info.source === 'player') {
       CF.HUD.hitmarker(tag === 'head' || tag === 'weak' ? 'head' : 'hit');
       if (info.point) CF.HUD.dmgNumber(info.point, dmg, tag === 'head' ? 'head' : tag === 'weak' ? 'weak' : '');
+      CF.ZM.onHit();
       A.play(tag === 'head' || tag === 'weak' ? 'headshot' : 'hit', null, { ui: true });
       CF.Game.stats.damageDealt += dmg;
     }
@@ -215,6 +216,7 @@
     const G = CF.Game, st = G.stats; st.kills++; if (msg.h) st.headshots++;
     const pts = G.pts((msg.s || 100) + (msg.h ? 50 : 0));
     G.addScore(pts);
+    CF.ZM.onOwnKill(msg.s, msg.h);
     CF.HUD.popup(msg.n + (msg.h ? ' · headshot' : msg.x ? ' · explosive' : ''), pts, msg.h ? 'head' : '');
     CF.HUD.killfeed(msg.n + ' destroyed', msg.h ? 'Headshot' : '');
     CF.HUD.hitmarker('kill');
@@ -304,7 +306,7 @@
       C.reviveT = 0;
       MP().post({ t: 'rev', to: best, by: M.myId });
       M.remotes[best].downed = false;
-      CF.Game.addScore(CF.Game.pts(100)); CF.HUD.popup('Revived ' + nameOf(best), CF.Game.pts(100), 'obj');
+      CF.Game.addScore(CF.Game.pts(100)); CF.HUD.popup('Revived ' + nameOf(best), CF.Game.pts(100), 'obj'); CF.ZM.onRevive();
       A.play('objective', null, { ui: true, vol: 0.6 });
     }
   }

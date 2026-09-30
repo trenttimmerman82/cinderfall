@@ -37,23 +37,30 @@
       spreadHip: 2.6, spreadAds: 0.3, spreadMove: 2.2, spreadAir: 4, bloom: 0.18, bloomMax: 2.0, mag: 100, reserve: 200, maxReserve: 300,
       reload: 3.8, reloadEmpty: 4.3, magInAt: 0.6, falloff: [35, 80, 0.7], recoil: [0.55, 0.3, 0.028, 0.035], adsFov: 0.74, adsTime: 0.3,
       hip: [0.14, -0.15, -0.32], adsZ: -0.28, equip: 0.7, sound: 'carbine', tracerEvery: 3, shell: 1, moveMul: 0.88, noise: 50 },
-    // Revolver One-Shot mode only: slow, deliberate, deadly. Aim first; hip shots wander.
+    // multiplayer only (Pyro loadout): a short stream of fire that goes through a crowd and sets people alight.
+    // range: the flames stop there. No aiming down the sights; whoever it touches keeps burning for a moment (BURN).
+    flamer: { id: 'flamer', name: 'Ember-9 Flamethrower', short: 'EMBER-9', auto: true, rpm: 600, dmg: 5, head: 1, pellets: 3, pierce: 2, range: 11, flame: true, noAds: true,
+      spreadHip: 4.5, spreadAds: 4.5, spreadMove: 0.8, spreadAir: 1.5, bloom: 0, bloomMax: 0, mag: 100, reserve: 200, maxReserve: 300,
+      reload: 2.6, reloadEmpty: 2.9, magInAt: 0.6, falloff: [5, 11, 0.6], recoil: [0.08, 0.12, 0.012, 0.012], adsFov: 1, adsTime: 0.2,
+      hip: [0.14, -0.15, -0.32], adsZ: -0.3, equip: 0.6, sound: 'flamer', tracerEvery: 99, shell: 0, moveMul: 0.95, noise: 30 },
+    // Multiplayer and Zombies (Gunslinger kit, Revolver One-Shot, the shop): slow, deliberate, deadly. Aim first; hip shots wander.
     revolver: { id: 'revolver', name: 'KF-44 Kingfisher', short: 'KF-44', auto: false, rpm: 72, dmg: 120, head: 2, pellets: 1, cylinder: true,
-      spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: Infinity, maxReserve: Infinity,
+      spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: 36, maxReserve: 72, // Revolver One-Shot hands it out with endless rounds
       reload: 1.6, reloadEmpty: 1.6, magInAt: 0.62, falloff: [400, 500, 1], recoil: [4.2, 0.8, 0.1, 0.34], adsFov: 0.78, adsTime: 0.2,
       hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 }
   };
-  // Player-vs-player damage scaling (multiplayer only)
-  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 1; DEFS.lmg.pvp = 0.9;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver', 'lmg']; // index is sent over the network: bump Net's PREFIX when this changes
-  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver' && id !== 'lmg'); // campaign number keys (the revolver and LMG are multiplayer-only)
+  // Player-vs-player damage scaling (multiplayer only). The revolver: two body shots or one headshot (Revolver One-Shot kills on any hit).
+  DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 0.75; DEFS.lmg.pvp = 0.9; DEFS.flamer.pvp = 1;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver', 'lmg', 'flamer']; // index is sent over the network: bump Net's PREFIX when this changes
+  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver' && id !== 'lmg' && id !== 'flamer'); // campaign number keys (the revolver, LMG and flamethrower are multiplayer-only)
+  const BURN = { time: 2.5, every: 0.25, dmg: 4 }; // flamethrower afterburn: how long, how often it ticks, damage per tick
 
   const S = U.Spring;
   const WP = CF.Weapons = {
     defs: DEFS, order: ORDER, inv: {}, cur: null, curId: null, lastId: null, pendingId: null,
     grenades: 2, maxGrenades: 4, state: 'idle', stateT: 0, fireCd: 0, fireBuffer: 0, bloom: 0, adsT: 0, adsE: 0,
     cycleT: 1, shotCount: 0, reloadAdded: false, shellPhase: '', shellT: 0, interrupt: false, chamberEmpty: false,
-    vm: {}, grenadesLive: [], projLive: [], spin: 0, breath: 4, flashT: 0, t: 0,
+    vm: {}, grenadesLive: [], projLive: [], burning: [], spin: 0, breath: 4, flashT: 0, t: 0,
     sp: { kz: new S(170, 17), rx: new S(150, 15), ry: new S(110, 13), rz: new S(110, 12), sx: new S(70, 11), sy: new S(70, 11), land: new S(95, 10) }
   };
 
@@ -100,7 +107,7 @@
   WP.clearLive = function () {
     for (const g of this.grenadesLive) this.scene.remove(g.mesh);
     for (const p of this.projLive) this.scene.remove(p.mesh);
-    this.grenadesLive.length = 0; this.projLive.length = 0;
+    this.grenadesLive.length = 0; this.projLive.length = 0; this.burning.length = 0;
   };
   WP.snapshot = function () {
     const w = {};
@@ -138,15 +145,42 @@
   WP.give = function (id, silent) {
     const d = DEFS[id];
     if (this.inv[id]) {
-      const w = this.inv[id];
+      const w = this.inv[id], wd = w.def; // an upgraded gun (Zombies shop) carries its own, bigger magazine and reserve
       if (w.reserve === Infinity) return false;
-      const before = w.reserve; w.reserve = Math.min(d.maxReserve, w.reserve + d.mag * 2);
+      const before = w.reserve; w.reserve = Math.min(wd.maxReserve, w.reserve + wd.mag * 2);
       this.hudAmmo(); return w.reserve > before;
     }
     this.inv[id] = { def: d, mag: d.mag, reserve: d.reserve };
     CF.HUD.setWeapon(this.cur.def, this.inv, this.slots(), id);
     if (!silent) this.select(id);
     return true;
+  };
+  /** Zombies shop: fill every magazine and reserve to the top, and the grenades. */
+  WP.maxAmmo = function () {
+    for (const id in this.inv) { const w = this.inv[id]; w.mag = w.def.mag; if (w.reserve !== Infinity) w.reserve = w.def.maxReserve; }
+    this.grenades = this.maxGrenades; CF.HUD.setGrenades(this.grenades, this.maxGrenades);
+    this.chamberEmpty = false; this.hudAmmo();
+  };
+  const MK = ['', 'Mk II', 'Mk III', 'Mk IV'];
+  WP.MAX_UPGRADE = 3;
+  /** Zombies shop: a weapon's stats at upgrade level 1-3. More damage, bigger magazine and reserve, faster fire and reload. */
+  WP.upgradeDef = function (id, lvl) {
+    const b = DEFS[id], k = 1 + 0.6 * lvl, m = 1 + 0.5 * lvl, quick = 1 - 0.1 * lvl;
+    const d = Object.assign({}, b, { lvl, name: b.name + ' ' + MK[lvl], short: b.short + ' ' + MK[lvl], dmg: b.dmg * k, rpm: b.rpm * (1 + 0.08 * lvl) });
+    for (const t of ['reload', 'reloadEmpty', 'reloadStart', 'reloadShell', 'reloadEnd']) if (b[t]) d[t] = b[t] * quick;
+    if (!b.cylinder) d.mag = Math.round(b.mag * m); // the revolver keeps its six chambers
+    if (b.maxReserve !== Infinity) { d.reserve = Math.round(b.reserve * m); d.maxReserve = Math.round(b.maxReserve * m); }
+    if (b.rocket) d.rocket = Object.assign({}, b.rocket, { damage: b.rocket.damage * k });
+    if (b.satchel) d.satchel = Object.assign({}, b.satchel, { damage: b.satchel.damage * k });
+    return d;
+  };
+  /** Upgrade an owned weapon one level and fill it. Returns the new level, or 0 if it can't go higher. */
+  WP.upgrade = function (id) {
+    const w = this.inv[id]; if (!w) return 0;
+    const lvl = (w.def.lvl || 0) + 1; if (lvl > this.MAX_UPGRADE) return 0;
+    w.def = this.upgradeDef(id, lvl); w.mag = w.def.mag; if (w.reserve !== Infinity) w.reserve = w.def.maxReserve;
+    if (this.curId === id) { this.chamberEmpty = false; CF.HUD.setWeapon(w.def, this.inv, this.slots()); this.hudAmmo(); }
+    return lvl;
   };
   /** Refill all weapons + grenades. Returns true if anything was added. */
   WP.resupply = function () {
@@ -220,13 +254,14 @@
     const spread = this.currentSpread(P) * D2R;
     const muzzle = this.muzzleWorld(new THREE.Vector3(), 0.9);
     let anyHit = false, headHit = false;
+    const reach = d.range || 400;
     const ends = CF.MP && CF.MP.active ? [] : null;
     for (let p = 0; p < d.pellets; p++) {
       const a = Math.random() * Math.PI * 2, rr = spread * Math.sqrt(Math.random());
       const tx = Math.tan(rr) * Math.cos(a), ty = Math.tan(rr) * Math.sin(a);
       _d.copy(_f).addScaledVector(_r, tx).addScaledVector(_u, ty).normalize();
-      const wh = W.raycast(_o.x, _o.y, _o.z, _d.x, _d.y, _d.z, 400);
-      let tWorld = wh ? wh.t : 400;
+      const wh = W.raycast(_o.x, _o.y, _o.z, _d.x, _d.y, _d.z, reach);
+      let tWorld = wh ? wh.t : reach;
       const wbox = wh ? wh.box : null, wsurf = wbox ? wbox.surf : null;
       const wx = wh ? wh.x : 0, wy = wh ? wh.y : 0, wz = wh ? wh.z : 0, wnx = wh ? wh.nx : 0, wny = wh ? wh.ny : 0, wnz = wh ? wh.nz : 0;
       let endT = tWorld;
@@ -236,16 +271,17 @@
         const fall = dist <= d.falloff[0] ? 1 : dist >= d.falloff[1] ? d.falloff[2] : U.lerp(1, d.falloff[2], (dist - d.falloff[0]) / (d.falloff[1] - d.falloff[0]));
         const res = h.enemy.damage(d.dmg * fall, { dir: _d, point: h.point, normal: h.normal, part: h.part, weapon: d.id, source: 'player', knock: d.knock || 1.5 });
         anyHit = true; if (res && res.head) headHit = true;
+        if (d.flame) this.ignite(h.enemy);
         if (!d.pierce) endT = dist;
       }
       if (!hits.length || d.pierce) {
         if (wh) {
           const fake = { x: wx, y: wy, z: wz, nx: wnx, ny: wny, nz: wnz, box: wbox };
-          CF.FX.impact(fake, _d, wsurf);
+          if (!d.flame) CF.FX.impact(fake, _d, wsurf);
           if (wbox && wbox.owner && wbox.owner.hp !== undefined) CF.Game.damageBarrel(wbox.owner, d.dmg);
         }
       }
-      _hp.copy(_o).addScaledVector(_d, Math.min(endT, 400));
+      _hp.copy(_o).addScaledVector(_d, Math.min(endT, reach));
       if (ends) ends.push(_hp.clone());
       if (d.id === 'rail') {
         CF.FX.tracer(muzzle, _hp, { r: 0.8, g: 3.2, b: 5, w: 0.07, life: 0.55 });
@@ -257,7 +293,8 @@
           _v.addScaledVector(_r, Math.cos(ang) * 0.09).addScaledVector(_u, Math.sin(ang) * 0.09);
           CF.FX.add.spawn(_v.x, _v.y, _v.z, U.gauss() * 0.2, U.gauss() * 0.2 + 0.2, U.gauss() * 0.2, U.rand(0.3, 0.7), 0.05, 0.01, 0.6, 2.4, 4, 1, 0, 1.5, 0);
         }
-      } else if (this.shotCount % d.tracerEvery === 0 || d.pellets > 1) {
+      } else if (d.flame) CF.FX.flame(muzzle, _hp, 6);
+      else if (this.shotCount % d.tracerEvery === 0 || d.pellets > 1) {
         const pellet = d.pellets > 1;
         CF.FX.tracer(muzzle, _hp, { speed: pellet ? 260 : 380, len: pellet ? 2.5 : 5, w: pellet ? 0.018 : 0.028, r: 3.2, g: 2.1, b: 1.0 });
       }
@@ -269,12 +306,12 @@
     P.addRecoil(rc[0] * adsK * U.rand(0.85, 1.15), (Math.random() - 0.35) * rc[1] * 2 * adsK);
     this.sp.kz.kick(rc[2] * 18 * adsK); this.sp.rx.kick(rc[3] * 22 * adsK); this.sp.rz.kick((Math.random() - 0.5) * rc[3] * 12);
     this.bloom = Math.min(d.bloomMax, this.bloom + d.bloom);
-    P.shake(d.id === 'shotgun' ? 0.22 : d.id === 'rail' ? 0.3 : 0.07);
+    P.shake(d.id === 'shotgun' ? 0.22 : d.id === 'rail' ? 0.3 : d.flame ? 0.03 : 0.07);
     const quiet = this.quiet();
     A.play(quiet ? 'suppressed' : d.sound, null, { send: 0.3 + A.room * 0.8 });
     this.flashT = d.id === 'rail' ? 0.06 : 0.035;
     this.flash.material.rotation = Math.random() * Math.PI * 2;
-    const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' ? 0.16 : d.id === 'rail' ? 0.3 : d.id === 'revolver' ? 0.3 : 0.22;
+    const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' || d.flame ? 0.16 : d.id === 'rail' ? 0.3 : d.id === 'revolver' ? 0.3 : 0.22;
     this.flash.scale.setScalar(fs * U.rand(0.8, 1.2) * (quiet ? 0.25 : 1));
     this.flash.material.color.setRGB(d.id === 'rail' ? 1.5 : 5, d.id === 'rail' ? 4 : 3.6, d.id === 'rail' ? 6 : 2.2);
     if (!quiet) CF.FX.flashLight(muzzle, d.id === 'rail' ? 0x60c8ff : 0xffa850, d.id === 'shotgun' ? 5 : 3, 9, 0.07);
@@ -284,6 +321,20 @@
     if (d.pump) { A.play('pumpBack', null, { delay: 0.3 }); A.play('pumpFwd', null, { delay: 0.48 }); }
     this.hudAmmo(); CF.HUD.ammoBump();
     if (w.mag === 0) this.chamberEmpty = true;
+  };
+  /** Flamethrower afterburn: whoever the fire touches keeps burning for BURN.time, in small ticks credited to the shooter. */
+  WP.ignite = function (e) {
+    const b = this.burning.find((x) => x.e === e);
+    if (b) b.t = BURN.time; else this.burning.push({ e, t: BURN.time, tick: BURN.every });
+  };
+  WP.updateBurning = function (dt) {
+    for (let i = this.burning.length - 1; i >= 0; i--) {
+      const b = this.burning[i], e = b.e;
+      b.t -= dt; b.tick -= dt;
+      if (!e.alive || b.t <= 0) { this.burning.splice(i, 1); continue; }
+      CF.FX.burn(e.center(_v));
+      if (b.tick <= 0) { b.tick += BURN.every; e.damage(BURN.dmg, { weapon: 'burn', source: 'player', knock: 0 }); }
+    }
   };
   /** Rockets and satchel charges: physical projectiles that explode instead of hitscan bullets. */
   WP.fireSpecial = function (P) {
@@ -447,7 +498,7 @@
     const live = P.alive && !P.frozen && CF.Game.state === 'playing';
     if (live) {
       const sl = this.slots();
-      for (let i = 0; i < sl.length; i++) if (inp.hit('Digit' + (i + 1))) this.select(sl[i]);
+      if (!(CF.ZM && CF.ZM.shopOpen)) for (let i = 0; i < sl.length; i++) if (inp.hit('Digit' + (i + 1))) this.select(sl[i]); // number keys buy while the Zombies shop is open
       if (inp.hit('KeyQ') && this.lastId && this.inv[this.lastId]) this.select(this.lastId);
       if (inp.wheel) this.cycle(inp.wheel);
       if (inp.hit('KeyR')) this.reload();
@@ -495,6 +546,7 @@
     this.updateState(dt, P);
     this.updateGrenades(dt);
     this.updateProjectiles(dt);
+    this.updateBurning(dt);
     // crosshair spread
     const spread = this.currentSpread(P) * D2R;
     const px = Math.tan(spread) * (window.innerHeight / 2) / Math.tan((this.camera.fov * D2R) / 2);
@@ -602,6 +654,7 @@
       parts.pump.position.z = -0.42 + 0.075 * pk;
     }
     if (parts.barrels) parts.barrels.rotation.z += this.spin * dt * 45;
+    if (parts.pilot) { const f = (0.75 + Math.random() * 0.5) * (this.flashT > 0 ? 1.6 : 1); parts.pilot.scale.set(0.011 * f, 0.011 * f, 0.018 * f); }
     if (parts.cyl) { parts.cyl.rotation.z = U.damp(parts.cyl.rotation.z, this.cylTurn || 0, 22, dt); this.hammerT = (this.hammerT || 0) + dt; parts.hammer.rotation.x = -0.4 + (this.hammerT < 0.06 ? 0.55 : Math.max(0, 0.55 - (this.hammerT - 0.06) * 3)); }
     if (parts.charge && this.state !== 'reload') parts.charge.visible = this.cur.mag > 0;
     if (d.rocket && parts.mag && this.state !== 'reload') parts.mag.visible = this.cur.mag > 0;

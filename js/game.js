@@ -726,6 +726,7 @@
     const st = this.stats; st.kills++; if (head) st.headshots++;
     const pts = this.pts((e.T.score || 100) + (head ? 50 : 0));
     this.addScore(pts);
+    CF.ZM.onOwnKill(e.T.score, head);
     const how = head ? 'Headshot' : info && info.explosive ? 'Explosive' : info && info.melee ? 'Melee' : '';
     CF.HUD.popup(e.name + (how ? ' · ' + how.toLowerCase() : ''), pts, head ? 'head' : '');
     CF.HUD.killfeed(e.name + ' destroyed', how);

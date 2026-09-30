@@ -604,6 +604,26 @@ body.coop .mp-bar { display: none !important; }
 .card-zombies.sel b { color: #8dff6a; }
 body.mp-zombies .mpb-mode { color: #8dff6a; }
 body.mp-zombies .mp-bar { border-left-color: #8dff6a; }
+.mpb-pts { display: none; font: 800 22px/1.1 var(--f-display); letter-spacing: 0.04em; color: #ffe14d; font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgba(255, 225, 77, 0.35); }
+body.mp-zombies .mpb-pts { display: block; }
+.board.zm .sb-row { grid-template-columns: 1fr 64px 64px 80px; }
+/* Zombies shop: opens with the shop key during a break, number keys buy; the game keeps running behind it */
+.zm-shop { position: absolute; left: var(--hud-pad); top: 50%; transform: translateY(-50%); z-index: 3; width: min(420px, 44vw); display: grid; gap: 8px; padding: 14px 16px;
+  background: rgba(7, 6, 13, 0.86); border: 1px solid rgba(141, 255, 106, 0.5); border-left: 3px solid #8dff6a; box-shadow: 0 0 24px rgba(141, 255, 106, 0.12); }
+.zm-shop[hidden] { display: none; }
+.zs-head { display: flex; justify-content: space-between; align-items: baseline; }
+.zs-head b { font: 800 22px/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: #8dff6a; }
+.zs-head span { font: 800 20px/1 var(--f-display); color: #ffe14d; font-variant-numeric: tabular-nums; }
+.zs-list { display: grid; gap: 3px; }
+.zs-item { display: grid; grid-template-columns: 26px 1fr auto; column-gap: 10px; align-items: center; padding: 5px 8px; background: rgba(233, 247, 255, 0.04); }
+.zs-item kbd { grid-row: span 2; font: 600 13px/24px var(--f-mono); text-align: center; border: 1px solid rgba(233, 247, 255, 0.35); color: var(--bone); }
+.zs-name { font: 700 15px/1.15 var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--bone); }
+.zs-item b { font: 800 17px/1 var(--f-display); color: #ffe14d; font-variant-numeric: tabular-nums; text-align: right; }
+.zs-note { grid-column: 2 / 4; font: 500 12px/1.2 var(--f-body); color: var(--bone-dim); }
+.zs-item.poor b { color: var(--ember); }
+.zs-item.off { opacity: 0.45; }
+.zs-item.off b { color: var(--bone-dim); }
+.zs-foot { font: 500 11px/1.3 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-dim); }
 body.coop-downed .crosshair, body.coop-downed .weapon-panel, body.coop-downed .hitmarker { display: none; }
 body.coop-downed #hud::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 35%, rgba(120, 0, 10, 0.55) 100%); }
 /* Prop Hunt */

@@ -104,6 +104,7 @@ window.CF = window.CF || {};
     { id: 'last', label: 'Last weapon', canon: 'KeyQ', def: ['KeyX', null] },
     { id: 'streak', label: 'Deploy drone (kill streak)', canon: 'KeyB', def: ['KeyZ', null] },
     { id: 'gadget', label: 'RC car: drive · detonate', canon: 'KeyT', def: ['KeyT', null] },
+    { id: 'shop', label: 'Zombies shop (between waves)', canon: 'Shop', def: ['KeyB', null] },
     { id: 'slot1', label: 'Weapon 1 · loadout 1', canon: 'Digit1', def: ['Digit1', null] },
     { id: 'slot2', label: 'Weapon 2 · loadout 2', canon: 'Digit2', def: ['Digit2', null] },
     { id: 'slot3', label: 'Weapon 3 · loadout 3', canon: 'Digit3', def: ['Digit3', null] },
@@ -120,8 +121,10 @@ window.CF = window.CF || {};
     try { saved = JSON.parse(localStorage.getItem(BIND_KEY) || '{}') || {}; } catch (e) { saved = {}; }
     // saves from before leaning had L Ctrl on crouch: it moves to lean
     if (!saved.lean && Array.isArray(saved.crouch)) saved.crouch = saved.crouch.map((c) => (c === 'ControlLeft' ? null : c));
+    const taken = new Set(); for (const id in saved) if (Array.isArray(saved[id])) for (const c of saved[id]) if (c) taken.add(c);
     for (const a of ACTIONS) {
-      const b = Array.isArray(saved[a.id]) ? saved[a.id] : a.def;
+      // an action added since the save: its default key only if the player hasn't put that key on something else
+      const b = Array.isArray(saved[a.id]) ? saved[a.id] : a.def.map((c) => (c && taken.has(c) ? null : c));
       this.binds[a.id] = [0, 1].map((i) => (typeof b[i] === 'string' && !RESERVED.has(b[i]) ? b[i] : null));
     }
     this.rebuild();

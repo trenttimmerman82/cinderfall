@@ -14,9 +14,11 @@
     marksman: { label: 'Marksman', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.', weapons: { rail: { mag: 4, reserve: 16 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rail', grenades: 1, armor: 0, speed: 1 },
     heavy: { label: 'Heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.', weapons: { minigun: { mag: 150, reserve: 300 }, pistol: { mag: 12, reserve: Infinity } }, current: 'minigun', grenades: 1, armor: 50, speed: 0.9 },
     demo: { label: 'Demolition', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.', weapons: { rocket: { mag: 1, reserve: 3 }, satchel: { mag: 2, reserve: 2 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rocket', grenades: 1, armor: 0, speed: 1 },
-    gunner: { label: 'Gunner', desc: 'HX-9 Warden LMG and sidearm. A 100-round box, a long reload.', weapons: { lmg: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'lmg', grenades: 1, armor: 25, speed: 0.94 }
+    gunslinger: { label: 'Gunslinger', desc: 'KF-44 Kingfisher revolver and P-11. Two body shots, one to the head. Light on your feet.', weapons: { revolver: { mag: 6, reserve: 36 }, pistol: { mag: 12, reserve: Infinity } }, current: 'revolver', grenades: 2, armor: 0, speed: 1.05 },
+    gunner: { label: 'Gunner', desc: 'HX-9 Warden LMG and sidearm. A 100-round box, a long reload.', weapons: { lmg: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'lmg', grenades: 1, armor: 25, speed: 0.94 },
+    pyro: { label: 'Pyro', desc: 'Ember-9 flamethrower and P-11, plus 25 armor. 11 m of fire; anyone it touches keeps burning.', weapons: { flamer: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'flamer', grenades: 1, armor: 25, speed: 1 }
   };
-  const LO_KEYS = ['assault', 'breacher', 'marksman', 'gunner', 'heavy', 'demo'];
+  const LO_KEYS = ['assault', 'breacher', 'marksman', 'gunner', 'heavy', 'demo', 'gunslinger', 'pyro'];
   // Sniper Valley: long-range kit only (the towers never meet, so shotguns, miniguns and grenades have nothing to do)
   const SNIPER = {
     deadeye: { label: 'Deadeye', desc: 'VX-3 rail rifle and the KF-44 revolver. The classic pairing.', weapons: { rail: { mag: 4, reserve: 24 }, revolver: { mag: 6, reserve: 36 } }, current: 'rail', grenades: 0, armor: 0, speed: 1 },
@@ -178,6 +180,7 @@
       }
       this.tp.set(s.p[0], s.p[1], s.p[2]); this.tyaw = s.y; this.pitch = s.x; this.tc = s.c ? 1 : 0; this.w = s.w || 0; this.tl = +s.l || 0;
       this.driving = !!s.d; this.protect = !!s.s; this.downed = !!s.dn;
+      if (s.zp != null) this.zp = +s.zp || 0; // Zombies: their points, for the scoreboard
       const wid = W_IDX[s.w || 0] || 'carbine';
       if (this.armedW !== wid) { this.armedW = wid; CF.Skins.arm(this.m, wid, this.finish || null); }
       this.shield.visible = (this.driving || this.protect) && !this.dead;
@@ -238,7 +241,7 @@
       if (info.point) CF.FX.botHit(info.point, info.normal || new THREE.Vector3(0, 1, 0), tag === 'head');
       CF.HUD.hitmarker(tag === 'head' ? 'head' : 'hit');
       if (info.point) CF.HUD.dmgNumber(info.point, dmg, tag === 'head' ? 'head' : '');
-      A.play(tag === 'head' ? 'headshot' : 'hit', null, { ui: true });
+      if (info.weapon !== 'burn') A.play(tag === 'head' ? 'headshot' : 'hit', null, { ui: true }); // afterburn ticks four times a second: no ping for each
       CF.Game.stats.damageDealt += dmg;
       return { head: tag === 'head', dealt: dmg };
     }
@@ -386,6 +389,7 @@
     if (Math.abs(P.lean * P.leanReach) > 0.05) msg.l = +(P.lean * P.leanReach).toFixed(2);
     if (MP.mode === 'prophunt') CF.PH.stateFields(msg); // ph: disguise, pr: its facing
     if (CF.Coop.downed) msg.dn = 1;
+    if (MP.mode === 'zombies') msg.zp = CF.ZM.points;
     if (MP.role === 'client') CF.AC.observe(MP.myId, msg); // we're a target in everyone's aim check, our own included (the host's goes through onHostMsg)
     MP.postFast(msg);
   };
@@ -528,7 +532,7 @@
       else killer.kills++;
     }
     const wdef = CF.Weapons.defs[k.w];
-    const how = wdef ? wdef.short : k.w === 'frag' ? 'FRAG' : k.w === 'melee' ? 'MELEE' : k.w === 'drone' ? 'DRONE' : k.w === 'rc' ? 'RC-XD' : '';
+    const how = wdef ? wdef.short : k.w === 'frag' ? 'FRAG' : k.w === 'melee' ? 'MELEE' : k.w === 'drone' ? 'DRONE' : k.w === 'rc' ? 'RC-XD' : k.w === 'burn' ? 'BURNED' : '';
     if (victim) CF.HUD.killfeed(suicide ? victim.name + ' fell' : (killer ? killer.name : '?') + ' ▸ ' + victim.name, how + (k.head ? ' · HEAD' : ''));
     if (MP.remotes[k.victim]) MP.remotes[k.victim].die();
     if (k.killer === MP.myId && !suicide) {
@@ -546,9 +550,10 @@
       const def = CF.Weapons.defs[msg.w]; if (!def || !msg.m) return;
       const m = new THREE.Vector3(msg.m[0], msg.m[1], msg.m[2]);
       A.play(def.sound, m, { ref: 7 });
-      CF.FX.muzzle(m, new THREE.Vector3(0, 0, 0), def.id === 'rail' ? 1.5 : 5, def.id === 'rail' ? 4 : 3.2, def.id === 'rail' ? 6 : 1.6, 0.5);
+      CF.FX.muzzle(m, new THREE.Vector3(0, 0, 0), def.id === 'rail' ? 1.5 : 5, def.id === 'rail' ? 4 : 3.2, def.id === 'rail' ? 6 : 1.6, def.flame ? 0.3 : 0.5);
       for (const e of msg.e || []) {
         const end = new THREE.Vector3(e[0], e[1], e[2]);
+        if (def.flame) { if (end.distanceTo(m) <= def.range + 3) CF.FX.flame(m, end, 5); continue; } // no sparks: the stream just stops
         if (def.id === 'rail') CF.FX.tracer(m, end, { r: 0.8, g: 3.2, b: 5, w: 0.07, life: 0.5 });
         else CF.FX.tracer(m, end, { speed: def.pellets > 1 ? 260 : 380, len: 4, w: 0.026, r: 3.2, g: 2.1, b: 1.0 });
         CF.FX.sparks(end.x, end.y, end.z, 0, 1, 0, 3, 3);

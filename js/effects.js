@@ -359,6 +359,23 @@
     const gy = W.groundHeight(pos.x, pos.y + 0.5, pos.z);
     for (let k = 0; k < 6; k++) this.smoke.spawn(pos.x + U.gauss() * 0.4, gy + 0.15, pos.z + U.gauss() * 0.4, U.gauss() * 0.8, U.rand(0.1, 0.5), U.gauss() * 0.8, U.rand(1.2, 2), 0.4, 1.6, 0.5, 0.45, 0.37, 0.35, -0.05, 1.2, 1);
   };
+  /** One burst of flamethrower fire from a to b: flame puffs strung along the stream that surge forward and curl upward. */
+  FX.flame = function (a, b, n) {
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, len = Math.hypot(dx, dy, dz) || 1, fx = dx / len, fy = dy / len, fz = dz / len;
+    for (let k = 0; k < n; k++) {
+      const t = Math.pow(Math.random(), 0.8), sp = U.rand(5, 9), w = 0.1 + t * 0.6, hot = 1 - t * 0.45;
+      this.add.spawn(a.x + dx * t + U.gauss() * w * 0.3, a.y + dy * t + U.gauss() * w * 0.3, a.z + dz * t + U.gauss() * w * 0.3,
+        fx * sp + U.gauss() * w, fy * sp + U.gauss() * w + 0.6, fz * sp + U.gauss() * w, U.rand(0.16, 0.3), 0.1 + t * 0.45, 0.4 + t * 1.1,
+        4.2 * hot, 1.7 * hot, 0.35 * hot, 0.85, -3, 5, 1, U.gauss() * 3);
+    }
+    if (Math.random() < 0.4) this.smoke.spawn(b.x, b.y + 0.2, b.z, U.gauss() * 0.4, U.rand(0.8, 1.6), U.gauss() * 0.4, U.rand(0.8, 1.4), 0.4, 1.8, 0.12, 0.11, 0.1, 0.45, -0.4, 1, 1);
+  };
+  /** Someone on fire: flames licking up off the body, a little smoke. Called every frame while they burn. */
+  FX.burn = function (c) {
+    if (Math.random() < 0.6) this.add.spawn(c.x + U.gauss() * 0.2, c.y + U.rand(-0.6, 0.5), c.z + U.gauss() * 0.2, U.gauss() * 0.2, U.rand(1, 2.2), U.gauss() * 0.2,
+      U.rand(0.25, 0.45), 0.35, 0.1, 3.6, 1.4, 0.3, 0.8, -1, 1, 1, U.gauss() * 2);
+    if (Math.random() < 0.08) this.smoke.spawn(c.x, c.y + 0.6, c.z, U.gauss() * 0.3, U.rand(0.8, 1.4), U.gauss() * 0.3, U.rand(0.8, 1.3), 0.3, 1.2, 0.1, 0.09, 0.08, 0.4, -0.3, 1, 1);
+  };
   FX.muzzle = function (pos, dir, r, g, b, size) {
     this.flash.spawn(pos.x + dir.x * 0.1, pos.y + dir.y * 0.1, pos.z + dir.z * 0.1, 0, 0, 0, 0.05, size || 0.7, (size || 0.7) * 0.8, r, g, b, 1, 0, 0, 0);
     this.glow(pos.x, pos.y, pos.z, (size || 0.7) * 1.6, r * 0.3, g * 0.3, b * 0.3, 0.06);

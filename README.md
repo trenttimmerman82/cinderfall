@@ -36,7 +36,7 @@ It is set in a rain-soaked neon city.
   other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
   (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) or co-op
-  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) and **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane), with six loadouts. Kill-streak drones
+  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) and **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane), with eight loadouts. Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -70,9 +70,11 @@ resolution and, in multiplayer, each player's link type, ping and bandwidth.
 | Assault | M7 carbine + P-11 pistol | — |
 | Breacher | KS-12 shotgun + P-11 | Starts with 50 armor |
 | Marksman | VX-3 rail rifle + P-11 | One-shot headshots |
-| Runner | M7 carbine + P-11 | 8% faster, one grenade |
+| Gunner | HX-9 Warden LMG + P-11 | Starts with 25 armor, 6% slower |
 | Heavy | Rotor-6 minigun + P-11 | Starts with 50 armor, 10% slower |
 | Demolition | Havoc RPG + satchel charges + P-11 | — |
+| Gunslinger | KF-44 revolver + P-11 | 5% faster; the revolver kills in two body shots or one headshot |
+| Pyro | Ember-9 flamethrower + P-11 | Starts with 25 armor; 11 m of fire that burns on for 2.5 s |
 
 **Revolver One-Shot** replaces the loadouts with the KF-44 revolver: six rounds, 2.5 s reload, every hit kills, first to
 15 kills in 6 minutes. Players are shielded for 2.5 s after spawning or until they fire. No grenades, pickups, drones or RC-XD.
@@ -94,8 +96,15 @@ rules live in `js/ctf.js`; the host decides every take, return and capture.
 
 **Zombies** (2+ players, best on Neon Market) puts everyone on one team against waves of infected: Husks (clawing
 Sentry frames), Crawlers, Blight drones from wave 3 and Brutes every fifth wave. Each wave is bigger and tougher;
-count, health and damage also scale with the number of players (`CF.ZM.scale` in `js/zombies.js`). An 18-second
+count, health and damage also scale with the number of players (`CF.ZM.scale` in `js/zombies.js`). A 25-second
 break between waves restocks every ammo and armor pickup, gets downed players up and brings back anyone who bled out.
+**Points and the shop.** Everyone starts with 500 points and earns their own: 10 per shot that hits, the infected's
+score per kill (+50 for a headshot), 100 for a revive and a bonus for every cleared wave. During a break, press **B**
+(rebindable) to open the shop and buy with the number keys: max ammo (500), armor to 100 (750), a weapon off the wall
+(KF-44 revolver 1,000, KS-12 1,250, VX-3 1,750, HX-9 2,000, RPG 2,500, minigun 3,000; half price to refill one you own)
+or an upgrade for the gun in your hands: Mk II, Mk III and Mk IV for 2,000, 4,000 and 7,000, each adding damage,
+magazine, reserve, fire rate and reload speed. Points carry across the game; bought guns and upgrades are lost if you
+bleed out. The scoreboard shows everyone's points.
 Out of health, you go **down**: you crawl and can't shoot; a teammate holds **E** next to you for 3 seconds to revive
 you (50 health). After 30 seconds down you bleed out until the next break. The game ends when nobody is standing; the
 scoreboard shows the wave reached and total kills.

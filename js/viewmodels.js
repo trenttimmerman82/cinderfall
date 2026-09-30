@@ -24,6 +24,7 @@
       sleeve: new THREE.MeshStandardMaterial({ color: 0x262c33, metalness: 0, roughness: 0.95, envMapIntensity: 0.35 }),
       glass: new THREE.MeshStandardMaterial({ color: 0x4a7a90, metalness: 1, roughness: 0.05, transparent: true, opacity: 0.18, depthWrite: false }),
       dot: new THREE.MeshBasicMaterial({ color: new THREE.Color(9, 0.5, 0.25) }),
+      flame: new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 1.4, 0.4) }),
       coil: new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 2.6, 4.2) }),
       shell: new THREE.MeshStandardMaterial({ color: 0xa82a18, metalness: 0.3, roughness: 0.5 }),
       brass: new THREE.MeshStandardMaterial({ color: 0xc8a050, metalness: 0.95, roughness: 0.3 }),
@@ -142,6 +143,41 @@
       P.handLHome = P.handL.position.clone();
     }
     return { root, gun, parts: P, sightY: 0.13, sightZ: -0.02 };
+  }
+
+  function flamer(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    B(gun, M.metal, 0, 0.03, -0.06, 0.07, 0.09, 0.3); // pump housing
+    CZ(gun, M.steel, 0, 0.045, -0.46, 0.018, 0.5); // wand
+    CZ(gun, M.metal, 0, 0.045, -0.36, 0.034, 0.2, true); // heat shield
+    for (let i = 0; i < 5; i++) CZ(gun, M.metal, 0, 0.045, -0.28 - i * 0.04, 0.037, 0.008);
+    CZ(gun, M.metal, 0, 0.045, -0.72, 0.028, 0.06); // nozzle
+    CZ(gun, M.polymer, 0, 0.045, -0.755, 0.023, 0.015, true);
+    CZ(gun, M.steel, 0, 0.012, -0.67, 0.006, 0.12); // igniter under the nozzle, pilot flame at its tip
+    P.pilot = part(gun, sph(), M.flame, 0, 0.012, -0.735, 0.011, 0.011, 0.018);
+    B(gun, M.accent, 0.036, 0.02, -0.02, 0.003, 0.012, 0.12);
+    P.mag = new THREE.Group(); P.mag.position.set(0, -0.03, -0.1); gun.add(P.mag); // fuel canister
+    CZ(P.mag, M.grenade, 0, -0.06, -0.02, 0.05, 0.2);
+    part(P.mag, sph(), M.grenade, 0, -0.06, -0.12, 0.05, 0.05, 0.03);
+    part(P.mag, sph(), M.grenade, 0, -0.06, 0.08, 0.05, 0.05, 0.03);
+    B(P.mag, M.accent, 0.051, -0.06, -0.02, 0.002, 0.03, 0.1);
+    part(P.mag, cyl(), M.steel, 0, -0.005, 0.03, 0.012, 0.03, 0.012); // valve
+    B(gun, M.polymer, 0, -0.06, 0.1, 0.034, 0.1, 0.048, -0.3, 0, 0); // grip
+    B(gun, M.polymer, 0, 0.025, 0.2, 0.046, 0.075, 0.14); // stock
+    B(gun, M.polymer, 0, 0.012, 0.28, 0.05, 0.11, 0.025);
+    B(gun, M.polymer, 0, -0.012, -0.5, 0.03, 0.07, 0.04, 0.2, 0, 0); // front grip
+    P.muzzle = node(gun, 0, 0.045, -0.78);
+    P.eject = node(gun, 0.04, 0.03, -0.05);
+    if (hands) {
+      P.handR = hand(M.glove, 1); P.handR.position.set(0.004, -0.05, 0.115); P.handR.rotation.set(0.25, 0, -0.15); gun.add(P.handR);
+      forearm(gun, 0.02, -0.08, 0.17, 0.16, -0.32, 0.57);
+      P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.01, -0.03, -0.5);
+      const hl = hand(M.glove, -1); hl.rotation.set(0.1, 0, 0.5); P.handL.add(hl);
+      forearm(P.handL, -0.02, -0.03, 0.02, -0.22, -0.3, 0.32);
+      P.handLHome = P.handL.position.clone();
+    }
+    return { root, gun, parts: P, sightY: 0.1, sightZ: -0.1 };
   }
 
   function shotgun(hands) {
@@ -395,7 +431,7 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg };
+  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg, flamer };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);
