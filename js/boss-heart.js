@@ -73,7 +73,7 @@
       this.markers = []; this.spikes = []; this.spikeMeshes = [];
       this.hit = [
         { key: 'core', r: 1.75, weak: true }, { key: 'p0', r: 0.8, weak: true }, { key: 'p1', r: 0.8, weak: true }, { key: 'p2', r: 0.8, weak: true },
-        { key: 'shell', r: 3.4 }, { key: 'crown', r: 1.5 }, { key: 'base', r: 3.1 }, { key: 'pb0', r: 0.9 }, { key: 'pb1', r: 0.9 }, { key: 'pb2', r: 0.9 }
+        { key: 'shell', r: 3.4 }, { key: 'crown', r: 1.5 }, { key: 'base', r: 2.3 }, { key: 'pb0', r: 0.9 }, { key: 'pb1', r: 0.9 }, { key: 'pb2', r: 0.9 }
       ].map((h) => Object.assign(h, { w: new THREE.Vector3() }));
       this.root.position.set(x, y - 11, z); this.root.scale.setScalar(1.3);
       CF.Enemies.scene.add(this.root);
@@ -102,9 +102,9 @@
       for (const h of this.hit) {
         switch (h.key) {
           case 'core': h.w.set(b.x, y + 5.46, b.z); h.on = this.open > 0.6; break;
-          case 'shell': h.w.set(b.x, y + 5.2, b.z); h.on = true; break;
+          case 'shell': h.w.set(b.x, y + 5.2, b.z); h.on = this.open <= 0.6; break; // it fully encloses the core, so once the petals open it must stop soaking shots
           case 'crown': h.w.set(b.x, y + 10.9, b.z); h.on = true; break;
-          case 'base': h.w.set(b.x, y + 1.6, b.z); h.on = true; break;
+          case 'base': h.w.set(b.x, y + 1.3, b.z); h.on = true; break; // tops out at 3.6, under the core's 3.7 underside, so it never steals a shot meant for the core
           default: {
             const i = +h.key.slice(-1), pl = this.pylons[i];
             if (h.key[1] === 'b') { h.w.set(pl.g.position.x, pl.g.position.y + 2.4, pl.g.position.z); h.on = !pl.dead; }
