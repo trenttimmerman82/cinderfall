@@ -272,5 +272,27 @@
       (p.x > -50 && p.x < -36 && p.z > 18 && p.z < 32 && p.y < 4.2),
     menuCam: (t, cam) => { const a = t * 0.03 + 0.9; cam.position.set(Math.sin(a) * 62, 30 + Math.sin(a * 1.3) * 3, Math.cos(a) * 50); cam.lookAt(0, 3, -4); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'sniper'];
+  // Hijacked: a hot, clear afternoon on open sea; a deep blue sky, the sun high in the south-east, glitter on the water
+  CF.Maps.hijacked = {
+    id: 'hijacked', name: 'Hijacked', mp: true, nav: false, blurb: 'A superyacht under way: the pool deck, the salon and galley, the cabins below, the bridge, the sun deck and the helipad on the bow.',
+    bounds: { minX: -54, maxX: 54, minZ: -16, maxZ: 16 },
+    theme: base({
+      fog: [0.6, 0.74, 0.88], fogDensity: 0.0015,
+      hemi: [0xcfe0f2, 0x2c5a72, 0.66], moon: { color: 0xfff1da, intensity: 1.9, dir: [0.45, 0.72, 0.5] },
+      sky: { zen: [0.12, 0.3, 0.66], hor: [0.72, 0.82, 0.92], glow: [0.55, 0.46, 0.3], glowDir: [0.45, 0.5], glow2: [0.08, 0.1, 0.12], glow2Dir: [-1, 0],
+        cloudDark: [0.76, 0.8, 0.86], cloudLit: [1.08, 1.06, 1.02], stars: 0, moon: 2.6 },
+      env: { top: [0.52, 0.66, 0.9], bottom: [0.1, 0.26, 0.36], band: [0.66, 0.74, 0.8], panels: [[1.5, 1.5, 1.5], [1.3, 1.45, 1.65], [1.45, 1.4, 1.3], [1.4, 1.45, 1.5]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.8, sat: 1.08, shadow: [0, 0.002, 0.006], high: [0.01, 0.004, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapHijacked.build(),
+    // the main-deck house, everything below decks and the upper-deck house are roofed
+    inside: (p) => (p.x > -24 && p.x < 16 && Math.abs(p.z) < 6.2 && p.y < 3.1) || (p.y < -0.3 && p.x > -31.2 && p.x < 29.5) ||
+      (p.x > -22 && p.x < 10 && Math.abs(p.z) < 5.2 && p.y > 3.1 && p.y < 6.5),
+    menuCam: (t, cam) => { const a = t * 0.03 + 2.3; cam.position.set(Math.sin(a) * 72, 16 + Math.sin(a * 1.3) * 3, Math.cos(a) * 42); cam.lookAt(0, 2, 0); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'hijacked', 'sniper'];
 })(window.CF);
