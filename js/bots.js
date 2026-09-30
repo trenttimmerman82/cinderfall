@@ -10,10 +10,11 @@
   const MP = () => CF.MP;
   const RESPAWN = 3.5, GRAVITY = 19.5, RUN = 5.1;
   const NAMES = ['Viper', 'Kestrel', 'Onyx', 'Havoc', 'Rook', 'Juno', 'Talon', 'Mako', 'Nyx', 'Brick', 'Echo', 'Sable', 'Wraith', 'Cobalt'];
+  // moveErr/settle (easy only): shots are moveErr× wilder against a moving target and only tighten to normal once it has stood still for `settle` seconds
   // react: seconds before the first shot at a new target; err: aim wobble (radians); turn: how fast they swing onto you;
   // head: chance a shot goes for the head; sight: how far they spot you; fov: how wide they look (radians)
   const SKILL = {
-    easy: { label: 'Easy', react: 0.8, err: 0.07, turn: 4, head: 0.06, sight: 45, fov: 1.7, burst: [2, 4], pause: [0.55, 1.0], semi: [0.25, 0.5] },
+    easy: { label: 'Easy', react: 1.1, err: 0.09, turn: 2.5, head: 0.02, sight: 40, fov: 1.6, burst: [1, 3], pause: [0.8, 1.5], semi: [0.5, 0.9], moveErr: 5, settle: 1.6 },
     normal: { label: 'Normal', react: 0.45, err: 0.042, turn: 6, head: 0.16, sight: 65, fov: 2.1, burst: [3, 7], pause: [0.3, 0.6], semi: [0.12, 0.3] },
     hard: { label: 'Hard', react: 0.24, err: 0.024, turn: 9, head: 0.3, sight: 100, fov: 2.5, burst: [5, 10], pause: [0.15, 0.35], semi: [0.04, 0.14] }
   };
@@ -158,6 +159,7 @@
         const k = Math.min(1, dt * sk.turn);
         this.yaw += U.wrapAngle(wantYaw - this.yaw) * k; this.pitch += (wantPitch - this.pitch) * k;
         this.reactT -= dt;
+        this.stillT = t.speed < 1 ? (this.stillT || 0) + dt : 0; // how long the target has been standing still
         const off = Math.abs(U.wrapAngle(wantYaw - this.yaw)) + Math.abs(wantPitch - this.pitch);
         const range = RANGE[this.wid] || RANGE.carbine;
         const still = this.def.scope || this.wid === 'revolver'; // rifles and revolvers stop to aim
@@ -309,7 +311,8 @@
       const moving = Math.hypot(this.body.vel.x, this.body.vel.z) > 1;
       const spread = (moving ? def.spreadHip : def.scope || this.wid === 'revolver' ? def.spreadAds : def.spreadHip * 0.6) * Math.PI / 180 * 0.5;
       const steady = !moving && def.scope ? 0.3 : 1; // a scoped rifle held still barely wavers
-      const sigma = sk.err * steady * (1 + (moving ? 0.5 : 0) + Math.min(1, t.speed / 6) * 0.6) + spread;
+      const settle = sk.moveErr ? U.lerp(sk.moveErr, 1, Math.min(1, (this.stillT || 0) / sk.settle)) : 1; // easy bots only land shots on a target that has stopped
+      const sigma = sk.err * steady * settle * (1 + (moving ? 0.5 : 0) + Math.min(1, t.speed / 6) * 0.6) + spread;
       const fall = d <= def.falloff[0] ? 1 : d >= def.falloff[1] ? def.falloff[2] : U.lerp(1, def.falloff[2], (d - def.falloff[0]) / (def.falloff[1] - def.falloff[0]));
       let dmg = 0, head = false, whiz = false;
       const ends = [];
