@@ -193,7 +193,7 @@
   };
   G.bindUI = function () {
     document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-continue], [data-map], [data-mode], [data-loadout], [data-bots], [data-botskill]');
+      const b = e.target.closest('[data-act], [data-diff], [data-campaign], [data-continue], [data-map], [data-mode], [data-loadout], [data-kit], [data-bots], [data-botskill]');
       if (!b || b.disabled) return;
       this.initAudio();
       A.play('uiClick', null, { ui: true });
@@ -203,6 +203,7 @@
       if (b.dataset.map) { this.mpSel.map = b.dataset.map; this.renderMpPick(); return; }
       if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
+      if (b.dataset.kit) { const i = b.dataset.kit.indexOf(':'); CF.MP.editKit(CF.MP.nextLoadout, b.dataset.kit.slice(0, i), b.dataset.kit.slice(i + 1)); this.renderLoadouts(); return; }
       if (b.dataset.bots) { this.mpSel.bots = +b.dataset.bots; this.saveBotPrefs(); this.renderMpPick(); return; }
       if (b.dataset.botskill) { this.mpSel.skill = b.dataset.botskill; this.saveBotPrefs(); this.renderMpPick(); return; }
       this.act(b.dataset.act);
@@ -242,6 +243,9 @@
       $(id).addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') e.target.blur(); });
       $(id).addEventListener('change', (e) => { CF.MP.saveName(e.target.value); e.target.value = CF.MP.name; $('mpName').value = CF.MP.name; if (this.screen === 'leaderboard') CF.Board.open(); });
     }
+    // the loadout editor's class name (rebuilt with the editor, so listen on the document)
+    document.addEventListener('keydown', (e) => { if (e.target.classList && e.target.classList.contains('lo-name-in') && (e.code === 'Enter' || e.code === 'NumpadEnter')) e.target.blur(); });
+    document.addEventListener('change', (e) => { if (e.target.classList && e.target.classList.contains('lo-name-in')) { CF.MP.editKit(CF.MP.nextLoadout, 'name', e.target.value); this.renderLoadouts(); } });
     $('mpPublic').addEventListener('change', (e) => { try { localStorage.setItem('cinderfall.public', e.target.checked ? '1' : '0'); } catch (err) { /* storage unavailable */ } });
     $('diffNoDrones').addEventListener('change', (e) => { CF.settings.noDrones = e.target.checked; CF.saveSettings(); });
     $('mpCode').addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.initAudio(); this.act('mpjoin'); } });
@@ -1119,11 +1123,12 @@
     const M = MPM();
     const keys = M.loKeys(), defs = M.loDefs();
     for (const grid of document.querySelectorAll('[data-lo-grid]')) {
-      if (grid.dataset.set !== keys.join()) {
-        grid.dataset.set = keys.join(); grid.textContent = '';
+      const sig = keys.map((k) => k + '|' + defs[k].label + '|' + defs[k].desc + '|' + (keys === M.LO_KEYS && M.isEdited(k) ? 1 : 0)).join('/');
+      if (grid.dataset.set !== sig) {
+        grid.dataset.set = sig; grid.textContent = '';
         keys.forEach((k, i) => {
           const lo = defs[k], b = document.createElement('button');
-          b.className = 'lo-card'; b.dataset.loadout = k;
+          b.className = 'lo-card' + (keys === M.LO_KEYS && M.isEdited(k) ? ' edited' : ''); b.dataset.loadout = k;
           const n = document.createElement('span'); n.className = 'lo-name'; n.textContent = lo.label;
           const kb = document.createElement('kbd'); kb.textContent = String(i + 1);
           const d = document.createElement('span'); d.className = 'lo-desc'; d.textContent = lo.desc;
@@ -1132,11 +1137,46 @@
       }
       for (const b of grid.children) b.classList.toggle('sel', b.dataset.loadout === M.nextLoadout);
     }
+    for (const ed of document.querySelectorAll('[data-lo-edit]')) this.renderKitEditor(ed);
     const md = $('mdLo');
     if (md) {
       md.textContent = '';
       keys.forEach((k, i) => { const s = document.createElement('span'); s.className = k === M.nextLoadout ? 'sel' : ''; s.textContent = (i + 1) + ' ' + defs[k].label; md.appendChild(s); });
     }
+  };
+  /** The lobby's class editor: primary, secondary, equipment and vest for the picked class, plus its name. */
+  G.renderKitEditor = function (ed) {
+    const M = MPM(), k = M.nextLoadout, D = CF.Weapons.defs;
+    const on = M.canEdit() && M.loKeys() === M.LO_KEYS && !!M.DEFAULT_KITS[k];
+    ed.hidden = !on;
+    if (!on) { ed.dataset.sig = ''; return; }
+    const kit = M.kitFor(k), lo = M.myLoadout(k), sig = k + JSON.stringify(kit);
+    if (ed.dataset.sig === sig) return; // unchanged: keep the name box (and its focus) as it is
+    ed.dataset.sig = sig; ed.textContent = '';
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const head = el('div', 'lo-edit-head');
+    const name = el('input', 'lo-name-in'); name.type = 'text'; name.maxLength = 14; name.spellcheck = false; name.value = lo.label; name.title = 'Class name';
+    const reset = el('button', 'btn-ghost lo-reset', 'Reset class'); reset.dataset.kit = 'reset:'; reset.disabled = !M.isEdited(k);
+    head.append(el('span', 'lo-edit-h', 'Edit class'), name, reset);
+    ed.appendChild(head);
+    const stat = (d) => d.rocket ? 'Explosive · ' + d.mag + ' round' + (d.mag > 1 ? 's' : '') : (d.burst ? d.burst + '-round burst' : d.auto ? Math.round(d.rpm) + ' rpm' : 'Semi-auto') + ' · ' + d.mag + ' rds' + (d.range ? ' · ' + d.range + ' m' : '');
+    const row = (title, slot, ids, label, tip, cur, detail) => {
+      const r = el('div', 'lo-row'), chips = el('div', 'lo-chips');
+      r.appendChild(el('span', 'lo-row-h', title));
+      for (const id of ids) {
+        const c = el('button', 'lo-chip' + (id === cur ? ' sel' : ''), label(id));
+        c.dataset.kit = slot + ':' + id; c.title = tip(id);
+        chips.appendChild(c);
+      }
+      r.appendChild(chips);
+      if (detail) r.appendChild(el('span', 'lo-detail', detail));
+      ed.appendChild(r);
+    };
+    const wTip = (id) => D[id].name + ': ' + M.ROLE[id];
+    row('Primary', 'primary', M.PRIMARIES, (id) => D[id].short, wTip, kit.primary, D[kit.primary].name + ' · ' + M.ROLE[kit.primary] + ' ' + stat(D[kit.primary]));
+    row('Secondary', 'secondary', M.SECONDARIES, (id) => D[id].short, wTip, kit.secondary, D[kit.secondary].name + ' · ' + M.ROLE[kit.secondary] + ' ' + stat(D[kit.secondary]));
+    row('Equipment', 'equip', M.EQUIP_KEYS, (id) => M.EQUIP[id].label, (id) => M.EQUIP[id].desc, kit.equip, M.EQUIP[kit.equip].desc);
+    row('Vest', 'vest', M.VEST_KEYS, (id) => M.VEST[id].label, (id) => M.VEST[id].desc, kit.vest, M.VEST[kit.vest].desc + ' Move speed ' + Math.round(lo.speed * 100) + '%.');
   };
   G.mpBusy = function (on) {
     for (const b of document.querySelectorAll('[data-act="mphost"], [data-act="mpjoin"]')) b.disabled = on;

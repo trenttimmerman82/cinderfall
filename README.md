@@ -36,7 +36,7 @@ It is set in a rain-soaked neon city.
   other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
   (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) or co-op
-  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) and **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow), with eight loadouts. Kill-streak drones
+  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) and **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow), with eight classes you can edit in the lobby (any primary, eight secondaries including a machine pistol, hand cannon, burst pistol, sawn-off, arc pistol and grenade pistol, plus equipment and vest). Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -51,7 +51,7 @@ It is set in a rain-soaked neon city.
 
 1. One player picks **Multiplayer**, chooses a map (a big screenshot preview and a thumbnail gallery show what each one looks like) and a mode, and clicks **Host match**. A 5-character room code appears.
 2. Friends open the same page, pick **Multiplayer**, type the code and click **Join match**.
-3. In the lobby everyone picks a loadout and clicks **Deploy**.
+3. In the lobby everyone picks a class (and can edit its primary, secondary, equipment, vest and name) and clicks **Deploy**.
 
 Up to 8 players. Players first try a direct peer-to-peer link (WebRTC through [PeerJS](https://peerjs.com)). If a router or
 school/office Wi-Fi blocks it, they switch to the relay on the Cinderfall server after a few seconds (see **Game server** below).

@@ -439,7 +439,8 @@
    * Put a real weapon model (with a finish) in an operative's hands, replacing the placeholder gun.
    * model.p.gun is the hands' anchor (points -Z). Cached per weapon on the model.
    */
-  const ARM = { carbine: [0.85, 0.12], shotgun: [0.85, 0.12], rail: [0.8, 0.14], pistol: [1.1, -0.02], rocket: [0.8, 0.16], minigun: [0.8, 0.2], satchel: [1.2, 0], revolver: [1.15, -0.02], lmg: [0.8, 0.16], flamer: [0.8, 0.16] };
+  const ARM = { carbine: [0.85, 0.12], shotgun: [0.85, 0.12], rail: [0.8, 0.14], pistol: [1.1, -0.02], rocket: [0.8, 0.16], minigun: [0.8, 0.2], satchel: [1.2, 0], revolver: [1.15, -0.02], lmg: [0.8, 0.16], flamer: [0.8, 0.16],
+    wasp: [1.1, -0.02], magnum: [1.05, -0.02], sawnoff: [1.0, 0.0], tempo: [1.1, -0.02], pip: [1.0, 0.0], arc: [1.1, -0.02] };
   K.arm = function (model, weaponId, finishId) {
     const g = model.p.gun; if (!g || !CF.VM || !ARM[weaponId]) return;
     if (!model.guns) { model.guns = {}; model.placeholder = g.children.slice(); }

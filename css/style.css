@@ -398,6 +398,21 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .lo-card kbd { position: absolute; right: 10px; top: 10px; font: 500 11px/1 var(--f-mono); color: var(--haze); }
 .lo-name { font-size: 20px; }
 .lo-desc { font-size: 13px; }
+.lo-card.edited .lo-name::after { content: " ✎"; font-size: 14px; color: var(--sodium); }
+/* class editor under the loadout cards */
+.lo-edit { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--line-2); background: rgba(7, 6, 13, 0.55); }
+.lo-edit-head { display: flex; align-items: center; gap: 10px; }
+.lo-edit-h, .lo-row-h { font: 500 10px/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--haze); }
+.lo-name-in { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.9); color: var(--yellow); font: 800 18px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.lo-name-in:focus { outline: none; border-color: var(--sodium); }
+.lo-reset.btn-ghost { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.lo-reset:disabled { opacity: 0.4; pointer-events: none; }
+.lo-row { display: grid; gap: 6px; }
+.lo-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.lo-chip { padding: 6px 9px; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.82); color: var(--bone-dim); font: 600 12px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; transition: border-color 0.15s, color 0.15s; }
+.lo-chip:hover { border-color: var(--sodium); color: var(--bone); }
+.lo-chip.sel { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 10px rgba(252, 238, 10, 0.2); }
+.lo-detail { font: 500 12px/1.35 var(--f-body); color: var(--bone-dim); }
 /* public match list */
 .mp-public { margin-top: 4px; }
 .br-list .lb-row { grid-template-columns: 1.3fr 1.2fr 1.4fr 70px 110px; align-items: center; }
@@ -622,7 +637,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .revolver-note { display: none; gap: 6px; padding: 14px 16px; border: 1px solid var(--ember); background: rgba(255, 61, 90, 0.08); }
 .revolver-note b { font: 800 22px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ember); }
 .revolver-note span { font: 500 14px/1.45 var(--f-body); color: var(--bone-dim); }
-body.mp-revolver #screen-mpmenu [data-lo-grid], body.mp-revolver .md-lo, body.mp-revolver .md-lo-label, body.mp-revolver .grenades, body.mp-revolver .streak { display: none !important; }
+body.mp-revolver #screen-mpmenu [data-lo-grid], body.mp-revolver #screen-mpmenu [data-lo-edit], body.mp-revolver .md-lo, body.mp-revolver .md-lo-label, body.mp-revolver .grenades, body.mp-revolver .streak { display: none !important; }
 body.mp-revolver .revolver-note { display: grid; }
 body.mp-revolver .mpb-mode { color: var(--ember); }
 body.mp-revolver .mp-bar { border-left-color: var(--ember); }
@@ -637,7 +652,7 @@ body.mp-revolver .mp-bar { border-left-color: var(--ember); }
 body.mp-sniper .grenades { display: none !important; }
 /* Zombies and co-op */
 .card-coop b::before { content: '⇄ '; color: #37f3ff; }
-body.coop #screen-mpmenu [data-lo-grid], body.coop #screen-mpmenu .mp-h small { display: none; }
+body.coop #screen-mpmenu [data-lo-grid], body.coop #screen-mpmenu [data-lo-edit], body.coop #screen-mpmenu .mp-h small { display: none; }
 body.coop .mp-bar { display: none !important; }
 .card-zombies b::before { content: '☣ '; color: #8dff6a; }
 .card-zombies.sel { border-color: #8dff6a; background: linear-gradient(135deg, rgba(141, 255, 106, 0.14), rgba(255, 60, 90, 0.05)); }
@@ -678,7 +693,7 @@ body.mp-prophunt .ph-note { display: grid; }
 body.mp-prophunt .mpb-mode { color: #4dff9a; }
 body.mp-prophunt .mp-bar { border-left-color: #4dff9a; }
 .board.ph .sb-row { grid-template-columns: 1fr 72px 56px; }
-body.ph-prop #screen-mpmenu [data-lo-grid], body.ph-prop .md-lo, body.ph-prop .md-lo-label, body.ph-prop .weapon-panel, body.ph-prop .grenades, body.ph-prop .streak { display: none !important; }
+body.ph-prop #screen-mpmenu [data-lo-grid], body.ph-prop #screen-mpmenu [data-lo-edit], body.ph-prop .md-lo, body.ph-prop .md-lo-label, body.ph-prop .weapon-panel, body.ph-prop .grenades, body.ph-prop .streak { display: none !important; }
 body.ph-disguised .crosshair, body.ph-disguised .hitmarker { display: none; }
 
 .rc-hud { position: absolute; inset: 0; pointer-events: none; }

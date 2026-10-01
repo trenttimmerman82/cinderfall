@@ -19,7 +19,10 @@
     hard: { label: 'Hard', react: 0.24, err: 0.024, turn: 9, head: 0.3, sight: 100, fov: 2.5, burst: [5, 10], pause: [0.15, 0.35], semi: [0.04, 0.14] }
   };
   // how far each gun likes to fight from, and the furthest it bothers shooting
-  const RANGE = { carbine: [14, 70], minigun: [12, 50], shotgun: [5, 22], pistol: [10, 45], rail: [30, 200], lmg: [14, 65], revolver: [18, 80], flamer: [4, 10] };
+  const RANGE = { carbine: [14, 70], minigun: [12, 50], shotgun: [5, 22], pistol: [10, 45], rail: [30, 200], lmg: [14, 65], revolver: [18, 80], flamer: [4, 10],
+    wasp: [6, 30], magnum: [12, 60], tempo: [10, 50], sawnoff: [3, 14], arc: [3, 15] };
+  // the sidearms a bot may carry (not the Pip-40: lobbed grenades need aiming bots can't do)
+  const BOT_SIDEARMS = ['pistol', 'pistol', 'wasp', 'magnum', 'tempo', 'sawnoff', 'arc', 'revolver'];
   const Bots = CF.Bots = { list: [], skill: 'normal', SKILL, killY: -30 };
   const _eye = new THREE.Vector3(), _aim = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _e = new THREE.Vector3(), _m = new THREE.Vector3();
   const UP = new THREE.Vector3(0, 1, 0);
@@ -41,7 +44,9 @@
     const M = MP();
     if (M.mode === 'revolver') return M.REVOLVER;
     if (M.mode === 'sniper') return M.SNIPER[pick(M.SNIPER_KEYS)];
-    return M.LOADOUTS[pick(['assault', 'assault', 'breacher', 'marksman', 'gunner', 'heavy', 'gunslinger', 'pyro'])]; // no Demolition: rockets and satchels need aiming bots can't do
+    const k = pick(['assault', 'assault', 'breacher', 'marksman', 'gunner', 'heavy', 'gunslinger', 'pyro']), d = M.DEFAULT_KITS[k]; // no Demolition: rockets and satchels need aiming bots can't do
+    let side = pick(BOT_SIDEARMS); if (side === d.primary) side = 'pistol';
+    return M.buildLoadout(Object.assign({}, d, { secondary: side }), d.label, d.desc);
   }
 
   class Bot extends CF.MP.Remote {

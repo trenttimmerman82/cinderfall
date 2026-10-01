@@ -8,16 +8,72 @@
   const TEAM = [{ name: 'Voltage', hex: 0x36e7ff, css: '#36e7ff', c: [0.35, 3.1, 4.2] }, { name: 'Ronin', hex: 0xff3cc8, css: '#ff3cc8', c: [4.4, 0.45, 3.3] }];
   const FFA_COLS = [[5.6, 0.4, 0.8], [4.6, 3.8, 0.45], [0.6, 4.4, 1.9], [5.0, 1.9, 0.35], [2.1, 0.8, 5.2], [5.0, 1.2, 2.6], [0.35, 3.1, 4.2], [3.3, 3.5, 4.0]];
   const FFA_CSS = ['#ff3355', '#ffe14d', '#4dff9a', '#ff8a2a', '#9d5cff', '#ff6fb8', '#36e7ff', '#dfe8ff'];
-  const LOADOUTS = {
-    assault: { label: 'Assault', desc: 'M7 Vanguard carbine and P-11 sidearm. Reliable at every range.', weapons: { carbine: { mag: 30, reserve: 150 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 2, armor: 0, speed: 1 },
-    breacher: { label: 'Breacher', desc: 'KS-12 shotgun and sidearm, plus 50 armor. Owns the alleys.', weapons: { shotgun: { mag: 7, reserve: 28 }, pistol: { mag: 12, reserve: Infinity } }, current: 'shotgun', grenades: 2, armor: 50, speed: 0.97 },
-    marksman: { label: 'Marksman', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.', weapons: { rail: { mag: 4, reserve: 16 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rail', grenades: 1, armor: 0, speed: 1 },
-    heavy: { label: 'Heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.', weapons: { minigun: { mag: 150, reserve: 300 }, pistol: { mag: 12, reserve: Infinity } }, current: 'minigun', grenades: 1, armor: 50, speed: 0.9 },
-    demo: { label: 'Demolition', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.', weapons: { rocket: { mag: 1, reserve: 3 }, satchel: { mag: 2, reserve: 2 }, pistol: { mag: 12, reserve: Infinity } }, current: 'rocket', grenades: 1, armor: 0, speed: 1 },
-    gunslinger: { label: 'Gunslinger', desc: 'KF-44 Kingfisher revolver and P-11. Two body shots, one to the head. Light on your feet.', weapons: { revolver: { mag: 6, reserve: 36 }, pistol: { mag: 12, reserve: Infinity } }, current: 'revolver', grenades: 2, armor: 0, speed: 1.05 },
-    gunner: { label: 'Gunner', desc: 'HX-9 Warden LMG and sidearm. A 100-round box, a long reload.', weapons: { lmg: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'lmg', grenades: 1, armor: 25, speed: 0.94 },
-    pyro: { label: 'Pyro', desc: 'Ember-9 flamethrower and P-11, plus 25 armor. 11 m of fire; anyone it touches keeps burning.', weapons: { flamer: { mag: 100, reserve: 200 }, pistol: { mag: 12, reserve: Infinity } }, current: 'flamer', grenades: 1, armor: 25, speed: 1 }
+  // ------------------------------------------------------------ loadouts: every class is a kit you can edit
+  // A kit is primary + secondary + equipment + vest. The eight classes start from these defaults; the lobby's
+  // editor changes any part (and the name), saved per class in localStorage. Bots always use the defaults.
+  const PRIMARIES = ['carbine', 'shotgun', 'rail', 'lmg', 'minigun', 'flamer', 'rocket', 'revolver'];
+  const SECONDARIES = CF.Weapons.SIDEARMS;
+  const EQUIP = {
+    frag: { label: 'Frag grenades', desc: 'Two frags.', grenades: 2 },
+    satchel: { label: 'Satchel charges', desc: 'Two charges plus two spare to stick and detonate, and one frag.', grenades: 1, satchel: true },
+    bandolier: { label: 'Bandolier', desc: 'One frag and half again as much spare ammo for both guns.', grenades: 1, ammo: 1.5 }
   };
+  const VEST = {
+    none: { label: 'No vest', desc: 'No armor, a little quicker on your feet.', armor: 0, speed: 1.04 },
+    light: { label: 'Light vest', desc: '25 armor.', armor: 25, speed: 1 },
+    heavy: { label: 'Heavy vest', desc: '50 armor, a little slower.', armor: 50, speed: 0.96 }
+  };
+  const EQUIP_KEYS = ['frag', 'satchel', 'bandolier'], VEST_KEYS = ['none', 'light', 'heavy'];
+  const WEIGHT = { minigun: 0.94, lmg: 0.94, rocket: 0.98 }; // heavy primaries slow you down
+  const RESERVE = { rail: 16, rocket: 3 }; // spare ammo where multiplayer differs from the gun's campaign default
+  /** One line on each gun for the editor. */
+  const ROLE = {
+    carbine: 'Assault rifle. Reliable at every range.', shotgun: 'Pump shotgun. Owns the alleys.', rail: 'Rail rifle. Headshots are lethal.',
+    lmg: 'Belt-fed LMG. 100 rounds, long reload.', minigun: 'Minigun. Spins up, then shreds.', flamer: 'Flamethrower. 11 m of fire; burns on.',
+    rocket: 'Rocket launcher. Blows them away.', revolver: 'Revolver. Two body shots, one to the head.',
+    pistol: 'Sidearm. Endless spare magazines.', wasp: 'Machine pistol. Sprays fast up close.', magnum: 'Hand cannon. Two body shots.',
+    tempo: 'Burst pistol. Three rounds a pull.', sawnoff: 'Sawn-off. Two shells, brutal in a room.', arc: 'Arc pistol. 16 m of lightning that jumps.',
+    pip: 'Grenade pistol. One lobbed round at a time.'
+  };
+  const DEFAULT_KITS = {
+    assault: { label: 'Assault', primary: 'carbine', secondary: 'pistol', equip: 'frag', vest: 'none', desc: 'M7 Vanguard carbine and P-11 sidearm. Reliable at every range.' },
+    breacher: { label: 'Breacher', primary: 'shotgun', secondary: 'pistol', equip: 'frag', vest: 'heavy', desc: 'KS-12 shotgun and sidearm, plus 50 armor. Owns the alleys.' },
+    marksman: { label: 'Marksman', primary: 'rail', secondary: 'pistol', equip: 'frag', vest: 'none', desc: 'VX-3 rail rifle and sidearm. Headshots are lethal.' },
+    gunner: { label: 'Gunner', primary: 'lmg', secondary: 'pistol', equip: 'frag', vest: 'light', desc: 'HX-9 Warden LMG and sidearm. A 100-round box, a long reload.' },
+    heavy: { label: 'Heavy', primary: 'minigun', secondary: 'pistol', equip: 'frag', vest: 'heavy', desc: 'Rotor-6 minigun and sidearm, plus 50 armor. Spins up, then shreds.' },
+    demo: { label: 'Demolition', primary: 'rocket', secondary: 'pistol', equip: 'satchel', vest: 'none', desc: 'Havoc RPG, satchel charges and sidearm. Blow them away.' },
+    gunslinger: { label: 'Gunslinger', primary: 'revolver', secondary: 'pistol', equip: 'frag', vest: 'none', desc: 'KF-44 Kingfisher revolver and P-11. Two body shots, one to the head. Light on your feet.' },
+    pyro: { label: 'Pyro', primary: 'flamer', secondary: 'pistol', equip: 'frag', vest: 'light', desc: 'Ember-9 flamethrower and P-11, plus 25 armor. 11 m of fire; anyone it touches keeps burning.' }
+  };
+  /** A kit → the loadout the game spawns you with ({ weapons, current, grenades, armor, speed }). */
+  function buildLoadout(kit, label, desc) {
+    const D = CF.Weapons.defs, eq = EQUIP[kit.equip] || EQUIP.frag, vest = VEST[kit.vest] || VEST.none, weapons = {};
+    const add = (id) => { const d = D[id], r = RESERVE[id] != null ? RESERVE[id] : d.reserve; weapons[id] = { mag: d.mag, reserve: r === Infinity ? r : Math.round(r * (eq.ammo || 1)) }; };
+    add(kit.primary);
+    if (eq.satchel) weapons.satchel = { mag: 2, reserve: 2 };
+    add(kit.secondary);
+    const speed = Math.round(vest.speed * (WEIGHT[kit.primary] || 1) * 1000) / 1000;
+    return { label, desc: desc || describeKit(kit), kit, weapons, current: kit.primary, grenades: eq.grenades, armor: vest.armor, speed };
+  }
+  function describeKit(k) {
+    const D = CF.Weapons.defs;
+    return D[k.primary].name + ' and ' + D[k.secondary].name + '. ' + EQUIP[k.equip].label + ', ' + VEST[k.vest].label.toLowerCase() + '.';
+  }
+  /** A kit read from storage (or anywhere): fill gaps from the default and refuse anything the editor couldn't make. */
+  function cleanKit(k, def) {
+    const out = Object.assign({}, def);
+    if (!k || typeof k !== 'object') return out;
+    if (PRIMARIES.includes(k.primary)) out.primary = k.primary;
+    if (SECONDARIES.includes(k.secondary)) out.secondary = k.secondary;
+    if (EQUIP[k.equip]) out.equip = k.equip;
+    if (VEST[k.vest]) out.vest = k.vest;
+    if (typeof k.name === 'string' && k.name.trim()) out.name = k.name.replace(/[<>]/g, '').trim().slice(0, 14);
+    if (out.primary === out.secondary) out.secondary = out.primary === 'pistol' ? 'revolver' : 'pistol'; // can't carry the revolver twice
+    return out;
+  }
+  const slimKit = (k) => { const o = { primary: k.primary, secondary: k.secondary, equip: k.equip, vest: k.vest }; if (k.name) o.name = k.name; return o; };
+  const LOADOUTS = {}; // the defaults (bots, and any class you haven't edited)
+  for (const k in DEFAULT_KITS) LOADOUTS[k] = buildLoadout(DEFAULT_KITS[k], DEFAULT_KITS[k].label, DEFAULT_KITS[k].desc);
   const LO_KEYS = ['assault', 'breacher', 'marksman', 'gunner', 'heavy', 'demo', 'gunslinger', 'pyro'];
   // Sniper Valley: long-range kit only (the towers never meet, so shotguns, miniguns and grenades have nothing to do)
   const SNIPER = {
@@ -44,14 +100,50 @@
   const MP = CF.MP = {
     active: false, role: null, myId: '', name: 'Operative', mode: 'ffa', map: 'market', players: {}, remotes: {}, team: 0,
     loadout: 'assault', nextLoadout: 'assault', timeLeft: 0, limit: 20, teamScores: [0, 0], ended: false,
-    sendT: 0, tickT: 0, deadT: 0, lastHit: null, colorIdx: 0, LOADOUTS, LO_KEYS, TEAM, MODES, REVOLVER, SNIPER, SNIPER_KEYS
+    sendT: 0, tickT: 0, deadT: 0, lastHit: null, colorIdx: 0, LOADOUTS, LO_KEYS, TEAM, MODES, REVOLVER, SNIPER, SNIPER_KEYS,
+    PRIMARIES, SECONDARIES, EQUIP, VEST, EQUIP_KEYS, VEST_KEYS, ROLE, DEFAULT_KITS, buildLoadout, kits: {}
   };
   MP.modeDef = () => MODES[MP.mode] || MODES.ffa;
+  /** Your version of a class: its saved edits on top of the default kit. */
+  MP.kitFor = (k) => cleanKit(MP.kits[k], DEFAULT_KITS[k] || DEFAULT_KITS.assault);
+  MP.isEdited = (k) => !!MP.kits[k];
+  /** Your class k as a loadout (the default text until you change something). */
+  MP.myLoadout = function (k) {
+    if (!DEFAULT_KITS[k]) k = 'assault';
+    if (!MP.kits[k]) return LOADOUTS[k];
+    const kit = MP.kitFor(k);
+    return buildLoadout(kit, kit.name || DEFAULT_KITS[k].label);
+  };
   MP.loadoutFor = (k) => (MP.mode === 'revolver' ? REVOLVER : MP.mode === 'prophunt' && MP.team === CF.PH.PROP ? CF.PH.PROP_LOADOUT
-    : MP.mode === 'sniper' ? SNIPER[k] || SNIPER.deadeye : LOADOUTS[k] || LOADOUTS.assault);
+    : MP.mode === 'sniper' ? SNIPER[k] || SNIPER.deadeye : MP.myLoadout(k));
   /** The loadouts offered in the current mode (the picker and the number keys while respawning). */
   MP.loKeys = () => (MP.active && MP.mode === 'sniper' ? SNIPER_KEYS : LO_KEYS);
-  MP.loDefs = () => (MP.active && MP.mode === 'sniper' ? SNIPER : LOADOUTS);
+  MP.loDefs = function () {
+    if (MP.active && MP.mode === 'sniper') return SNIPER;
+    const out = {}; for (const k of LO_KEYS) out[k] = MP.myLoadout(k); return out;
+  };
+  /** Can the classes be edited right now? (Sniper Valley, Revolver One-Shot and co-op hand out fixed kits.) */
+  MP.canEdit = () => !(MP.active && (MP.mode === 'sniper' || MP.mode === 'revolver' || MP.mode === 'coop'));
+  /** The lobby editor: set one part of class k (slot: primary | secondary | equip | vest | name), or reset it. */
+  MP.editKit = function (k, slot, v) {
+    if (!DEFAULT_KITS[k]) return;
+    if (slot === 'reset') delete MP.kits[k];
+    else {
+      const kit = MP.kitFor(k);
+      if (slot === 'primary' && PRIMARIES.includes(v)) { if (kit.secondary === v) kit.secondary = 'pistol'; kit.primary = v; } // (only the revolver is on both lists)
+      else if (slot === 'secondary' && SECONDARIES.includes(v)) { if (kit.primary === v) kit.primary = 'carbine'; kit.secondary = v; }
+      else if (slot === 'equip' && EQUIP[v]) kit.equip = v;
+      else if (slot === 'vest' && VEST[v]) kit.vest = v;
+      else if (slot === 'name') { const n = String(v || '').replace(/[<>]/g, '').trim().slice(0, 14); if (n && n !== DEFAULT_KITS[k].label) kit.name = n; else delete kit.name; }
+      else return;
+      const d = DEFAULT_KITS[k];
+      const same = kit.primary === d.primary && kit.secondary === d.secondary && kit.equip === d.equip && kit.vest === d.vest && !kit.name;
+      if (same) delete MP.kits[k];
+      else MP.kits[k] = slimKit(kit);
+    }
+    try { localStorage.setItem('cinderfall.kits', JSON.stringify(MP.kits)); } catch (e) { /* storage unavailable */ }
+  };
+  try { const saved = JSON.parse(localStorage.getItem('cinderfall.kits') || '{}'); for (const k in saved) if (DEFAULT_KITS[k]) MP.kits[k] = slimKit(cleanKit(saved[k], DEFAULT_KITS[k])); } catch (e) { /* storage unavailable or corrupt */ }
   /** Spawn protection: a short window after spawning (longer in Revolver One-Shot) that ends the moment you fire. */
   MP.protectedNow = () => MP.active && CF.time - (MP.spawnT || -99) < MP.modeDef().protect;
   MP.myCosmetics = () => ({ skin: { p: CF.Profile.equipped('p'), w: CF.Profile.equipped('w') }, pub: CF.Profile.pub() });
@@ -550,10 +642,12 @@
       const def = CF.Weapons.defs[msg.w]; if (!def || !msg.m) return;
       const m = new THREE.Vector3(msg.m[0], msg.m[1], msg.m[2]);
       A.play(def.sound, m, { ref: 7 });
-      CF.FX.muzzle(m, new THREE.Vector3(0, 0, 0), def.id === 'rail' ? 1.5 : 5, def.id === 'rail' ? 4 : 3.2, def.id === 'rail' ? 6 : 1.6, def.flame ? 0.3 : 0.5);
+      const blue = def.id === 'rail' || def.arc;
+      CF.FX.muzzle(m, new THREE.Vector3(0, 0, 0), blue ? 1.5 : 5, blue ? 4 : 3.2, blue ? 6 : 1.6, def.flame || def.arc ? 0.3 : 0.5);
       for (const e of msg.e || []) {
         const end = new THREE.Vector3(e[0], e[1], e[2]);
         if (def.flame) { if (end.distanceTo(m) <= def.range + 3) CF.FX.flame(m, end, 5); continue; } // no sparks: the stream just stops
+        if (def.arc) { CF.Weapons.arcBolt(m, end); continue; }
         if (def.id === 'rail') CF.FX.tracer(m, end, { r: 0.8, g: 3.2, b: 5, w: 0.07, life: 0.5 });
         else CF.FX.tracer(m, end, { speed: def.pellets > 1 ? 260 : 380, len: 4, w: 0.026, r: 3.2, g: 2.1, b: 1.0 });
         CF.FX.sparks(end.x, end.y, end.z, 0, 1, 0, 3, 3);

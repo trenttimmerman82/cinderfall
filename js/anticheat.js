@@ -14,9 +14,9 @@
   const AC = CF.AC = { players: {}, aim: {}, banned: {}, bannedPub: {}, armed: null, armedT: 0, sig: '' };
   const SUSPECT = 10, LIKELY = 30; // score at which the host is warned, and warned again
   // most damage one hit message can carry for things that aren't hitscan guns (explosions deal it once, falling off)
-  const OTHER_MAX = { rocket: 158, satchel: 173, frag: 150, rc: 260, melee: 170, drone: 20, burn: 4 };
-  const OTHER_RATE = { rocket: 4, satchel: 4, frag: 4, rc: 4, melee: 2, drone: 9.1, burn: 16 }; // hits per second, before slack (burn: 4 ticks a second on up to 4 people)
-  const EXPLOSIVE = { rocket: 1, satchel: 1, frag: 1, rc: 1, drone: 1, burn: 1 }; // can land after the thrower died, and round corners (burn: the flamethrower's afterburn)
+  const OTHER_MAX = { pip: 110, rocket: 158, satchel: 173, frag: 150, rc: 260, melee: 170, drone: 20, burn: 4 };
+  const OTHER_RATE = { pip: 4, rocket: 4, satchel: 4, frag: 4, rc: 4, melee: 2, drone: 9.1, burn: 16 }; // hits per second, before slack (burn: 4 ticks a second on up to 4 people)
+  const EXPLOSIVE = { pip: 1, rocket: 1, satchel: 1, frag: 1, rc: 1, drone: 1, burn: 1 }; // can land after the thrower died, and round corners (burn: the flamethrower's afterburn)
   const WINDOW = 3; // seconds of hits the fire-rate check looks at
   const now = () => performance.now() / 1000;
   const num3 = (p) => Array.isArray(p) && p.length === 3 && Number.isFinite(+p[0]) && Number.isFinite(+p[1]) && Number.isFinite(+p[2]);

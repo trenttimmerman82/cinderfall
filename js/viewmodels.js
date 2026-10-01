@@ -431,7 +431,149 @@
     return g;
   };
 
-  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg, flamer };
+  // ---- multiplayer sidearms. All are held like the P-11: right hand on the grip, left hand cupping it.
+  function sidearmHands(gun, P, gz, lz) {
+    P.handR = hand(M.glove, 1); P.handR.position.set(0.003, -0.035, gz); P.handR.rotation.set(0.2, 0, -0.1); gun.add(P.handR);
+    forearm(gun, 0.02, -0.07, gz + 0.06, 0.12, -0.3, 0.46);
+    P.handL = new THREE.Group(); gun.add(P.handL); P.handL.position.set(-0.03, -0.05, lz == null ? gz - 0.01 : lz);
+    const hl = hand(M.glove, -1); hl.rotation.set(0.25, 0.2, 0.8); P.handL.add(hl);
+    forearm(P.handL, -0.02, -0.03, 0.03, -0.2, -0.3, 0.4);
+    P.handLHome = P.handL.position.clone();
+  }
+  /** VZ-9 Wasp: a boxy machine pistol with a long stick magazine, a compensator and a folded front grip. */
+  function wasp(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    P.slide = new THREE.Group(); gun.add(P.slide);
+    B(P.slide, M.metal, 0, 0.052, -0.07, 0.036, 0.036, 0.2);
+    for (let i = 0; i < 4; i++) B(P.slide, M.polymer, 0.0185, 0.052, 0.005 + i * 0.008, 0.002, 0.026, 0.003);
+    B(P.slide, M.metal, 0, 0.074, -0.16, 0.006, 0.01, 0.006); B(P.slide, M.metal, 0, 0.074, 0.02, 0.016, 0.01, 0.008);
+    part(P.slide, sph(), M.dot, 0, 0.0795, -0.16, 0.0022, 0.0022, 0.0022);
+    B(gun, M.polymer, 0, 0.022, -0.06, 0.034, 0.028, 0.17);
+    B(gun, M.metal, 0, 0.05, -0.19, 0.03, 0.03, 0.05);                       // compensator
+    for (let i = 0; i < 3; i++) B(gun, M.polymer, 0, 0.066, -0.175 - i * 0.013, 0.02, 0.004, 0.006);
+    B(gun, M.accent, 0.0175, 0.022, -0.06, 0.001, 0.006, 0.13);
+    B(gun, M.polymer, 0, -0.035, -0.12, 0.016, 0.05, 0.016, 0.3, 0, 0);       // folded front grip
+    B(gun, M.polymer, 0, -0.04, 0.015, 0.033, 0.11, 0.05, -0.22, 0, 0);
+    P.mag = new THREE.Group(); P.mag.position.set(0, -0.1, 0.035); gun.add(P.mag);
+    B(P.mag, M.metal, 0, -0.04, 0, 0.026, 0.1, 0.042, -0.22, 0, 0);          // stick mag below the grip
+    B(P.mag, M.accent, 0, -0.088, 0.01, 0.028, 0.008, 0.044, -0.22, 0, 0);
+    B(gun, M.polymer, 0, 0.0, -0.02, 0.008, 0.02, 0.04);
+    P.muzzle = node(gun, 0, 0.05, -0.22);
+    P.eject = node(gun, 0.02, 0.062, -0.03);
+    if (hands) sidearmHands(gun, P, 0.03);
+    return { root, gun, parts: P, sightY: 0.078, sightZ: 0.02 };
+  }
+  /** Hammer .50: a big, square-slided hand cannon with a ported barrel. */
+  function magnum(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    P.slide = new THREE.Group(); gun.add(P.slide);
+    B(P.slide, M.steel, 0, 0.056, -0.08, 0.04, 0.042, 0.24);
+    for (let i = 0; i < 3; i++) B(P.slide, M.metal, 0, 0.078, -0.16 - i * 0.022, 0.026, 0.004, 0.01); // ports
+    for (let i = 0; i < 6; i++) B(P.slide, M.metal, 0.0205, 0.056, 0.0 + i * 0.008, 0.002, 0.03, 0.003);
+    B(P.slide, M.metal, 0, 0.081, -0.19, 0.006, 0.012, 0.008);
+    B(P.slide, M.metal, -0.011, 0.081, 0.025, 0.007, 0.012, 0.008); B(P.slide, M.metal, 0.011, 0.081, 0.025, 0.007, 0.012, 0.008);
+    part(P.slide, sph(), M.dot, 0, 0.0875, -0.19, 0.0025, 0.0025, 0.0025);
+    B(gun, M.metal, 0, 0.024, -0.07, 0.038, 0.028, 0.2);
+    CZ(gun, M.steel, 0, 0.056, -0.205, 0.011, 0.012);
+    B(gun, M.accent, 0.0195, 0.024, -0.08, 0.001, 0.006, 0.15);
+    B(gun, M.tan, 0, -0.045, 0.02, 0.036, 0.12, 0.056, -0.24, 0, 0);          // wood-look grip
+    P.mag = new THREE.Group(); P.mag.position.set(0, -0.1, 0.035); gun.add(P.mag);
+    B(P.mag, M.metal, 0, -0.005, 0, 0.038, 0.012, 0.058, -0.24, 0, 0);
+    B(gun, M.metal, 0, 0.0, -0.025, 0.009, 0.022, 0.045);
+    P.muzzle = node(gun, 0, 0.056, -0.215);
+    P.eject = node(gun, 0.024, 0.07, -0.03);
+    if (hands) sidearmHands(gun, P, 0.035);
+    return { root, gun, parts: P, sightY: 0.088, sightZ: 0.025 };
+  }
+  /** Mule: a sawn-off side-by-side with a pistol grip. The barrels drop open to reload. */
+  function sawnoff(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    B(gun, M.metal, 0, 0.04, 0.0, 0.05, 0.05, 0.1);                           // action
+    B(gun, M.metal, 0, 0.07, 0.02, 0.012, 0.012, 0.03);                       // lever
+    const bb = node(gun, 0, 0.045, -0.05);                                   // barrels
+    for (const sx of [-0.012, 0.012]) { CZ(bb, M.steel, sx, 0, -0.13, 0.012, 0.26); CZ(bb, M.polymer, sx, 0, -0.262, 0.008, 0.006); }
+    B(bb, M.metal, 0, 0.014, -0.13, 0.006, 0.006, 0.26);                      // rib
+    B(bb, M.tan, 0, -0.018, -0.08, 0.046, 0.024, 0.13);                       // forend
+    B(bb, M.accent, 0.0235, -0.018, -0.08, 0.001, 0.006, 0.1);
+    part(bb, sph(), M.dot, 0, 0.02, -0.255, 0.0025, 0.0025, 0.0025);
+    P.mag = new THREE.Group(); P.mag.position.set(-0.03, 0.0, 0.03); gun.add(P.mag); // two fresh shells in the left hand
+    for (const sx of [-0.012, 0.012]) { CZ(P.mag, M.shell, sx, 0, 0, 0.011, 0.05); CZ(P.mag, M.brass, sx, 0, 0.027, 0.012, 0.008); }
+    B(gun, M.tan, 0, -0.035, 0.065, 0.04, 0.12, 0.055, -0.45, 0, 0);          // pistol grip
+    B(gun, M.metal, 0, 0.004, 0.02, 0.005, 0.024, 0.04);
+    P.muzzle = node(gun, 0, 0.045, -0.32);
+    P.eject = node(gun, 0, 0.05, 0.0);
+    if (hands) sidearmHands(gun, P, 0.07, 0.06);
+    return { root, gun, parts: P, sightY: 0.075, sightZ: 0.02 };
+  }
+  /** TR-3 Tempo: a sleek burst pistol with a light rail and a full-length accent stripe. */
+  function tempo(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    P.slide = new THREE.Group(); gun.add(P.slide);
+    B(P.slide, M.metal, 0, 0.05, -0.07, 0.03, 0.032, 0.21);
+    B(P.slide, M.accent, 0, 0.0665, -0.07, 0.008, 0.001, 0.18);
+    for (let i = 0; i < 5; i++) B(P.slide, M.polymer, 0.0155, 0.05, -0.005 + i * 0.008, 0.002, 0.024, 0.003);
+    B(P.slide, M.metal, 0, 0.07, -0.165, 0.005, 0.009, 0.006);
+    B(P.slide, M.metal, -0.008, 0.07, 0.025, 0.006, 0.01, 0.008); B(P.slide, M.metal, 0.008, 0.07, 0.025, 0.006, 0.01, 0.008);
+    part(P.slide, sph(), M.dot, 0, 0.0755, -0.165, 0.0022, 0.0022, 0.0022);
+    B(gun, M.polymer, 0, 0.022, -0.06, 0.03, 0.026, 0.18);
+    B(gun, M.polymer, 0, 0.0, -0.13, 0.024, 0.02, 0.05);                       // light
+    part(gun, new THREE.CircleGeometry(0.008, 12), M.glass, 0, 0.0, -0.156);
+    CZ(gun, M.steel, 0, 0.05, -0.18, 0.007, 0.012);
+    B(gun, M.polymer, 0, -0.04, 0.018, 0.031, 0.11, 0.05, -0.2, 0, 0);
+    P.mag = new THREE.Group(); P.mag.position.set(0, -0.09, 0.03); gun.add(P.mag);
+    B(P.mag, M.accent, 0, -0.005, 0, 0.033, 0.01, 0.05, -0.2, 0, 0);
+    B(gun, M.polymer, 0, 0.0, -0.02, 0.008, 0.02, 0.04);
+    P.muzzle = node(gun, 0, 0.05, -0.19);
+    P.eject = node(gun, 0.02, 0.06, -0.03);
+    if (hands) sidearmHands(gun, P, 0.03);
+    return { root, gun, parts: P, sightY: 0.074, sightZ: 0.02 };
+  }
+  /** Pip-40: a stubby single-shot grenade pistol. The round sits in the open breech. */
+  function pip(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = {};
+    CZ(gun, M.grenade, 0, 0.055, -0.11, 0.034, 0.2);                         // fat barrel
+    CZ(gun, M.metal, 0, 0.055, -0.215, 0.037, 0.02, true);
+    CZ(gun, M.metal, 0, 0.055, -0.01, 0.036, 0.02, true);
+    B(gun, M.accent, 0.035, 0.055, -0.11, 0.002, 0.008, 0.15);
+    B(gun, M.metal, 0, 0.03, 0.03, 0.036, 0.04, 0.07);                        // breech
+    B(gun, M.metal, 0, 0.1, -0.06, 0.006, 0.026, 0.01);                       // flip-up ladder sight
+    B(gun, M.metal, 0, 0.095, 0.04, 0.014, 0.014, 0.006);
+    part(gun, sph(), M.dot, 0, 0.114, -0.06, 0.0025, 0.0025, 0.0025);
+    B(gun, M.polymer, 0, -0.035, 0.05, 0.034, 0.11, 0.05, -0.25, 0, 0);
+    B(gun, M.metal, 0, 0.005, 0.0, 0.006, 0.022, 0.04);
+    P.mag = new THREE.Group(); P.mag.position.set(0, 0.055, 0.0); gun.add(P.mag); // the loaded round, seen in the breech
+    CZ(P.mag, M.brass, 0, 0, 0.02, 0.03, 0.03); part(P.mag, sph(), M.shell, 0, 0, -0.01, 0.026, 0.026, 0.03);
+    P.muzzle = node(gun, 0, 0.055, -0.23);
+    P.eject = node(gun, 0, 0.055, 0.04);
+    if (hands) sidearmHands(gun, P, 0.06);
+    return { root, gun, parts: P, sightY: 0.114, sightZ: -0.06 };
+  }
+  /** Volt arc pistol: an emitter fork in front of a glowing capacitor drum. */
+  function arc(hands) {
+    const root = new THREE.Group(), gun = new THREE.Group(); root.add(gun);
+    const P = { coils: [] };
+    B(gun, M.metal, 0, 0.048, -0.04, 0.036, 0.04, 0.16);
+    for (const sx of [-1, 1]) B(gun, M.steel, sx * 0.014, 0.05, -0.17, 0.008, 0.012, 0.11); // the fork
+    for (let i = 0; i < 3; i++) P.coils.push(part(gun, GEO.coil || (GEO.coil = new THREE.TorusGeometry(1, 0.22, 6, 16)), M.coil, 0, 0.05, -0.13 - i * 0.032, 0.02, 0.02, 0.02));
+    CZ(gun, M.metal, 0, 0.012, -0.05, 0.022, 0.1);                            // capacitor drum
+    P.cell = B(gun, M.coil, 0.0225, 0.012, -0.05, 0.002, 0.012, 0.07);
+    B(gun, M.metal, 0, 0.074, -0.02, 0.006, 0.012, 0.008); B(gun, M.metal, 0, 0.072, -0.11, 0.004, 0.01, 0.006);
+    B(gun, M.polymer, 0, -0.04, 0.03, 0.032, 0.11, 0.05, -0.22, 0, 0);
+    P.mag = new THREE.Group(); P.mag.position.set(0, -0.09, 0.045); gun.add(P.mag); // battery
+    B(P.mag, M.coil, 0, -0.005, 0, 0.034, 0.012, 0.05, -0.22, 0, 0);
+    B(gun, M.metal, 0, 0.0, 0.0, 0.008, 0.02, 0.04);
+    P.muzzle = node(gun, 0, 0.05, -0.23);
+    P.eject = node(gun, 0.02, 0.06, -0.03);
+    if (hands) sidearmHands(gun, P, 0.045);
+    return { root, gun, parts: P, sightY: 0.08, sightZ: 0.0 };
+  }
+
+  const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg, flamer, wasp, magnum, sawnoff, tempo, pip, arc };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);

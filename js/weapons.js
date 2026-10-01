@@ -47,17 +47,51 @@
     revolver: { id: 'revolver', name: 'KF-44 Kingfisher', short: 'KF-44', auto: false, rpm: 72, dmg: 120, head: 2, pellets: 1, cylinder: true,
       spreadHip: 2.6, spreadAds: 0.08, spreadMove: 1.8, spreadAir: 5, bloom: 1.4, bloomMax: 3.5, mag: 6, reserve: 36, maxReserve: 72, // Revolver One-Shot hands it out with endless rounds
       reload: 1.6, reloadEmpty: 1.6, magInAt: 0.62, falloff: [400, 500, 1], recoil: [4.2, 0.8, 0.1, 0.34], adsFov: 0.78, adsTime: 0.2,
-      hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 }
+      hip: [0.11, -0.12, -0.3], adsZ: -0.32, equip: 0.45, sound: 'revolver', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52 },
+    // ---- multiplayer sidearms (the loadout editor's secondary slot). sidearm: small flash, pistol-style reload roll.
+    // VZ-9 Wasp: a machine pistol. Empties its 24 rounds in under two seconds; falls off fast past 10 m.
+    wasp: { id: 'wasp', name: 'VZ-9 Wasp', short: 'WASP', auto: true, rpm: 1050, dmg: 14, head: 1.6, pellets: 1, sidearm: true,
+      spreadHip: 1.9, spreadAds: 0.5, spreadMove: 1.0, spreadAir: 2.5, bloom: 0.22, bloomMax: 2.6, mag: 24, reserve: 120, maxReserve: 192,
+      reload: 1.5, reloadEmpty: 1.8, magInAt: 0.6, falloff: [10, 30, 0.55], recoil: [0.5, 0.45, 0.03, 0.05], adsFov: 0.84, adsTime: 0.14,
+      hip: [0.11, -0.12, -0.3], adsZ: -0.3, equip: 0.3, sound: 'wasp', tracerEvery: 2, shell: 0.7, moveMul: 1.0, noise: 36 },
+    // Hammer .50: a hand cannon. Two body shots, or one to the head of someone without armor.
+    magnum: { id: 'magnum', name: 'Hammer .50', short: 'H-50', auto: false, rpm: 140, dmg: 62, head: 2.0, pellets: 1, sidearm: true,
+      spreadHip: 1.8, spreadAds: 0.1, spreadMove: 1.4, spreadAir: 4, bloom: 1.0, bloomMax: 3.0, mag: 7, reserve: 35, maxReserve: 63,
+      reload: 1.7, reloadEmpty: 2.0, magInAt: 0.6, falloff: [25, 60, 0.7], recoil: [3.6, 0.8, 0.09, 0.28], adsFov: 0.8, adsTime: 0.18,
+      hip: [0.11, -0.125, -0.3], adsZ: -0.32, equip: 0.4, sound: 'magnum', tracerEvery: 1, shell: 1.1, moveMul: 1.0, noise: 50, knock: 3 },
+    // Mule: a sawn-off double barrel. Two shells, both brutal inside a room, useless across one.
+    sawnoff: { id: 'sawnoff', name: 'Mule Sawn-off', short: 'MULE', auto: false, rpm: 200, dmg: 12, head: 1.4, pellets: 9, sidearm: true,
+      spreadHip: 6.5, spreadAds: 5.0, spreadMove: 0.6, spreadAir: 1.5, bloom: 0, bloomMax: 0, mag: 2, reserve: 20, maxReserve: 30,
+      reload: 2.0, reloadEmpty: 2.0, magInAt: 0.55, falloff: [5, 15, 0.15], recoil: [4.6, 1.2, 0.1, 0.26], adsFov: 0.9, adsTime: 0.16,
+      hip: [0.12, -0.13, -0.3], adsZ: -0.32, equip: 0.4, sound: 'shotgun', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 52, knock: 5 },
+    // TR-3 Tempo: three rounds per pull, then a short pause. Two bursts on target kill.
+    tempo: { id: 'tempo', name: 'TR-3 Tempo', short: 'TEMPO', auto: false, rpm: 1100, burst: 3, burstDelay: 0.3, dmg: 22, head: 1.8, pellets: 1, sidearm: true,
+      spreadHip: 1.2, spreadAds: 0.18, spreadMove: 1.0, spreadAir: 2.5, bloom: 0.25, bloomMax: 1.6, mag: 18, reserve: 90, maxReserve: 144,
+      reload: 1.4, reloadEmpty: 1.7, magInAt: 0.6, falloff: [22, 50, 0.65], recoil: [0.9, 0.3, 0.04, 0.08], adsFov: 0.84, adsTime: 0.15,
+      hip: [0.11, -0.12, -0.3], adsZ: -0.3, equip: 0.32, sound: 'pistol', tracerEvery: 1, shell: 0.8, moveMul: 1.0, noise: 36 },
+    // Pip-40: a one-shot grenade pistol. The round drops over distance and bursts on whatever it meets.
+    pip: { id: 'pip', name: 'Pip-40 Launcher', short: 'PIP-40', auto: false, rpm: 60, dmg: 0, head: 1, pellets: 1, sidearm: true, rocket: { speed: 34, radius: 4.5, damage: 140, impact: 30, drop: 9, size: 0.55 },
+      spreadHip: 1.2, spreadAds: 0.2, spreadMove: 1.0, spreadAir: 3, bloom: 0, bloomMax: 0, mag: 1, reserve: 4, maxReserve: 6,
+      reload: 1.6, reloadEmpty: 1.6, magInAt: 0.6, falloff: [400, 500, 1], recoil: [3.2, 0.6, 0.1, 0.26], adsFov: 0.84, adsTime: 0.18,
+      hip: [0.12, -0.13, -0.3], adsZ: -0.32, equip: 0.42, sound: 'pip', tracerEvery: 99, shell: 0, moveMul: 1.0, noise: 40 },
+    // Volt arc pistol: a 16 m lightning stream that jumps through up to three people.
+    arc: { id: 'arc', name: 'Volt Arc Pistol', short: 'VOLT', auto: true, rpm: 600, dmg: 12, head: 1.3, pellets: 1, pierce: 3, range: 16, arc: true, sidearm: true,
+      spreadHip: 1.4, spreadAds: 0.6, spreadMove: 0.6, spreadAir: 1.5, bloom: 0, bloomMax: 0, mag: 40, reserve: 160, maxReserve: 240,
+      reload: 1.8, reloadEmpty: 2.0, magInAt: 0.6, falloff: [8, 16, 0.6], recoil: [0.15, 0.15, 0.012, 0.015], adsFov: 0.86, adsTime: 0.16,
+      hip: [0.11, -0.12, -0.3], adsZ: -0.3, equip: 0.35, sound: 'arc', tracerEvery: 1, shell: 0, moveMul: 1.0, noise: 24 }
   };
+  DEFS.pistol.sidearm = DEFS.revolver.sidearm = true;
   // Player-vs-player damage scaling (multiplayer only). The revolver: two body shots or one headshot (Revolver One-Shot kills on any hit).
   DEFS.carbine.pvp = 1; DEFS.shotgun.pvp = 0.85; DEFS.rail.pvp = 0.62; DEFS.pistol.pvp = 1; DEFS.minigun.pvp = 0.7; DEFS.rocket.pvp = 1; DEFS.satchel.pvp = 1; DEFS.revolver.pvp = 0.75; DEFS.lmg.pvp = 0.9; DEFS.flamer.pvp = 1;
-  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver', 'lmg', 'flamer']; // index is sent over the network: bump Net's PREFIX when this changes
-  const CAMPAIGN = ORDER.filter((id) => id !== 'revolver' && id !== 'lmg' && id !== 'flamer'); // campaign number keys (the revolver, LMG and flamethrower are multiplayer-only)
+  DEFS.wasp.pvp = 1; DEFS.magnum.pvp = 0.85; DEFS.sawnoff.pvp = 0.8; DEFS.tempo.pvp = 1; DEFS.pip.pvp = 1; DEFS.arc.pvp = 1;
+  const ORDER = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel', 'revolver', 'lmg', 'flamer', 'wasp', 'magnum', 'sawnoff', 'tempo', 'pip', 'arc']; // index is sent over the network: bump Net's PREFIX when this changes
+  const CAMPAIGN = ['carbine', 'shotgun', 'rail', 'pistol', 'rocket', 'minigun', 'satchel']; // campaign number keys (the rest are multiplayer-only)
+  const SIDEARMS = ['pistol', 'revolver', 'wasp', 'magnum', 'tempo', 'sawnoff', 'arc', 'pip']; // the loadout editor's secondary slot
   const BURN = { time: 2.5, every: 0.25, dmg: 4 }; // flamethrower afterburn: how long, how often it ticks, damage per tick
 
   const S = U.Spring;
   const WP = CF.Weapons = {
-    defs: DEFS, order: ORDER, inv: {}, cur: null, curId: null, lastId: null, pendingId: null,
+    defs: DEFS, order: ORDER, SIDEARMS, inv: {}, cur: null, curId: null, lastId: null, pendingId: null,
     grenades: 2, maxGrenades: 4, state: 'idle', stateT: 0, fireCd: 0, fireBuffer: 0, bloom: 0, adsT: 0, adsE: 0,
     cycleT: 1, shotCount: 0, reloadAdded: false, shellPhase: '', shellT: 0, interrupt: false, chamberEmpty: false,
     vm: {}, grenadesLive: [], projLive: [], burning: [], spin: 0, breath: 4, flashT: 0, t: 0,
@@ -99,7 +133,7 @@
     const lo = loadout || { weapons: { carbine: { mag: 30, reserve: 120 }, pistol: { mag: 12, reserve: Infinity } }, current: 'carbine', grenades: 2 };
     for (const id in lo.weapons) this.inv[id] = { def: DEFS[id], mag: lo.weapons[id].mag, reserve: lo.weapons[id].reserve };
     this.grenades = lo.grenades;
-    this.adsT = 0; this.adsToggle = false; this.bloom = 0; this.cycleT = 1; this.fireCd = 0;
+    this.adsT = 0; this.adsToggle = false; this.bloom = 0; this.cycleT = 1; this.fireCd = 0; this.burstLeft = 0;
     this.equip(lo.current || 'carbine', true);
     CF.HUD.setGrenades(this.grenades, this.maxGrenades);
   };
@@ -120,7 +154,7 @@
     if (this.curId && this.curId !== id) this.lastId = this.curId;
     this.curId = id; this.cur = this.inv[id];
     const v = this.vm[id]; v.root.visible = true;
-    this.state = instant ? 'idle' : 'raise'; this.stateT = 0; this.cycleT = 1; this.spin = 0;
+    this.state = instant ? 'idle' : 'raise'; this.stateT = 0; this.cycleT = 1; this.spin = 0; this.burstLeft = 0;
     this.chamberEmpty = this.cur.mag === 0;
     if (!instant) A.play('switch');
     CF.HUD.setWeapon(this.cur.def, this.inv, this.slots());
@@ -277,7 +311,7 @@
       if (!hits.length || d.pierce) {
         if (wh) {
           const fake = { x: wx, y: wy, z: wz, nx: wnx, ny: wny, nz: wnz, box: wbox };
-          if (!d.flame) CF.FX.impact(fake, _d, wsurf);
+          if (!d.flame && !d.arc) CF.FX.impact(fake, _d, wsurf);
           if (wbox && wbox.owner && wbox.owner.hp !== undefined) CF.Game.damageBarrel(wbox.owner, d.dmg);
         }
       }
@@ -294,6 +328,7 @@
           CF.FX.add.spawn(_v.x, _v.y, _v.z, U.gauss() * 0.2, U.gauss() * 0.2 + 0.2, U.gauss() * 0.2, U.rand(0.3, 0.7), 0.05, 0.01, 0.6, 2.4, 4, 1, 0, 1.5, 0);
         }
       } else if (d.flame) CF.FX.flame(muzzle, _hp, 6);
+      else if (d.arc) { WP.arcBolt(muzzle, _hp); if (hits.length || wh) CF.FX.glow(_hp.x, _hp.y, _hp.z, 0.4, 0.6, 2.2, 5, 0.08); }
       else if (this.shotCount % d.tracerEvery === 0 || d.pellets > 1) {
         const pellet = d.pellets > 1;
         CF.FX.tracer(muzzle, _hp, { speed: pellet ? 260 : 380, len: pellet ? 2.5 : 5, w: pellet ? 0.018 : 0.028, r: 3.2, g: 2.1, b: 1.0 });
@@ -306,21 +341,33 @@
     P.addRecoil(rc[0] * adsK * U.rand(0.85, 1.15), (Math.random() - 0.35) * rc[1] * 2 * adsK);
     this.sp.kz.kick(rc[2] * 18 * adsK); this.sp.rx.kick(rc[3] * 22 * adsK); this.sp.rz.kick((Math.random() - 0.5) * rc[3] * 12);
     this.bloom = Math.min(d.bloomMax, this.bloom + d.bloom);
-    P.shake(d.id === 'shotgun' ? 0.22 : d.id === 'rail' ? 0.3 : d.flame ? 0.03 : 0.07);
+    P.shake(d.id === 'shotgun' || d.id === 'sawnoff' ? 0.22 : d.id === 'rail' ? 0.3 : d.flame || d.arc ? 0.03 : d.id === 'magnum' ? 0.12 : 0.07);
     const quiet = this.quiet();
     A.play(quiet ? 'suppressed' : d.sound, null, { send: 0.3 + A.room * 0.8 });
     this.flashT = d.id === 'rail' ? 0.06 : 0.035;
     this.flash.material.rotation = Math.random() * Math.PI * 2;
-    const fs = d.id === 'shotgun' ? 0.36 : d.id === 'pistol' || d.flame ? 0.16 : d.id === 'rail' ? 0.3 : d.id === 'revolver' ? 0.3 : 0.22;
+    const fs = d.id === 'shotgun' || d.id === 'sawnoff' ? 0.36 : d.id === 'rail' || d.id === 'revolver' || d.id === 'magnum' ? 0.3 : d.sidearm || d.flame ? 0.16 : 0.22;
     this.flash.scale.setScalar(fs * U.rand(0.8, 1.2) * (quiet ? 0.25 : 1));
-    this.flash.material.color.setRGB(d.id === 'rail' ? 1.5 : 5, d.id === 'rail' ? 4 : 3.6, d.id === 'rail' ? 6 : 2.2);
-    if (!quiet) CF.FX.flashLight(muzzle, d.id === 'rail' ? 0x60c8ff : 0xffa850, d.id === 'shotgun' ? 5 : 3, 9, 0.07);
+    const blue = d.id === 'rail' || d.arc;
+    this.flash.material.color.setRGB(blue ? 1.5 : 5, blue ? 4 : 3.6, blue ? 6 : 2.2);
+    if (!quiet) CF.FX.flashLight(muzzle, blue ? 0x60c8ff : 0xffa850, d.id === 'shotgun' || d.id === 'sawnoff' ? 5 : 3, 9, 0.07);
     if (d.shell && !d.pump) this.eject(P, d.shell);
     CF.Enemies.noise(cam.position, quiet ? 4 : d.noise);
     if (d.id === 'rail') A.play('railCharge', null, { delay: 0.25 });
     if (d.pump) { A.play('pumpBack', null, { delay: 0.3 }); A.play('pumpFwd', null, { delay: 0.48 }); }
     this.hudAmmo(); CF.HUD.ammoBump();
     if (w.mag === 0) this.chamberEmpty = true;
+  };
+  /** Volt arc pistol: a jagged blue bolt from a to b (also drawn for other players' shots). */
+  const _a0 = new THREE.Vector3(), _a1 = new THREE.Vector3();
+  WP.arcBolt = function (a, b) {
+    const n = 4; _a0.copy(a);
+    for (let i = 1; i <= n; i++) {
+      _a1.lerpVectors(a, b, i / n);
+      if (i < n) _a1.set(_a1.x + U.gauss() * 0.12, _a1.y + U.gauss() * 0.12, _a1.z + U.gauss() * 0.12);
+      CF.FX.tracer(_a0, _a1, { r: 0.6, g: 2.4, b: 5.5, w: 0.026, life: 0.09 });
+      _a0.copy(_a1);
+    }
   };
   /** Flamethrower afterburn: whoever the fire touches keeps burning for BURN.time, in small ticks credited to the shooter. */
   WP.ignite = function (e) {
@@ -346,13 +393,13 @@
       const spread = this.currentSpread(P) * D2R;
       _u.set(0, 1, 0).applyQuaternion(cam.quaternion);
       _d.copy(_f).addScaledVector(_r, (Math.random() - 0.5) * spread).addScaledVector(_u, (Math.random() - 0.5) * spread).normalize();
-      const mesh = CF.VM.rocketWorld(); this.scene.add(mesh);
+      const mesh = CF.VM.rocketWorld(); mesh.scale.setScalar(d.rocket.size || 1); this.scene.add(mesh);
       const pos = cam.position.clone().addScaledVector(_d, 0.6);
       this.projLive.push({ kind: 'rocket', mesh, pos, vel: _d.clone().multiplyScalar(d.rocket.speed), life: 5, def: d });
       CF.FX.flashLight(muzzle, 0xffa850, 5, 10, 0.1);
-      for (let i = 0; i < 10; i++) CF.FX.smoke.spawn(cam.position.x - _f.x * 0.6, cam.position.y - 0.2, cam.position.z - _f.z * 0.6, U.gauss() * 0.8 - _f.x * 3, U.gauss() * 0.4, U.gauss() * 0.8 - _f.z * 3, 1.2, 0.3, 1.4, 0.35, 0.35, 0.35, 0.6, -0.2, 0.6, 1);
+      if (!d.rocket.size) for (let i = 0; i < 10; i++) CF.FX.smoke.spawn(cam.position.x - _f.x * 0.6, cam.position.y - 0.2, cam.position.z - _f.z * 0.6, U.gauss() * 0.8 - _f.x * 3, U.gauss() * 0.4, U.gauss() * 0.8 - _f.z * 3, 1.2, 0.3, 1.4, 0.35, 0.35, 0.35, 0.6, -0.2, 0.6, 1);
       if (CF.MP && CF.MP.active) CF.MP.onShot(d.id, muzzle, []);
-      P.shake(0.35);
+      P.shake(d.rocket.size ? 0.15 : 0.35);
     } else {
       const mesh = CF.VM.satchelWorld(); this.scene.add(mesh);
       const pos = cam.position.clone().addScaledVector(_f, 0.45).addScaledVector(_r, -0.15); pos.y -= 0.1;
@@ -396,11 +443,12 @@
         const eh = CF.Enemies.raycast(p.pos, _d, wh ? wh.t : dist + 0.1);
         if (eh || wh || p.life <= 0) {
           const at = eh ? eh.point : wh ? new THREE.Vector3(wh.x + wh.nx * 0.2, wh.y + wh.ny * 0.2, wh.z + wh.nz * 0.2) : p.pos;
-          if (eh) eh.enemy.damage(60, { dir: _d.clone(), point: eh.point, normal: eh.normal, part: eh.part, weapon: 'rocket', source: 'player', knock: 6 });
+          if (eh) eh.enemy.damage(p.def.rocket.impact || 60, { dir: _d.clone(), point: eh.point, normal: eh.normal, part: eh.part, weapon: p.def.id, source: 'player', knock: 6 });
           this.scene.remove(p.mesh); this.projLive.splice(i, 1);
-          this.boom(at, p.def.rocket, 'rocket');
+          this.boom(at, p.def.rocket, p.def.id);
           continue;
         }
+        if (p.def.rocket.drop) p.vel.y -= p.def.rocket.drop * dt;
         p.pos.addScaledVector(p.vel, dt);
         p.mesh.position.copy(p.pos); p.mesh.lookAt(_v.copy(p.pos).sub(p.vel));
         CF.FX.smoke.spawn(p.pos.x, p.pos.y, p.pos.z, U.gauss() * 0.2, 0.3, U.gauss() * 0.2, 1.4, 0.2, 1.1, 0.25, 0.25, 0.25, 0.6, -0.2, 0.6, 1);
@@ -533,12 +581,16 @@
         if (P.sprinting) P.stopSprint();
         if (this.state === 'reload' && d.shellReload && w.mag > 0) this.interrupt = true;
         if (this.state === 'reload' && d.cylinder && this.reloadAdded) { this.state = 'idle'; this.fireCd = 0; } // rounds are in: skip closing the cylinder
-        if (this.state === 'idle' && this.fireCd <= 0 && P.sprintOut <= 0 && this.cycleT >= 1 && (!d.spin || this.spin >= 1)) {
-          if (w.mag > 0) { if (d.rocket || d.satchel) this.fireSpecial(P); else this.fire(P); this.fireBuffer = 0; }
+        if (this.state === 'idle' && this.fireCd <= 0 && !this.burstLeft && P.sprintOut <= 0 && this.cycleT >= 1 && (!d.spin || this.spin >= 1)) {
+          if (w.mag > 0) { if (d.rocket || d.satchel) this.fireSpecial(P); else { this.fire(P); if (d.burst) this.burstLeft = d.burst - 1; } this.fireBuffer = 0; }
           else if (d.satchel && inp.mpressed[0] && this.detonate()) this.fireBuffer = 0;
           else if (autoFire && w.reserve > 0) this.reload();
           else if (inp.mpressed[0]) { A.play('dry'); this.fireBuffer = 0; if (w.reserve > 0) this.reload(); else CF.HUD.hint('Out of ammo · switch weapon', true); }
         }
+      }
+      if (this.burstLeft > 0 && this.fireCd <= 0) { // the rest of a burst fires on its own
+        if (w.mag > 0 && this.state === 'idle') { this.fire(P); this.burstLeft--; } else this.burstLeft = 0;
+        if (!this.burstLeft) this.fireCd = d.burstDelay;
       }
       if (w.mag === 0 && w.reserve > 0 && this.state === 'idle' && this.fireCd <= -0.25 && !inp.mdown[0]) CF.HUD.hint('Press ' + CF.Keys.label('reload') + ' to reload');
       else if (w.mag > 0 && w.mag <= Math.ceil(d.mag * 0.25) && this.state === 'idle' && w.reserve > 0) CF.HUD.hint('Reload [' + CF.Keys.label('reload') + ']');
@@ -579,7 +631,7 @@
           w.mag += take; if (w.reserve !== Infinity) w.reserve -= take;
           this.hudAmmo();
         }
-        if (this.chamberEmpty && k > 0.8 && !snd.c) { snd.c = 1; A.play(this.curId === 'pistol' ? 'slide2' : this.curId === 'rail' ? 'railCharge' : 'bolt'); }
+        if (this.chamberEmpty && k > 0.8 && !snd.c) { snd.c = 1; A.play(this.vm[this.curId].parts.slide ? 'slide2' : this.curId === 'rail' ? 'railCharge' : 'bolt'); }
         if (k >= 1) { this.state = 'idle'; this.chamberEmpty = false; }
       }
     } else if (this.state === 'melee') {
@@ -658,6 +710,7 @@
     if (parts.cyl) { parts.cyl.rotation.z = U.damp(parts.cyl.rotation.z, this.cylTurn || 0, 22, dt); this.hammerT = (this.hammerT || 0) + dt; parts.hammer.rotation.x = -0.4 + (this.hammerT < 0.06 ? 0.55 : Math.max(0, 0.55 - (this.hammerT - 0.06) * 3)); }
     if (parts.charge && this.state !== 'reload') parts.charge.visible = this.cur.mag > 0;
     if (d.rocket && parts.mag && this.state !== 'reload') parts.mag.visible = this.cur.mag > 0;
+    if (d.id === 'sawnoff' && this.state !== 'reload') parts.mag.visible = false; // the fresh shells only show while loading
     if (parts.coils) {
       const charge = d.id === 'rail' ? U.smoothstep(0.35, 1, this.cycleT) : 1;
       const lvl = this.cur.mag === 0 ? 0.08 : 0.15 + 0.85 * charge;
@@ -745,9 +798,9 @@
     if (this.chamberEmpty) {
       const b = U.pulse(k, 0.8, 0.94);
       this.reloadBolt = b * 0.06;
-      if (this.curId === 'pistol') this.slideBack = k < 0.82;
+      if (P.slide) this.slideBack = k < 0.82;
     }
-    const roll = this.curId === 'pistol' ? 0.35 : 0.5;
+    const roll = d.sidearm ? 0.35 : 0.5;
     out.rz = roll * tilt; out.rx = 0.18 * tilt - dip * 4; out.py = -0.03 * tilt + dip; out.px = -0.02 * tilt;
     return out;
   };

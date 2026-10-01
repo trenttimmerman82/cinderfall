@@ -306,6 +306,24 @@
     A.tone(d, t, { f0: 120, f1: 36, dur: 0.26, gain: 1.2 });
     A.noise(d, t + 0.02, { type: 'bandpass', f0: 600, f1: 200, dur: 0.9, gain: 0.22, Q: 0.5 });
   };
+  // multiplayer sidearms
+  R.wasp = (d, t) => { // a light, snappy machine-pistol crack
+    A.noise(d, t, { type: 'highpass', f0: 3400, dur: 0.025, gain: 0.5 });
+    A.noise(d, t, { type: 'lowpass', f0: 7000, f1: 1500, dur: 0.08, gain: 0.6, Q: 0.9 });
+    A.tone(d, t, { f0: 240, f1: 80, dur: 0.07, gain: 0.45 });
+  };
+  R.magnum = (d, t) => { R.revolver(d, t); A.tone(d, t, { f0: 85, f1: 28, dur: 0.35, gain: 0.7 }); A.noise(d, t, { type: 'highpass', f0: 1800, dur: 0.07, gain: 0.5 }); };
+  R.pip = (d, t) => { // a hollow thunk
+    A.tone(d, t, { f0: 210, f1: 70, dur: 0.16, gain: 0.9 });
+    A.noise(d, t, { type: 'bandpass', f0: 900, f1: 300, dur: 0.14, gain: 0.45, Q: 1.2 });
+    A.noise(d, t + 0.01, { type: 'lowpass', f0: 1500, f1: 200, dur: 0.4, gain: 0.25 });
+  };
+  R.arc = (d, t) => { // an electric snap and buzz
+    const bp = A.filter(d, 'bandpass', 2200, 2);
+    A.tone(bp, t, { type: 'sawtooth', f0: U.rand(900, 1300), f1: 300, dur: 0.09, gain: 0.5 });
+    A.noise(d, t, { type: 'highpass', f0: 4500, dur: 0.05, gain: 0.35 });
+    A.tone(d, t, { type: 'square', f0: 120, dur: 0.08, gain: 0.05, lp: 900 });
+  };
   R.hammer = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 2800, dur: 0.02, gain: 0.25, Q: 3 }); A.tone(d, t, { type: 'square', f0: 1400, dur: 0.012, gain: 0.05 }); };
   R.cylinder = (d, t) => { for (let i = 0; i < 3; i++) R.hammer(d, t + i * 0.05); };
   R.chest = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 500, f1: 1200, dur: 0.3, gain: 0.3, Q: 1 }); R.pickup(d, t + 0.2); A.tone(d, t + 0.1, { type: 'triangle', f0: 523, f1: 1046, dur: 0.4, gain: 0.08 }); };
@@ -341,7 +359,7 @@
   R.cellDoor = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 1800, f1: 900, dur: 0.5, gain: 0.35, Q: 2 }); A.tone(d, t + 0.4, { f0: 180, f1: 90, dur: 0.2, gain: 0.3 }); };
 
   // Throttle: max plays of a given sound within a short window
-  const LIMIT = { akShot: 4, impactFlesh: 3, death: 2, shout: 2, shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
+  const LIMIT = { wasp: 4, arc: 3, akShot: 4, impactFlesh: 3, death: 2, shout: 2, shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
 
   /**
    * play(name, pos?, opts?) — pos is a world position ({x,y,z}) for spatial sounds, omitted for first-person/UI.
