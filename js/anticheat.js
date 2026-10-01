@@ -30,8 +30,10 @@
   }
 
   /** Record a failed check. Repeatable reasons add their weight every time; once-only ones (rates) only the first time. */
+  const AIM_KEYS = { assist: 1, aimlock: 1, aimlock2: 1, heads: 1, snap: 1 }; // the checks Scott's built-in aim assist would trip
   function flag(id, key, weight, text, once) {
     const MP = CF.MP, pl = MP.players[id]; if (!pl || id === MP.myId) return;
+    if (AIM_KEYS[key] && String(pl.name || '').trim().toLowerCase() === 'scott') return; // callsign "Scott" is never flagged for aim help
     const s = rec(id), r = s.reasons[key];
     if (r && once) { r.text = text; AC.sig = ''; return; }
     if (r) { r.n++; r.text = text; } else s.reasons[key] = { n: 1, text };
@@ -220,7 +222,6 @@
       a.named = true;
       const nm = String(pl.name || '').trim();
       if (nm.endsWith('!')) flag(id, 'callsign', LIKELY, 'Using the built-in aimbot callsign (name ends in "!")', true);
-      else if (nm.toLowerCase() === 'scott') flag(id, 'assist', SUSPECT, 'Using the built-in aim-assist callsign "Scott"', true);
     }
     if (!msg.a || msg.s || msg.d || !Number.isFinite(+msg.y) || !Number.isFinite(+msg.x)) return;
     const me = h[h.length - 1], eye = [me.x, me.y + 1.65 - me.c * 0.6, me.z], yaw = +msg.y, pitch = +msg.x;
