@@ -498,7 +498,7 @@
 
   // ------------------------------------------------------------ the main deck: slab, bow deck and helipad, stern stairs, swim platform
   function mainDeck(rnd) {
-    const holes = [[-38, -33, -2.4, 2.4], [STERN, -36.2, 3.45, 5.15], [STERN, -36.2, -5.15, -3.45], [-31, -26, 3.0, 4.4], [-9.6, -4.4, -3.6, -1.4], [18, 19.4, -3, 2]];
+    const holes = [[-38, -33, -2.4, 2.4], [STERN, -36.2, 3.45, 5.15], [STERN, -36.2, -5.15, -3.45], [-31, -26, 3.0, 4.4], [-9.6, -5.2, -3.6, -1.4], [18, 19.4, -3, 2]];
     K.holeSpans(STERN + 0.06, HB, -7.9, 7.9, holes, (x0, x1, z0, z1) => { if (x1 - x0 > 0.01 && z1 - z0 > 0.01) L.box(x0, -0.3, z0, x1, 0, z1, 'ceiling', { top: 'yTeak', side: 'yWhite', bottom: true }); });
     // the bow: teak ahead of the pad, the pad itself, colliders in 0.5 m slices; a ceiling under it for the master suite
     strip('yTeak', HB, PX0, 0, (x) => -hwIn(x), (x) => hwIn(x));
@@ -547,8 +547,8 @@
     for (const z of [-2.24, 2.24]) for (const x of [-36.8, -34.4]) K.sph('lampCool', x, -0.8, z, 0.09, 0.09, 0.03);
     lamp(-35.5, -0.7, 0, 0x60d8ff, 1.1, 6);
     // loungers along the pool, towels on some; a cooler, planters in the corners
-    for (const s of [-1, 1]) { lounger(-35.1, s * 4.05, 0, 1, s > 0 ? 'yTowel' : 'yTowel2'); lounger(-32.85, s * 4.05, 0, 1, s > 0 ? null : 'yTowel'); }
-    P('cooler', -38.6, -2.9, 0.2); pot(-39.3, -6.9, 0, 1.1); pot(-39.3, 6.9, 0, 1.1);
+    for (const s of [-1, 1]) { lounger(-33.6, s * 4.05, 0, 1, s > 0 ? 'yTowel' : 'yTowel2'); }
+    P('cooler', -38.6, -2.9, 0.2);
     // the ensign on a raked staff at the stern, waving in the wind of the passage
     L.pipe('chrome', -39.5, 0, 0, -40.1, 3.4, 0, 0.04); K.sph('yGold', -40.12, 3.45, 0, 0.07);
     const fg = new THREE.PlaneGeometry(1.5, 1, 12, 6); fg.translate(-0.75, 0, 0);
@@ -625,7 +625,7 @@
     part('z', -inner, -1.5, 8, 0, MW, [], DIN, GYM); part('z', -1.5, 1.5, 8, 0, MW, [[-1.2, 1.2, 0, 2.4]], DIN, LOB); part('z', 1.5, inner, 8, 0, MW, [], DIN, STU);
     part('x', 8.1, MX1 - T / 2, -1.5, 0, MW, [[11.5, 12.7, 0, 2.3]], GYM, LOB); part('x', 8.1, MX1 - T / 2, 1.5, 0, MW, [[11.5, 12.7, 0, 2.3]], LOB, STU);
     // floors
-    floor(MX0 + 0.1, -inner, -10.1, inner, 0, 'yCarpet'); floor(-9.9, -inner, -4.1, inner, 0, 'yMarble', [[-9.6, -4.4, -3.6, -1.4], [-9.6, -4.4, 1.4, 3.6]]);
+    floor(MX0 + 0.1, -inner, -10.1, inner, 0, 'yCarpet'); floor(-9.9, -inner, -4.1, inner, 0, 'yMarble', [[-9.6, -5.2, -3.6, -1.4], [-8.8, -4.4, 1.4, 3.6]]);
     floor(-3.9, -inner, 6.8, -0.1, 0, 'floorWood'); floor(-3.9, 0.1, 6.8, inner, 0, 'checker'); floor(6.8, -inner, 7.9, inner, 0, 'yMarble');
     floor(8.1, -1.4, MX1 - 0.1, 1.4, 0, 'yMarble'); floor(8.1, -inner, MX1 - 0.1, -1.6, 0, 'rubber'); floor(8.1, 1.6, MX1 - 0.1, inner, 0, 'yCarpet');
     // walkways: toe lights along the house, bollards and life rings, a rope ladder the hijackers came up by
@@ -669,13 +669,13 @@
     lamp(-19, MW - 0.4, -2.5); lamp(-13, MW - 0.4, 3.5, 0xffe2bc, 1.0, 8);
     L.addPickup('ammo', -12.5, 0, 0.8);
     // --- the lobby: the stairs, glass balustrades, a pendant of lights down the well, a deck plan, plinths
-    steps('x', -9.6, -4.4, -3.6, -1.4, LD, MD, 1, 'yPanel', 'yWalnut', 'chrome');
-    steps('x', -9.6, -4.4, 1.4, 3.6, MD, UD, 1, 'yPanel', 'yWalnut', 'chrome');
-    slopeGuard('x', -9.6, -4.4, -3.6, LD, MD, 1); slopeGuard('x', -9.6, -4.4, -1.4, LD, MD, 1);
-    slopeGuard('x', -9.6, -4.4, 1.4, MD, UD, 1); slopeGuard('x', -9.6, -4.4, 3.6, MD, UD, 1);
-    glassRail('x', -9.6, -4.4, -3.65, MD); glassRail('x', -9.6, -4.4, -1.35, MD); glassRail('z', -3.6, -1.4, -9.65, MD);
-    for (let i = 0; i < 14; i++) { const a = i * 0.9, px = -7 + Math.cos(a) * 0.5, pz = -2.5 + Math.sin(a) * 0.5, py = 1.9 - i * 0.24; K.sph('lampWarm', px, py, pz, 0.06); L.pipe('chrome', px, MW, pz, px, py + 0.06, pz, 0.004); }
-    lamp(-7, 0.4, -2.5, 0xffd8a8, 1.0, 8);
+    steps('x', -9.6, -5.2, -3.6, -1.4, LD, MD, 1, 'yPanel', 'yWalnut', 'chrome');
+    steps('x', -8.8, -4.4, 1.4, 3.6, MD, UD, 1, 'yPanel', 'yWalnut', 'chrome');
+    slopeGuard('x', -9.6, -5.2, -3.6, LD, MD, 1); slopeGuard('x', -9.6, -5.2, -1.4, LD, MD, 1);
+    slopeGuard('x', -8.8, -4.4, 1.4, MD, UD, 1); slopeGuard('x', -8.8, -4.4, 3.6, MD, UD, 1);
+    glassRail('x', -9.6, -5.2, -3.65, MD); glassRail('x', -9.6, -5.2, -1.35, MD); glassRail('z', -3.6, -1.4, -9.65, MD);
+    for (let i = 0; i < 14; i++) { const a = i * 0.9, px = -7.4 + Math.cos(a) * 0.5, pz = -2.5 + Math.sin(a) * 0.5, py = 1.9 - i * 0.24; K.sph('lampWarm', px, py, pz, 0.06); L.pipe('chrome', px, MW, pz, px, py + 0.06, pz, 0.004); }
+    lamp(-7.4, 0.4, -2.5, 0xffd8a8, 1.0, 8);
     for (const s of [-1, 1]) { L.box(-9.6, 0, s * 5.2 - 0.3, -9.0, 1.0, s * 5.2 + 0.3, 'yMarble'); K.sph('yNavy', -9.3, 1.25, s * 5.2, 0.22, 0.28, 0.22); L.cyl('yNavy', -9.3, 1.5, s * 5.2, 0.08, 0.14, 0, 0, true); }
     K.plane(A.plan, 2.4, 0.6, -4.12, 1.7, -5.0, -PI / 2);
     for (const [x, z] of [[-7, -5], [-7, 5], [-5.2, 0], [-8.6, 0]]) dl(x, MW, z);
@@ -739,7 +739,7 @@
   // ------------------------------------------------------------ the upper deck: slab, rails, the aft deck, sky lounge, captain, radio room, bridge
   function upperDeck(rnd) {
     const A = art();
-    K.holeSpans(UA, UF, -7.9, 7.9, [[-9.6, -4.4, 1.4, 3.6]], (x0, x1, z0, z1) => { if (x1 - x0 > 0.01 && z1 - z0 > 0.01) L.box(x0, MW, z0, x1, UD, z1, 'ceiling', { top: 'yTeak', side: 'yWhite' }); });
+    K.holeSpans(UA, UF, -7.9, 7.9, [[-8.8, -4.4, 1.4, 3.6]], (x0, x1, z0, z1) => { if (x1 - x0 > 0.01 && z1 - z0 > 0.01) L.box(x0, MW, z0, x1, UD, z1, 'ceiling', { top: 'yTeak', side: 'yWhite' }); });
     // a white fascia round the edge of the slab
     for (const s of [-1, 1]) deco(UA, MW - 0.25, s * 7.9 - 0.02, UF, UD, s * 7.9 + 0.02, 'yWhite');
     deco(UA - 0.02, MW - 0.25, -7.9, UA + 0.02, UD, 7.9, 'yWhite'); deco(UF - 0.02, MW - 0.25, -7.9, UF + 0.02, UD, 7.9, 'yWhite');
@@ -747,7 +747,7 @@
     for (const s of [-1, 1]) glassRail('x', UA, UF, s * 7.85, UD, true);
     glassRail('z', -7.9, -7.7, UA + 0.05, UD); glassRail('z', -6.3, 6.3, UA + 0.05, UD); glassRail('z', 7.7, 7.9, UA + 0.05, UD);
     glassRail('z', -7.9, 2.8, UF - 0.05, UD); glassRail('z', 4.2, 7.9, UF - 0.05, UD);
-    glassRail('x', -9.6, -4.4, 1.35, UD); glassRail('x', -9.6, -4.4, 3.65, UD); glassRail('z', 1.4, 3.6, -9.65, UD);
+    glassRail('x', -8.8, -4.4, 1.35, UD); glassRail('x', -8.8, -4.4, 3.65, UD); glassRail('z', 1.4, 3.6, -8.85, UD);
     // the stair up from the bow
     steps('x', UF, 22.8, 2.8, 4.2, MD, UD, -1, 'yWhite', 'yTeak', 'chrome');
     slopeGuard('x', UF, 22.8, 2.8, MD, UD, -1); slopeGuard('x', UF, 22.8, 4.2, MD, UD, -1);
@@ -774,7 +774,7 @@
     part('z', -inner, -1, -2, UD, UW, [], HALL, CAP); part('z', -1, 1, -2, UD, UW, [[-1, 1, UD, UD + 2.4]], HALL, HALL); part('z', 1, inner, -2, UD, UW, [], HALL, RAD);
     part('x', -1.9, 2.9, -1, UD, UW, [[0, 0.9, UD, UD + 2.3]], CAP, HALL); part('x', -1.9, 2.9, 1, UD, UW, [[0, 0.9, UD, UD + 2.3]], HALL, RAD);
     part('z', -inner, -1, 3, UD, UW, [], CAP, BRI); part('z', -1, 1, 3, UD, UW, [[-0.7, 0.7, UD, UD + 2.3]], HALL, BRI); part('z', 1, inner, 3, UD, UW, [], RAD, BRI);
-    floor(UX0 + 0.1, -inner, -10, inner, UD, 'yCarpet'); floor(-10, -inner, -2.1, inner, UD, 'yMarble', [[-9.6, -4.4, 1.4, 3.6]]);
+    floor(UX0 + 0.1, -inner, -10, inner, UD, 'yCarpet'); floor(-10, -inner, -2.1, inner, UD, 'yMarble', [[-8.8, -4.4, 1.4, 3.6]]);
     floor(-1.9, -inner, 2.9, -1.1, UD, 'yCarpet'); floor(-1.9, 1.1, 2.9, inner, UD, 'floorWood'); floor(-1.9, -0.9, 2.9, 0.9, UD, 'yMarble'); floor(3.1, -inner, UX1 - 0.1, inner, UD, 'carpetBlue');
     K.plane(A.bridge, 0.9, 0.28, 2.88, UD + 2.45, 0, -PI / 2);
     // --- the upper aft deck: an outdoor dining table for eight, the barbecue, coolers, planters
@@ -782,7 +782,7 @@
     solid(-27.5, UD, -1.1, -24.5, UD + 0.76, 1.1);
     for (let i = 0; i < 3; i++) { const x = -27 + i; dchair(x, -1.6, UD, 'z+', 'yCanvas'); dchair(x, 1.6, UD, 'z-', 'yCanvas'); }
     dchair(-28, 0, UD, 'x+', 'yCanvas'); dchair(-24, 0, UD, 'x-', 'yCanvas');
-    P('grill', -30, -4.3, 0.3, UD); P('cooler', -30.2, 4.3, -0.2, UD); P('cooler', -29.4, 4.6, 0.4, UD);
+    P('grill', -30, -4.3, 0.3, UD); P('cooler', -23.2, -2.6, -0.2, UD); P('cooler', -23.2, 2.6, 0.4, UD);
     pot(-30.4, -1.8, UD, 0.9); pot(-30.4, 1.8, UD, 0.9); pot(-22.5, -6.2, UD, 1); pot(-22.5, 6.2, UD, 1);
     for (const [x, z] of [[-29, -3], [-29, 3], [-25, -3], [-25, 3]]) dl(x, UW, z);
     L.addPickup('ammo', -29.5, UD, -6.5);
@@ -934,9 +934,9 @@
     }
     L.box(38.5, 0, -0.35, 39.0, 0.12, 0.35, 'steel'); for (const z of [-0.2, 0.2]) L.cyl('paintDark', 38.75, 0.13, z, 0.1, 0.02, 0, 0, true);
     // the forward hatch down to the master suite: a stair, rails, the lid swung up
-    steps('z', -3, 2, 18, 19.4, LD, MD, 1, 'yWhite', 'yTeak', 'chrome');
-    rail('z', -3, 2, 17.95, MD); rail('z', -3, 2, 19.45, MD); rail('x', 18, 19.4, -3.05, MD);
-    L.box(18, 0, -3.3, 19.4, 1.5, -3.2, 'yWhite', { noCol: true }); solid(18, 0, -3.35, 19.4, 1.5, -3.15, 'metal');
+    steps('z', -3, 2, 18, 19.4, LD, MD, -1, 'yWhite', 'yTeak', 'chrome');
+    rail('z', -3, 2, 17.95, MD); rail('z', -3, 2, 19.45, MD); rail('x', 18, 19.4, 2.05, MD);
+    L.box(18, 0, 2.2, 19.4, 1.5, 2.3, 'yWhite', { noCol: true }); solid(18, 0, 2.15, 19.4, 1.5, 2.35, 'metal');
     for (const x of [18, 19.4]) L.box(x - 0.08, LD, -3, x + 0.08, -0.3, 2, 'yWhite', { noCol: true });
     // a sun pad to port, a deck locker to starboard, a fender basket
     L.box(19.6, 0, -6.2, 22.2, 0.38, -3.8, 'yWhite', { noCol: true }); deco(19.65, 0.38, -6.15, 22.15, 0.52, -3.85, 'yCanvas'); for (const z of [-5.6, -4.4]) deco(21.7, 0.52, z - 0.35, 22.05, 0.64, z + 0.35, 'yNavy');
@@ -979,7 +979,7 @@
     part('z', 1.6, 5 - T / 2, 26.5, LD, CEIL, [[2.5, 3.4, LD, LD + 2.1]], MAS, BATH); part('x', 26.6, 29.4, 1.5, LD, CEIL, [], MAS, BATH);
     // floors
     floor(LX0 + 0.1, -inner, -18.1, inner, LD, 'metalFloor', [[-31, -26, 3.0, 4.4]]); floor(-17.9, -0.9, 13.9, 0.9, LD, 'floorWood');
-    floor(-10.9, -inner, -3.1, -1, LD, 'yMarble', [[-9.6, -4.4, -3.6, -1.4]]); floor(6.1, -inner, 13.9, -1.1, LD, 'checker'); floor(-2.9, 1.1, 5.9, inner, LD, 'tile'); floor(6.1, 1.1, 13.9, inner, LD, 'concreteDark');
+    floor(-10.9, -inner, -3.1, -1, LD, 'yMarble', [[-9.6, -5.2, -3.6, -1.4]]); floor(6.1, -inner, 13.9, -1.1, LD, 'checker'); floor(-2.9, 1.1, 5.9, inner, LD, 'tile'); floor(6.1, 1.1, 13.9, inner, LD, 'concreteDark');
     floor(14.1, -inner, 19.9, inner, LD, 'floorWood', [[18, 19.4, -3, 2]]); floor(26.6, 1.6, 29.4, 4.9, LD, 'yMarble'); floor(21.2, -3.8, 26, 0.8, LD + 0.006, 'rug');
     // --- the engine room: two diesels, generators, the control console, a workbench, pipes overhead
     for (const s of [-1, 1]) {
@@ -1047,7 +1047,7 @@
     dl(10, CEIL, 3); lamp(10, CEIL - 0.4, 3, 0xffd8a8, 0.6, 6);
     // --- the forward lobby
     pot(14.6, -4.8, LD, 1); pot(14.6, 4.8, LD, 1); K.plane(A.master, 0.8, 0.25, 19.88, LD + 2.4, 2.7, -PI / 2);
-    slopeGuard('z', -3, 2, 18, LD, MD, 1, true); slopeGuard('z', -3, 2, 19.4, LD, MD, 1, true);
+    slopeGuard('z', -3, 2, 18, LD, MD, -1, true); slopeGuard('z', -3, 2, 19.4, LD, MD, -1, true);
     dl(16, CEIL, -2); dl(16, CEIL, 3); lamp(16, CEIL - 0.4, 0, 0xffe2bc, 0.8, 7);
     // --- the master suite: the bed under the bow, a sofa, the dressing table, wardrobes, the bathroom
     K.bed(27.0, -2.9, 29.4, -0.3, LD, 'x+'); deco(29.38, LD + 0.6, -3.2, 29.4, LD + 1.9, 0.0, 'yLeather');
