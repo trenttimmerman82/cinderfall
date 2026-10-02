@@ -45,8 +45,19 @@
       <div class="zs-foot" id="zsFoot"></div>
     </div>
     <div class="aim-name" id="aimName" hidden></div>
+    <div class="br-tint" id="brTint" hidden></div>
+    <div class="br-hud" id="brHud" hidden>
+      <canvas class="br-mini" id="brMini" width="200" height="200"></canvas>
+      <div class="br-storm" id="brStorm">Waiting for players</div>
+      <div class="br-info"><span id="brAlive">1 in lobby</span><span id="brKills">0 kills</span></div>
+    </div>
+    <div class="br-bigmap" id="brBig" hidden>
+      <canvas id="brBigCanvas" width="720" height="720"></canvas>
+      <div class="br-legend"><span><i class="lg-you"></i>You</span><span><i class="lg-next"></i>Next safe zone</span><span><i class="lg-storm"></i>Storm</span><span><i class="lg-bus"></i>Battle Bus</span><em>M closes the map</em></div>
+    </div>
+    <div class="br-banner" id="brBanner" hidden><b id="brBannerT">#1</b><span id="brBannerS">Victory Royale</span></div>
     <div class="mp-dead" id="mpDead" hidden>
-      <div class="md-title">Flatlined</div>
+      <div class="md-title" id="mdTitle">Flatlined</div>
       <div class="md-by" id="mdBy"></div>
       <div class="md-timer" id="mdTimer">Respawning in 4</div>
       <div class="md-lo-label">Next loadout</div>
@@ -562,6 +573,7 @@
             <button class="map-tile" data-map="rust" data-tags="Daylight,Desert,Open yard" data-desc="An oil yard in the desert haze. Climb the drilling tower to the top platform, walk under the arched pipeline, fight through the office, the tank farm, the pump house roof and the shed by the nodding pumpjack."><img src="img/maps/rust.webp" alt="" draggable="false"><b>Rust</b></button>
             <button class="map-tile" data-map="highrise" data-tags="Daylight,Large,Vertical" data-desc="The roof of a skyscraper, eighty-one floors up. The helipad and its lounge, two floors of offices with a balcony, the sunken mechanical well, the building site and the tower crane."><img src="img/maps/highrise.webp" alt="" draggable="false"><b>Highrise</b></button>
             <button class="map-tile" data-map="hijacked" data-tags="Daylight,Superyacht,Close quarters" data-desc="A superyacht under way on open sea. The pool deck and the cockpit bar, the salon and the galley, the cabins and engine room below, the bridge, the hot tub on the sun deck and the helipad on the bow."><img src="img/maps/hijacked.webp" alt="" draggable="false"><b>Hijacked</b></button>
+            <button class="map-tile card-br" data-map="retail" data-tags="Daylight,Huge,Battle Royale" data-desc="A shopping town in open country. Noms and the row of shops round the parking lot, the water tower, the Gas-N-Go, two streets of houses with garages, the park, a self-storage yard and a red barn. Built for Battle Royale."><img src="img/maps/retail.webp" alt="" draggable="false"><b>Retail Row</b></button>
             <button class="map-tile card-sniper" data-map="sniper" data-tags="Night,Long range,Rail rifles only" data-desc="Two teams, two rooftops, a 60 m drop between them. Rail rifles only; team deathmatch, first to 25."><img src="img/maps/sniper.webp" alt="" draggable="false"><b>Sniper Valley</b></button>
           </div>
           <h3 class="mp-h"><i class="mp-step">2</i>Mode</h3>
@@ -573,6 +585,7 @@
             <button class="card card-prophunt" data-mode="prophunt" data-desc="Props get 15 s to disguise as crates, barrels and chairs; Hunters have 5 minutes to find them all. 2+ players."><b>Prop Hunt</b></button>
             <button class="card card-zombies" data-mode="zombies" data-desc="Co-op survival against growing waves of infected. Revive downed teammates. 2+ players; best on Neon Market."><b>Zombies</b></button>
             <button class="card card-zombies" data-mode="zombiesnd" data-desc="The same co-op waves of infected with no flying Blight drones: Husks, Crawlers and Brutes only. 2+ players; best on Neon Market."><b>Zombies · No drones</b></button>
+            <button class="card card-br" data-mode="br" data-desc="Ride the Battle Bus over Retail Row, jump, glide down and loot guns, armor and med kits off the floor and out of chests. The storm closes in; last one standing wins. 2+ players, or practise against bots."><b>Battle Royale</b></button>
             <button class="card card-coop" data-mode="coop" data-desc="Two players through Cinder Foundry or Whiteout, sharing every objective. Revive each other when down."><b>Co-op Campaign</b></button>
           </div>
           <p class="map-desc" id="mpModeDesc"></p>
@@ -630,6 +643,7 @@
         <div class="mp-col"><h3 class="mp-h">Loadout <small>used from your next spawn</small></h3><div class="lo-grid" data-lo-grid></div>
           <div class="lo-edit" data-lo-edit hidden></div>
           <div class="revolver-note"><b>Revolver One-Shot</b><span>Everyone carries the KF-44 Kingfisher: six rounds, one hit kills, a 2.5 s reload. Aim down sights; hip shots wander. You're shielded for 2.5 s after spawning, until you fire. No grenades, pickups, kill-streak drones or RC-XD.</span></div>
+          <div class="br-note"><b>Battle Royale</b><span>No classes here: everyone drops with a <em>P-11</em> and finds the rest. Warm up until the <em>Battle Bus</em> leaves, then press <kbd>Space</kbd> to jump, look down and hold <kbd>W</kbd> to dive, and <kbd>Space</kbd> again (or low enough) opens the glider. Walk over loot to take it; with four guns, <kbd>E</kbd> swaps. Hold <kbd>E</kbd> at a <em>chest</em>. Rarer guns (<i class="rr1">Uncommon</i>, <i class="rr2">Rare</i>, <i class="rr3">Epic</i>, <i class="rr4">Legendary</i>) hit harder. Health doesn't come back on its own: grab med kits and armor. Stay inside the <em>storm</em> circle (<kbd>M</kbd> for the map). One life; the last one standing wins.</span></div>
           <div class="ph-note"><b>Prop Hunt</b><span><em>Props</em> carry no weapons. During the 15 s head start, walk up to a crate, barrel, chair or other small object and press <kbd>E</kbd> to become it. You move slowly and see yourself from behind. Sprinting or getting shot blows your cover, and you can't hide again for 4 s. <em>Hunters</em> are blindfolded during the head start, then keep their loadout (picked here). Props shrug off most of your damage for the first 45 s. Found Props join the Hunters.</span></div></div>
       </div>
       <footer class="panel-foot">
@@ -689,6 +703,7 @@
 <script src="js/map-dust.js"></script>
 <script src="js/map-rust.js"></script>
 <script src="js/map-hijacked.js"></script>
+<script src="js/map-retail.js"></script>
 <script src="js/map-halden.js"></script>
 <script src="js/map-story.js"></script>
 <script src="js/effects.js"></script>
@@ -715,6 +730,7 @@
 <script src="js/coop.js"></script>
 <script src="js/zombies.js"></script>
 <script src="js/ctf.js"></script>
+<script src="js/br.js"></script>
 <script src="js/bots.js"></script>
 <script src="js/coop-campaign.js"></script>
 <script src="js/streak.js"></script>

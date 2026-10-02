@@ -32,9 +32,9 @@
   /** Everyone a bot might shoot at or run to: the local player and the bots, with what the AI needs to know. */
   function actors() {
     const M = MP(), P = CF.Player, out = [];
-    out.push({ id: M.myId, team: M.team, pos: P.body.pos, alive: P.alive && CF.Game.state === 'playing' && !CF.Game.mpLobby && !CF.RC.driving,
+    out.push({ id: M.myId, team: M.team, pos: P.body.pos, alive: P.alive && CF.Game.state === 'playing' && !CF.Game.mpLobby && !CF.RC.driving && CF.BR.fl !== 3,
       crouch: P.crouching ? 0.66 : 1, speed: Math.hypot(P.body.vel.x, P.body.vel.z), shotT: M.shotT == null ? -99 : M.shotT });
-    for (const b of Bots.list) out.push({ id: b.id, team: b.team, pos: b.body.pos, alive: b.alive, crouch: 1, speed: Math.hypot(b.body.vel.x, b.body.vel.z), shotT: b.shotT, bot: b });
+    for (const b of Bots.list) out.push({ id: b.id, team: b.team, pos: b.body.pos, alive: b.alive && b.fl !== 3, crouch: 1, speed: Math.hypot(b.body.vel.x, b.body.vel.z), shotT: b.shotT, bot: b });
     return out;
   }
   const hostile = (a, b) => a.id !== b.id && (!MP().teamMode() || a.team !== b.team);
@@ -43,6 +43,7 @@
   function loadoutFor() {
     const M = MP();
     if (M.mode === 'revolver') return M.REVOLVER;
+    if (M.mode === 'br') return CF.BR.kit(); // Battle Royale: a pistol, then whatever they find
     if (M.mode === 'sniper') return M.SNIPER[pick(M.SNIPER_KEYS)];
     const k = pick(['assault', 'assault', 'breacher', 'marksman', 'gunner', 'heavy', 'gunslinger', 'pyro']), d = M.DEFAULT_KITS[k]; // no Demolition: rockets and satchels need aiming bots can't do
     let side = pick(BOT_SIDEARMS); if (side === d.primary) side = 'pistol';
@@ -64,19 +65,19 @@
     spawn() {
       const M = MP(), s = Bots.pickSpawn(this), lo = this.lo = loadoutFor();
       this.ammo = {}; for (const w in lo.weapons) this.ammo[w] = { mag: lo.weapons[w].mag, reserve: lo.weapons[w].reserve };
-      this.equip(lo.current);
+      this.rdefs = {}; this.equip(lo.current);
       const b = this.body;
       b.pos.set(s[0], s[1], s[2]); b.vel.set(0, 0, 0); this.tp.copy(b.pos); this.lastPos.copy(b.pos);
       this.yaw = this.tyaw = Math.atan2(s[0], s[2]); this.pitch = 0; // face the middle of the map
       this.dead = false; this.alive = true; this.deadT = 0; this.downed = false;
       this.root.visible = true; this.root.rotation.set(0, this.yaw, 0); this.m.p.hips.position.y = 0.95;
-      this.hp = 100; this.armor = lo.armor || 0; this.speedMul = lo.speed || 1;
+      this.hp = 100; this.armor = lo.armor || 0; this.speedMul = lo.speed || 1; this.fl = 0;
       this.protect = true; this.protectT = CF.time + M.modeDef().protect; this.shield.visible = true;
       this.target = null; this.path = null; this.goal = null; this.planT = 0; this.idleT = 0; this.hurt = null; this.lastHit = null;
       this.cd = U.rand(0.2, 0.5); this.reloadT = 0; this.burst = 0; this.stuckT = 0; this.stuckN = 0;
     }
     equip(wid) {
-      this.wid = wid; this.def = CF.Weapons.defs[wid];
+      this.wid = wid; this.def = (this.rdefs && this.rdefs[wid]) || CF.Weapons.defs[wid]; // Battle Royale: the rarity it was found at
       if (this.armedW !== wid) { this.armedW = wid; CF.Skins.arm(this.m, wid, this.finish || null); }
     }
     die() {
@@ -110,7 +111,7 @@
     update(dt) {
       const M = MP();
       if (this.dead) {
-        if (!CF.Game.mpLobby && !M.ended) { this.respawnT -= dt; if (this.respawnT <= 0) this.spawn(); }
+        if (!CF.Game.mpLobby && !M.ended && CF.BR.canRespawn()) { this.respawnT -= dt; if (this.respawnT <= 0) this.spawn(); }
       } else if (M.ended || CF.Game.mpLobby) this.wish.set(0, 0, 0);
       else this.think(dt);
       super.update(dt);
@@ -151,6 +152,7 @@
       if (this.reloadT > 0) { this.reloadT -= dt; if (this.reloadT <= 0) this.reloaded(); }
       this.scanT -= dt;
       if (this.scanT <= 0) { this.scanT = U.rand(0.12, 0.24); this.scan(); }
+      if (M.mode === 'br' && CF.BR.botThink(this, dt)) { this.checkStuck(dt); return; } // the drop, the storm and looting
       if (M.mode === 'ctf') this.ctfTouch(dt);
       const t = this.target ? actor(this.target.id) : null;
       if (t && !t.alive) this.target = null;
@@ -203,6 +205,7 @@
       let g = null;
       if (this.chase && this.known) { g = { x: this.known.x, z: this.known.z }; this.chase = false; this.planT = 8; } // last seen here
       else if (M.mode === 'ctf' && CF.CTF.flags.length) { g = this.ctfGoal(); this.planT = 1; }
+      else if (CF.BR.match()) { g = CF.BR.botGoal(this); this.planT = 4; }
       else if (M.mode === 'sniper') {
         const c = Bots.centre(this.team), i = W.randomReachable(c[0], c[2], 14);
         if (i >= 0) g = { x: W.cellX(i), z: W.cellZ(i) };
@@ -347,6 +350,7 @@
     // ---------------------------------------------------------- body (called by Remote.update in place of network smoothing)
     sim(dt) {
       const b = this.body;
+      if (this.fl) { CF.BR.botFly(this, dt); this.tp.copy(b.pos); return; } // Battle Royale: on the bus or in the air
       b.vel.x = U.damp(b.vel.x, this.wish.x, 10, dt); b.vel.z = U.damp(b.vel.z, this.wish.z, 10, dt);
       b.vel.y -= GRAVITY * dt;
       W.moveBody(b, dt);

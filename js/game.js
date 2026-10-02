@@ -200,8 +200,8 @@
       if (b.dataset.diff) { CF.settings.difficulty = b.dataset.diff; CF.saveSettings(); this.startMission(); return; }
       if (b.dataset.campaign) { this.newOperation(b.dataset.campaign); return; }
       if (b.dataset.continue) { this.continueMission(b.dataset.continue); return; }
-      if (b.dataset.map) { this.mpSel.map = b.dataset.map; this.renderMpPick(); return; }
-      if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; this.renderMpPick(); return; }
+      if (b.dataset.map) { this.mpSel.map = b.dataset.map; if (b.dataset.map === 'retail') this.mpSel.mode = 'br'; else if (this.mpSel.mode === 'br') this.mpSel.mode = 'ffa'; this.renderMpPick(); return; }
+      if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; if (b.dataset.mode === 'br') this.mpSel.map = 'retail'; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
       if (b.dataset.kit) { const i = b.dataset.kit.indexOf(':'); CF.MP.editKit(CF.MP.nextLoadout, b.dataset.kit.slice(0, i), b.dataset.kit.slice(i + 1)); this.renderLoadouts(); return; }
       if (b.dataset.bots) { this.mpSel.bots = +b.dataset.bots; this.saveBotPrefs(); this.renderMpPick(); return; }
@@ -981,9 +981,9 @@
     if (!mp && CF.Mission.preUpdate && (playing || this.state === 'victory' || this.state === 'dying')) CF.Mission.preUpdate(dt); // Story: helicopters carry their riders
     if ((mp || CF.Coop.campaign()) && this.mpLobby) { this.menuT += raw; this.menuCamera(); }
     else P.update(dt);
-    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); CF.ZM.update(dt); CF.CTF.update(dt); }
+    if (mp) { CF.RC.update(dt, raw); CF.PH.update(dt); CF.ZM.update(dt); CF.CTF.update(dt); CF.BR.update(dt, raw); }
     if (CF.MP.active) CF.Coop.update(dt); // co-op: enemy sync, downed and revives
-    const armed = !CF.RC.driving && !CF.PH.unarmed() && !CF.PH.blind && CF.Coop.armed(); // Prop Hunt: Props carry nothing, Hunters wait blindfolded; co-op: no shooting while down
+    const armed = !CF.RC.driving && !CF.PH.unarmed() && !CF.PH.blind && CF.Coop.armed() && !CF.BR.busy(); // Prop Hunt: Props carry nothing, Hunters wait blindfolded; co-op: no shooting while down; Battle Royale: none on the bus or in the air
     if (mp && playing && P.alive && armed) CF.MP.autoAim(dt);
     if (P.alive && playing && armed) CF.Weapons.update(dt, P);
     else if (P.alive) CF.Weapons.animate(dt, P);
@@ -1050,7 +1050,7 @@
       CF.Perf.mid();
       const cam = this.camera;
       if (cam.fov !== this.lastFov) { this.lastFov = cam.fov; CF.FX.resize(CF.Post.H, cam.fov); }
-      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving && !CF.PH.unarmed() && CF.Coop.armed();
+      const showVM = (st === 'playing' || st === 'paused' || st === 'victory' || st === 'mpdead' || st === 'mpmenu') && CF.Player.alive && !(this.mode === 'mp' && this.mpLobby) && !CF.RC.driving && !CF.PH.unarmed() && CF.Coop.armed() && !CF.BR.busy();
       if (st === 'menu' && this.screen === 'locker' && CF.Locker.active) CF.Locker.render(raw);
       else CF.Post.render(this.scene, cam, showVM ? this.vmScene : null, this.vmCam);
       if (st === 'playing' || st === 'menu' || mpSt) CF.Post.adapt(raw);
@@ -1109,7 +1109,7 @@
     for (const b of document.querySelectorAll('[data-botskill]')) b.setAttribute('aria-pressed', String(b.dataset.botskill === this.mpSel.skill));
     $('mpBotsBtn').disabled = noBots;
     const bn = $('mpBotNote');
-    bn.textContent = noBots ? 'Bots can’t play ' + CF.MP.MODES[mode].name + '. Pick another mode to practise.' : CF.MP.zombies(mode) ? 'Zombies practice is just you against the waves.' : '';
+    bn.textContent = noBots ? 'Bots can’t play ' + CF.MP.MODES[mode].name + '. Pick another mode to practise.' : CF.MP.zombies(mode) ? 'Zombies practice is just you against the waves.' : mode === 'br' ? 'Battle Royale practice: you and the bots ride the bus a few seconds after you deploy.' : '';
     bn.hidden = !bn.textContent;
   };
   G.saveBotPrefs = function () { try { localStorage.setItem('cinderfall.bots', JSON.stringify({ n: this.mpSel.bots, s: this.mpSel.skill })); } catch (e) { /* storage unavailable */ } };
@@ -1239,6 +1239,7 @@
     document.body.classList.toggle('mp-prophunt', M.mode === 'prophunt');
     document.body.classList.toggle('mp-sniper', M.mode === 'sniper');
     document.body.classList.toggle('mp-zombies', M.zombies());
+    document.body.classList.toggle('mp-br', M.mode === 'br');
     if (M.zombies() && !W.nav) W.buildNav(); // the infected path-find; multiplayer maps don't build this by default
     CF.Coop.reset();
     if (!M.loDefs()[M.nextLoadout]) M.nextLoadout = M.loKeys()[0]; // e.g. Assault picked, but Sniper Valley only offers rail kits
@@ -1250,6 +1251,7 @@
     this.resetPickups(); this.stopHold();
     CF.Player.alive = false; CF.Player.frozen = false;
     CF.RC.setup(); CF.PH.setup(); CF.CTF.setup();
+    if (M.mode === 'br') CF.BR.setup(); else CF.BR.clear();
     this.mpLobby = true; this.deathT = 0; this.menuT = 0;
     $('mpBar').hidden = false; $('mpDead').hidden = true;
     CF.Post.setState({ fade: 1, low: 0, hurt: 0, suppress: 0 });
@@ -1289,11 +1291,16 @@
     if (M.ended) { this.mpMatchEnd(M.winnerText()); return; }
     this.showScreen(null); CF.HUD.show(true);
     CF.Input.active = true; CF.Input.clearAll();
-    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN && !(M.zombies() && !CF.ZM.canRespawn()))) { this.mpLobby = false; this.mpSpawn(); }
+    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN && !(M.zombies() && !CF.ZM.canRespawn()) && CF.BR.canRespawn())) { this.mpLobby = false; this.mpSpawn(); }
     else this.state = CF.Player.alive ? 'playing' : 'mpdead';
     if (!CF.Input.freeLook) CF.Input.requestLock();
   };
   G.mpSpawn = function () {
+    if (CF.BR.blockSpawn()) { // Battle Royale: out of this match (or joined after the bus left): watch instead
+      CF.Player.alive = false; this.state = 'mpdead'; this.deathT = RESPAWN;
+      $('mdTitle').textContent = CF.BR.place[MPM().myId] ? 'Eliminated' : 'Match in progress'; $('mdBy').textContent = CF.BR.place[MPM().myId] ? '#' + CF.BR.place[MPM().myId] + ' of ' + CF.BR.roster.length : 'You join the next one';
+      CF.BR.specT = 0; $('mpDead').hidden = false; return;
+    }
     CF.PH.drop(); CF.Coop.standUp();
     const M = MPM(), P = CF.Player, lo = M.loadoutFor(M.nextLoadout);
     M.loadout = M.nextLoadout;
@@ -1307,6 +1314,7 @@
     $('mpDead').hidden = true;
     CF.Post.setState({ fade: 1, low: 0, hurt: 0 });
     A.play('spawn', null, { ui: true, vol: 0.5 });
+    CF.BR.onSpawn(); // Battle Royale after the bus left: onto the bus, or straight into the drop
     M.sendState();
   };
   /** Prop Hunt: a new round moves everyone to their team's side with their team's kit. */
@@ -1320,10 +1328,12 @@
     CF.RC.onDeath(); CF.PH.drop();
     if (this.state === 'playing') this.state = 'mpdead';
     this.deathT = 0; this.stats.deaths++;
-    MPM().onLocalDeath(source);
+    $('mdTitle').textContent = 'Flatlined';
+    $('mdBy').textContent = source && source !== 'The fall' ? 'By ' + source : source || '';
+    if (CF.BR.fl) { CF.Player.ride = null; CF.BR.setFl(0); }
+    MPM().onLocalDeath(source); // (the host records the kill right here, which can rewrite the lines above)
     CF.HUD.interact(null); this.stopHold();
     CF.HUD.setSpread(10, true); CF.HUD.showScope(false);
-    $('mdBy').textContent = source && source !== 'The fall' ? 'By ' + source : source || '';
     this.renderLoadouts();
     $('mpDead').hidden = false;
   };
@@ -1340,11 +1350,11 @@
     const M = MPM(), inp = CF.Input;
     if (this.state === 'mpdead') {
       this.deathT += raw;
-      CF.Post.setState({ fade: Math.max(0.35, 1 - this.deathT * 0.25) });
-      if (M.mode !== 'revolver' && !CF.PH.unarmed()) { const keys = M.loKeys(); for (let i = 0; i < keys.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(keys[i]); this.renderLoadouts(); } }
-      const left = Math.max(0, RESPAWN - this.deathT), wait = M.zombies() && !CF.ZM.canRespawn();
-      const txt = M.ended ? 'Match over' : wait ? 'Back in at the next break' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
-      if (this.ui.md !== txt) { $('mdTimer').textContent = txt; this.ui.md = txt; }
+      CF.Post.setState({ fade: CF.BR.spectating() ? 1 : Math.max(0.35, 1 - this.deathT * 0.25) });
+      if (M.mode !== 'revolver' && M.mode !== 'br' && !CF.PH.unarmed()) { const keys = M.loKeys(); for (let i = 0; i < keys.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(keys[i]); this.renderLoadouts(); } }
+      const left = Math.max(0, RESPAWN - this.deathT), brOut = !CF.BR.canRespawn(), wait = (M.zombies() && !CF.ZM.canRespawn()) || brOut;
+      const txt = M.ended ? 'Match over' : brOut ? 'Out of the match' : wait ? 'Back in at the next break' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
+      if (this.ui.md !== txt && !CF.BR.spectating()) { $('mdTimer').textContent = txt; this.ui.md = txt; }
       if (left <= 0 && !M.ended && !wait) this.mpSpawn();
     } else if (this.state === 'mpmenu' && !CF.Player.alive) this.deathT += raw;
     if (this.state === 'playing' && M.protectedNow() && !CF.RC.driving && !CF.PH.blind) CF.HUD.hint('Spawn protection · ends when you fire');
@@ -1366,7 +1376,8 @@
     CF.RC.end(false, true);
     CF.Input.active = false; CF.Input.exitLock(); CF.Input.clearAll();
     $('mpDead').hidden = true; $('aimName').hidden = true; $('relock').hidden = true;
-    $('mpWinner').textContent = winner || 'Match over';
+    $('mpWinner').textContent = (M.mode === 'br' ? CF.BR.endTitle(winner) : winner) || 'Match over';
+    $('mpWinner').classList.toggle('br-win', M.mode === 'br' && CF.BR.place[M.myId] === 1);
     M.renderBoard($('mpEndBoard'));
     $('mpAgainBtn').hidden = !M.isHost();
     $('mpEndNote').textContent = M.solo ? 'Play another round against the same bots, or leave for the menu.' : M.isHost() ? 'Start another round on this map, or leave to close the room.' : 'Waiting for the host to start another round.';
@@ -1378,7 +1389,7 @@
   G.mpRestart = function () {
     if (this.mode !== 'mp') return;
     this.stats = newStats(); this.score = 0;
-    CF.Player.alive = false; this.mpLobby = true; this.deathT = 0;
+    CF.Player.alive = false; CF.Player.ride = null; this.mpLobby = true; this.deathT = 0; this.godMode = false;
     this.resetPickups();
     CF.RC.setup(); CF.PH.drop();
     CF.HUD.reset();
@@ -1388,8 +1399,8 @@
   };
   G.leaveMultiplayer = function (reason) {
     this.mode = 'campaign'; this.mpLobby = false;
-    CF.RC.clear(); CF.PH.clear(); CF.CTF.clear();
-    document.body.classList.remove('mp', 'mp-revolver', 'mp-prophunt', 'mp-sniper', 'mp-zombies', 'coop-downed', 'coop');
+    CF.RC.clear(); CF.PH.clear(); CF.CTF.clear(); CF.BR.clear(); CF.Player.ride = null;
+    document.body.classList.remove('mp', 'mp-revolver', 'mp-prophunt', 'mp-sniper', 'mp-zombies', 'mp-br', 'coop-downed', 'coop');
     CF.Coop.reset();
     $('mpBar').hidden = true; $('mpDead').hidden = true; $('aimName').hidden = true;
     CF.Player.speedMul = 1;

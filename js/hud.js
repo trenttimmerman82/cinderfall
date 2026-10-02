@@ -183,10 +183,11 @@
   H.ammoBump = function () { const e = this.el.ammoMag; e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); };
   H.setWeapon = function (def, inv, order, newId) {
     this.el.weaponName.textContent = def.name;
+    this.el.weaponName.style.color = def.rarCss || ''; // Battle Royale loot: the rarity's colour
     let html = '';
     order.forEach((id, i) => {
-      const d = CF.Weapons.defs[id];
-      html += '<div class="slot' + (id === def.id ? ' active' : '') + (!inv[id] ? ' empty' : '') + (id === newId ? ' new' : '') + '"><kbd>' + CF.Keys.label('slot' + (i + 1)) + '</kbd>' + d.short + '</div>';
+      const d = CF.Weapons.defs[id], rc = inv[id] && inv[id].def.rarCss;
+      html += '<div class="slot' + (id === def.id ? ' active' : '') + (!inv[id] ? ' empty' : '') + (id === newId ? ' new' : '') + '"' + (rc ? ' style="--rar:' + rc + '"' : '') + '><kbd>' + CF.Keys.label('slot' + (i + 1)) + '</kbd>' + d.short + '</div>';
     });
     this.el.weaponSlots.innerHTML = html;
   };

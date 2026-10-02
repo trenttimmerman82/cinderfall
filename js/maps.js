@@ -294,5 +294,28 @@
       (p.x > -22 && p.x < 10 && Math.abs(p.z) < 5.2 && p.y > 3.1 && p.y < 6.5),
     menuCam: (t, cam) => { const a = t * 0.03 + 2.3; cam.position.set(Math.sin(a) * 72, 16 + Math.sin(a * 1.3) * 3, Math.cos(a) * 42); cam.lookAt(0, 2, 0); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'hijacked', 'sniper'];
+  // Retail Row: a bright, clear afternoon in open country; a saturated blue sky, green fields, hills on the horizon
+  CF.Maps.retail = {
+    id: 'retail', name: 'Retail Row', mp: true, nav: false, br: true, blurb: 'A shopping town in open country: Noms, the row of shops, the water tower, the Gas-N-Go and two streets of houses. Battle Royale.',
+    bounds: { minX: -124, maxX: 124, minZ: -124, maxZ: 124 },
+    theme: base({
+      fog: [0.68, 0.8, 0.92], fogDensity: 0.0017,
+      hemi: [0xcfe0f4, 0x58703c, 0.68], moon: { color: 0xfff2dc, intensity: 1.85, dir: [0.42, 0.74, 0.52] },
+      sky: { zen: [0.1, 0.3, 0.72], hor: [0.7, 0.82, 0.94], glow: [0.55, 0.46, 0.3], glowDir: [0.42, 0.52], glow2: [0.08, 0.1, 0.12], glow2Dir: [-1, 0],
+        cloudDark: [0.78, 0.82, 0.88], cloudLit: [1.1, 1.08, 1.04], stars: 0, moon: 2.6 },
+      env: { top: [0.5, 0.66, 0.92], bottom: [0.3, 0.38, 0.22], band: [0.64, 0.72, 0.78], panels: [[1.5, 1.5, 1.5], [1.3, 1.45, 1.65], [1.45, 1.4, 1.3], [1.4, 1.45, 1.4]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 220, r1: 390, count: 48, hMin: 14, hMax: 60, rock: [0.2, 0.3, 0.16], snow: [0.36, 0.46, 0.28], haze: 0.0045, seed: 81 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.82, sat: 1.14, shadow: [0, 0.002, 0.006], high: [0.01, 0.004, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapRetail.build(),
+    // Noms, the shops (both floors), the Gas-N-Go, the houses and the storage units are roofed
+    inside: (p) => (p.x > -88 && p.x < -46 && p.z > -42 && p.z < 6 && p.y < 7) || (p.x > -38 && p.x < 34 && p.z > -36 && p.z < -20 && p.y < 7) ||
+      (p.x > 70 && p.x < 84 && p.z > -12 && p.z < 2 && p.y < 4.2) || (p.y < 5.9 && ((p.z > 30 && p.z < 40) || (p.z > 58 && p.z < 68)) && [-100, -76, -52, 60, 84, -96, -70, -44, 62, 88].some((c) => p.x > c - 6 && p.x < c + 12 && (p.x < c + 6 || p.z < (p.z > 50 ? 65 : 37)))),
+    menuCam: (t, cam) => { const a = t * 0.03 + 0.4; cam.position.set(-10 + Math.sin(a) * 70, 30 + Math.sin(a * 1.3) * 4, -10 + Math.cos(a) * 60); cam.lookAt(-10, 3, -14); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'hijacked', 'retail', 'sniper'];
 })(window.CF);

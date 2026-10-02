@@ -58,8 +58,9 @@
   function maxDamage(w) {
     const d = CF.Weapons.defs[w];
     if (CF.MP.mode === 'revolver' && w === 'revolver') return 999;
-    if (d && d.dmg > 0) return d.dmg * Math.max(1, d.head) * (d.pvp || 1);
-    return OTHER_MAX[w] || 175;
+    const loot = CF.MP.mode === 'br' ? CF.BR.MAXMUL : 1; // Battle Royale guns hit harder the rarer they are
+    if (d && d.dmg > 0) return d.dmg * Math.max(1, d.head) * (d.pvp || 1) * loot;
+    return (OTHER_MAX[w] || 175) * loot;
   }
   function perSecond(w) {
     const d = CF.Weapons.defs[w];
@@ -113,7 +114,7 @@
   /** Position updates: speed over one-second stretches, jumps between consecutive updates, and aim history. */
   AC.movement = function (from, s, msg, t) {
     if (!num3(msg.p)) { flag(from, 'malformed', 2, 'Sent a broken position update'); return false; }
-    const p = [+msg.p[0], +msg.p[1], +msg.p[2]], alive = !!msg.a, shield = !!msg.s || !!msg.d;
+    const p = [+msg.p[0], +msg.p[1], +msg.p[2]], alive = !!msg.a, shield = !!msg.s || !!msg.d || (!!msg.fl && CF.BR.airOK()); // riding the Battle Bus or dropping from it is fast
     if (alive && !s.alive) { s.aliveAt = t; s.win = null; s.pos = null; s.taken.length = 0; }
     if (alive && !shield && s.pos && s.alive && t - s.posT < 0.3 && t - s.aliveAt > 0.5) {
       const step = Math.hypot(p[0] - s.pos[0], p[2] - s.pos[2]);

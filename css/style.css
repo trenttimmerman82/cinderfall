@@ -696,6 +696,58 @@ body.mp-prophunt .mp-bar { border-left-color: #4dff9a; }
 body.ph-prop #screen-mpmenu [data-lo-grid], body.ph-prop #screen-mpmenu [data-lo-edit], body.ph-prop .md-lo, body.ph-prop .md-lo-label, body.ph-prop .weapon-panel, body.ph-prop .grenades, body.ph-prop .streak { display: none !important; }
 body.ph-disguised .crosshair, body.ph-disguised .hitmarker { display: none; }
 
+/* Battle Royale (Retail Row) */
+.card-br b::before, .map-tile.card-br b::before { content: '◆ '; color: #ffb12a; }
+.card-br.sel { border-color: #ffb12a; background: linear-gradient(135deg, rgba(255, 177, 42, 0.16), rgba(187, 102, 255, 0.08)); box-shadow: 0 0 18px rgba(255, 177, 42, 0.2); }
+.card-br.sel b { color: #ffb12a; }
+.br-note { display: none; gap: 6px; padding: 14px 16px; border: 1px solid #ffb12a; background: rgba(255, 177, 42, 0.07); }
+.br-note b { font: 800 22px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: #ffb12a; }
+.br-note span { font: 500 14px/1.5 var(--f-body); color: var(--bone-dim); }
+.br-note em { font-style: normal; font-weight: 700; color: var(--bone); }
+.br-note i { font-style: normal; font-weight: 700; }
+.rr1 { color: #62d75c; } .rr2 { color: #3fa0ff; } .rr3 { color: #bb66ff; } .rr4 { color: #ffb12a; }
+body.mp-br .br-note { display: grid; }
+body.mp-br #screen-mpmenu [data-lo-grid], body.mp-br #screen-mpmenu [data-lo-edit], body.mp-br #screen-mpmenu .mp-h small, body.mp-br .md-lo, body.mp-br .md-lo-label, body.mp-br .streak { display: none !important; }
+body.mp-br .mpb-mode { color: #ffb12a; }
+body.mp-br .mp-bar { border-left-color: #ffb12a; }
+body.mp-br .killfeed { top: calc(var(--hud-pad) + 268px + env(safe-area-inset-top, 0px)); }
+.slot[style] { border-color: var(--rar); box-shadow: inset 0 -2px 0 var(--rar); }
+.slot.active[style] { border-color: var(--rar); background: color-mix(in srgb, var(--rar) 22%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--rar) 45%, transparent); }
+.br-hud { position: absolute; top: calc(var(--hud-pad) + env(safe-area-inset-top, 0px)); right: var(--hud-pad); display: grid; justify-items: end; gap: 6px; z-index: 2; pointer-events: none; }
+.br-hud[hidden] { display: none; }
+.br-mini { width: 200px; height: 200px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(7, 6, 13, 0.6), 0 6px 24px rgba(0, 0, 0, 0.45); background: rgba(7, 6, 13, 0.5); }
+.br-storm { min-width: 200px; box-sizing: border-box; padding: 5px 10px; text-align: center; font: 700 14px/1.1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: #e9d6ff;
+  background: rgba(40, 14, 70, 0.72); border: 1px solid rgba(190, 120, 255, 0.55); }
+.br-storm.shrink { color: #fff; background: rgba(110, 30, 170, 0.85); animation: brPulse 1s ease-in-out infinite alternate; }
+@keyframes brPulse { from { box-shadow: 0 0 0 rgba(190, 120, 255, 0); } to { box-shadow: 0 0 16px rgba(190, 120, 255, 0.7); } }
+.br-info { display: flex; gap: 12px; font: 800 18px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bone); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.br-info span:first-child { color: #ffb12a; }
+.br-tint { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(ellipse at center, rgba(120, 40, 200, 0.12) 30%, rgba(90, 20, 170, 0.6) 100%); animation: brTint 2s ease-in-out infinite alternate; }
+.br-tint[hidden] { display: none; }
+@keyframes brTint { from { opacity: 0.8; } to { opacity: 1; } }
+.br-bigmap { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; align-content: center; gap: 10px; background: rgba(4, 4, 10, 0.72); pointer-events: none; }
+.br-bigmap[hidden] { display: none; }
+.br-bigmap canvas { width: min(720px, 82vh, 90vw); height: min(720px, 82vh, 90vw); border: 2px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+.br-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; font: 600 13px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-dim); }
+.br-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+.br-legend em { font-style: normal; color: var(--haze); }
+.lg-you { background: #ffe14d; clip-path: polygon(50% 0, 100% 100%, 50% 75%, 0 100%); }
+.lg-next { border: 2px solid #fff; border-radius: 50%; box-sizing: border-box; }
+.lg-storm { background: rgba(140, 50, 210, 0.85); }
+.lg-bus { background: #2a7ad8; border-radius: 50%; border: 2px solid #fff; box-sizing: border-box; }
+.br-banner { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; z-index: 3; pointer-events: none; animation: brBanner 0.7s cubic-bezier(.2, 1.4, .4, 1); text-align: center; }
+.br-banner[hidden] { display: none; }
+.br-banner b { font: 900 clamp(64px, 11vw, 150px)/0.85 var(--f-stencil); color: var(--bone); text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6); }
+.br-banner span { font: 900 clamp(30px, 5vw, 64px)/1 var(--f-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone); text-shadow: 0 3px 18px rgba(0, 0, 0, 0.7); }
+.br-banner.win b, .br-banner.win span { color: #ffd23a; text-shadow: 0 0 30px rgba(255, 177, 42, 0.8), 0 4px 0 #8a4a00; }
+@keyframes brBanner { from { opacity: 0; transform: translateX(-50%) scale(1.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+#mpWinner.br-win { color: #ffd23a; text-shadow: 0 0 24px rgba(255, 177, 42, 0.6); }
+.popup.br-r1 { color: #62d75c; } .popup.br-r2 { color: #3fa0ff; } .popup.br-r3 { color: #bb66ff; } .popup.br-r4 { color: #ffb12a; }
+body.br-air .crosshair, body.br-air .weapon-panel, body.br-air .hitmarker { display: none; }
+body.br-spec .mp-dead { top: auto; bottom: calc(var(--hud-pad) + 90px); }
+body.br-spec .md-title { font-size: clamp(32px, 4.5vw, 56px); }
+body.br-spec .crosshair, body.br-spec .weapon-panel, body.br-spec .vitals { display: none; }
+
 .rc-hud { position: absolute; inset: 0; pointer-events: none; }
 .rc-cam { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 20, 10, 0.55) 100%), repeating-linear-gradient(0deg, rgba(120, 255, 170, 0.035) 0 1px, transparent 1px 3px); }
 .rc-cam i { position: absolute; width: 38px; height: 38px; border: 2px solid rgba(160, 255, 190, 0.6); }

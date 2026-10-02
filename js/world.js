@@ -11,7 +11,7 @@
   const _q = [], _q2 = [], _q3 = [];
 
   W.reset = function (bounds) {
-    this.boxes.length = 0; this.grid = null; this.nav = null;
+    this.boxes.length = 0; this.grid = null; this.nav = null; this.navWalls = false;
     this.flowMax = 0; // > 0: stop the flow field this far (in metres of path) from the player (big maps)
     if (bounds) this.bounds = bounds;
   };
@@ -287,6 +287,21 @@
     nav.dist = new Float32Array(N).fill(Infinity); nav.comp = new Int32Array(N);
     nav.heapI = new Int32Array(N * 8); nav.heapP = new Float32Array(N * 8);
     this.rebuildNavRect(B.minX, B.minZ, B.maxX, B.maxZ);
+    if (this.navWalls) this.navWallScan();
+  };
+  /** Maps that ask for it (W.navWalls) also block links between neighbouring cells with a thin wall, a window or a rail
+      between their centres: one sample per cell can't see a 25 cm wall, so walkers would try to walk through it. */
+  W.navWallScan = function () {
+    const nav = this.nav, w = nav.w, h = nav.h, cs = nav.cs;
+    nav.bx = new Uint8Array(w * h); nav.bz = new Uint8Array(w * h);
+    const blocked = (x, z, y, dx, dz) => !!(this.raycast(x, y + 0.45, z, dx, 0, dz, cs, null, true) || this.raycast(x, y + 1.3, z, dx, 0, dz, cs, null, true));
+    for (let iz = 0; iz < h; iz++) for (let ix = 0; ix < w; ix++) {
+      const i = iz * w + ix; if (!nav.walk[i]) continue;
+      const x = nav.x0 + (ix + 0.5) * cs, z = nav.z0 + (iz + 0.5) * cs, y = nav.hgt[i];
+      if (ix + 1 < w && nav.walk[i + 1] && (blocked(x, z, y, 1, 0) || blocked(x + cs, z, nav.hgt[i + 1], -1, 0))) { nav.bx[i] = 1; nav.edge[i] = nav.edge[i + 1] = 1; }
+      if (iz + 1 < h && nav.walk[i + w] && (blocked(x, z, y, 0, 1) || blocked(x, z + cs, nav.hgt[i + w], 0, -1))) { nav.bz[i] = 1; nav.edge[i] = nav.edge[i + w] = 1; }
+    }
+    this.labelComponents();
   };
 
   W.rebuildNavRect = function (minX, minZ, maxX, maxZ) {
@@ -327,7 +342,7 @@
           const x = ix + (k === 0 ? 1 : k === 1 ? -1 : 0), z = iz + (k === 2 ? 1 : k === 3 ? -1 : 0);
           if (x < 0 || z < 0 || x >= w || z >= h) continue;
           const j = z * w + x;
-          if (nav.walk[j] && nav.comp[j] === -1 && Math.abs(nav.hgt[j] - nav.hgt[i]) <= CONNECT) { nav.comp[j] = label; stack[sp++] = j; }
+          if (nav.walk[j] && nav.comp[j] === -1 && Math.abs(nav.hgt[j] - nav.hgt[i]) <= CONNECT && !wallBetween(nav, ix, iz, x - ix, z - iz)) { nav.comp[j] = label; stack[sp++] = j; }
         }
       }
       if (size > bestSize) { bestSize = size; bestLabel = label; }
@@ -368,12 +383,24 @@
 
   const NB = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.4142], [1, -1, 1.4142], [-1, 1, 1.4142], [-1, -1, 1.4142]];
   function linked(nav, i, j) { return nav.walk[j] && Math.abs(nav.hgt[j] - nav.hgt[i]) <= CONNECT; }
+  /** A wall between cell (ix, iz) and its orthogonal neighbour (dx, dz) (only on maps that scanned for them). */
+  function wallBetween(nav, ix, iz, dx, dz) {
+    if (!nav.bx) return false;
+    const w = nav.w;
+    if (dx === 1) return !!nav.bx[iz * w + ix];
+    if (dx === -1) return ix > 0 && !!nav.bx[iz * w + ix - 1];
+    if (dz === 1) return !!nav.bz[iz * w + ix];
+    if (dz === -1) return iz > 0 && !!nav.bz[(iz - 1) * w + ix];
+    return false;
+  }
   function canStepTo(nav, ix, iz, k) {
     const w = nav.w, dx = NB[k][0], dz = NB[k][1];
     const x = ix + dx, z = iz + dz;
     if (x < 0 || z < 0 || x >= w || z >= nav.h) return -1;
     const i = iz * w + ix, j = z * w + x;
     if (!linked(nav, i, j)) return -1;
+    if (nav.bx && (dx === 0 || dz === 0 ? wallBetween(nav, ix, iz, dx, dz)
+      : wallBetween(nav, ix, iz, dx, 0) || wallBetween(nav, ix, iz, 0, dz) || wallBetween(nav, x, iz, 0, dz) || wallBetween(nav, ix, z, dx, 0))) return -1;
     if (dx !== 0 && dz !== 0) {
       const a = iz * w + x, b = z * w + ix;
       if (!linked(nav, i, a) || !linked(nav, i, b) || nav.edge[a] || nav.edge[b]) return -1;

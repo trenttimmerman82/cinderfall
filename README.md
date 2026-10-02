@@ -35,8 +35,8 @@ It is set in a rain-soaked neon city.
 - **Co-op campaign.** Play Cinder Foundry or Whiteout with a friend through a room code: shared objectives, revive each
   other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
-  (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you) or co-op
-  **Zombies** (survive waves of infected) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) and **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow), with eight classes you can edit in the lobby (any primary, eight secondaries including a machine pistol, hand cannon, burst pistol, sawn-off, arc pistol and grenade pistol, plus equipment and vest). Kill-streak drones
+  (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you), co-op
+  **Zombies** (survive waves of infected) or **Battle Royale** (ride the Battle Bus over **Retail Row**, loot, outlast the storm) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow) and **Retail Row** (a shopping town in open country, built for Battle Royale), with eight classes you can edit in the lobby (any primary, eight secondaries including a machine pistol, hand cannon, burst pistol, sawn-off, arc pistol and grenade pistol, plus equipment and vest). Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -112,6 +112,38 @@ scoreboard shows the wave reached and total kills.
 waves; Crawlers fill their share. Pick it as its own card in the mode row (`zombiesnd` in `js/mp.js`, `CF.ZM.nd` in
 `js/zombies.js`). Kill-streak drones for the players still work.
 
+**Battle Royale** is played on **Retail Row**, a small shopping town in open country after the Fortnite landmark:
+the Noms supermarket, a two-storey row of shops (Ruckus Sports, Sofa Kingdom, Toy Barn, Bean There, Hammer & Co.) with a
+balcony walk and a roof you reach from the west stair, the parking lot and the RETAIL ROW pylon, the water tower with a
+switchback stair up to its catwalk, the Gas-N-Go, two streets of houses with garages, the park, a self-storage yard and
+a red barn. Picking the mode picks the map (and the other way round).
+- **Warm-up.** Until the bus leaves you run around with a pistol and respawn. Online, the Battle Bus leaves 20 seconds
+  after a second player is in; in practice, 5 seconds after you deploy. No classes: everyone drops with a P-11.
+- **The drop.** Everyone rides the **Battle Bus** (a bus under a hot-air balloon) across the map on a random line. Press
+  **Space** to jump once the doors open; at the end of the route you are thrown out. In free fall, look down and hold **W**
+  to dive; **Space** (below 90 m) or reaching 30 m above the ground opens the **glider**. The camera is third-person on the
+  bus and in the air, and other players see you fall and glide.
+- **Loot.** About 110 floor spots and 24 golden chests (hold **E** to open). Guns come in five rarities, **Common**,
+  **Uncommon**, **Rare**, **Epic** and **Legendary**, each a little harder-hitting (up to +22% damage); the colour shows on
+  the floor ring and light beam, the weapon name and its slot. Walk over loot to take it: guns while you carry fewer than
+  four, ammo boxes, armor plates (+25/+50), med kits and bandages (+25/+50 health), frags. With four guns (or a better copy of
+  one you carry), **E** swaps the gun in your hands for it and drops yours. Health does not regenerate in the match.
+- **The storm.** Five circles, each inside the last and drawn from the match seed, the late ones near the middle of town:
+  wait 75/45/35/30/20 s, then shrink to 78/44/22/9/0 m. Outside you take 1, 2, 4, 7 and then 10 damage a second (armor
+  doesn't help), the screen and fog turn purple and the storm howls. The minimap (top right) shows the storm, the next
+  circle (white), the bus route and you; **M** opens the full map. The bar shows the storm timer, players alive and kills.
+- **Eliminated.** One life: you drop everything you carried, see your placement (**#4 of 8**) and spectate the
+  survivors (**Space** for the next). Joining after the bus left also spectates. The last one standing gets
+  **Victory Royale**; the scoreboard lists everyone's place and kills, and the host can start another match.
+- **Bots** ride the bus, glide to a loot spot, pick up guns, armor and med kits, open chests, keep ahead of the storm and
+  fight. Retail Row's navigation grid also sees thin walls and shop windows (`W.navWalls` in `js/world.js`), so bots go
+  through doors; like everywhere, the grid maps one floor per spot, so bots don't loot house and shop ground floors.
+- **Online:** the host runs the countdown, the bus line, the storm circles and the loot seed, and decides every pickup and
+  chest; every client builds the same loot from the seed, flies its own drop and takes its own storm damage. Rules and
+  tuning (storm table, rarities, loot pool) are at the top of `js/br.js`; the map is `js/map-retail.js`, which lists its
+  loot spots and chests in `L.points.loot` / `L.points.chests`. The anticheat allows the bus ride and the drop and the
+  higher damage of rare guns. The network version is now `v9`, so everyone needs the updated page.
+
 **Sniper Valley** is its own map and mode: team deathmatch (first to 25, 10 minutes) between two skyscraper rooftops
 60 m apart with nothing connecting them. Each roof has a spawn bunker and a watchtower. Loadouts are rail-rifle kits
 only (Deadeye: VX-3 + KF-44, Spotter: VX-3 + P-11 + 50 armor, Longshot: VX-3 with 40 spare rounds + P-11), no
@@ -139,7 +171,7 @@ wind-up telegraphs.
 ## Practice vs bots
 
 **Practice vs bots** on the main menu (or the same section of the Multiplayer screen) plays any map in Free for all, Team
-deathmatch, Capture the Flag, Revolver One-Shot or Sniper Valley against 1, 3, 5 or 7 computer players, offline, on
+deathmatch, Capture the Flag, Revolver One-Shot, Sniper Valley or Battle Royale (Retail Row) against 1, 3, 5 or 7 computer players, offline, on
 Easy, Normal or Hard. Zombies practice is you alone against the waves. **Esc** pauses. Bots can't play Prop Hunt or the
 co-op campaign. The bots (`js/bots.js`) are ordinary multiplayer players driven by the host: they walk the map's
 navigation grid, spot you in their field of view or by the sound of your shots, and in CTF they take, carry, return and

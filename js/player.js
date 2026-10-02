@@ -256,8 +256,8 @@
     }
     this.bobAmp = U.damp(this.bobAmp, b.grounded && !this.sliding ? U.clamp(hs / 5.1, 0, 1.5) : 0, 8, dt);
     // regen
-    const diff = CF.Game.mode === 'mp' ? { regenDelay: 5, regenRate: 25 } : CF.diff();
-    if (this.time - this.lastHurt > diff.regenDelay && this.health < this.maxHealth) { this.health = Math.min(this.maxHealth, this.health + diff.regenRate * dt); CF.HUD.setVitals(this.health, this.armor); }
+    const diff = CF.Game.mode === 'mp' ? { regenDelay: 5, regenRate: CF.BR && CF.BR.noRegen() ? 0 : 25 } : CF.diff(); // Battle Royale: heal with med kits
+    if (diff.regenRate && this.time - this.lastHurt > diff.regenDelay && this.health < this.maxHealth) { this.health = Math.min(this.maxHealth, this.health + diff.regenRate * dt); CF.HUD.setVitals(this.health, this.armor); }
     // low health heartbeat
     if (this.health < 30 * this.maxHealth / 100) { this.heartT -= dt; if (this.heartT <= 0) { this.heartT = 0.85; A.play('heartbeat', null, { ui: true, vol: 0.9 }); } }
     this.updateCamera(dt);
