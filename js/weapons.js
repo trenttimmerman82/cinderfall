@@ -14,7 +14,7 @@
       adsFov: 0.86, adsTime: 0.2, hip: [0.13, -0.13, -0.27], adsZ: -0.34, equip: 0.5, sound: 'shotgun', tracerEvery: 1, shell: 1.9, pump: true, moveMul: 0.95, noise: 50, knock: 5 },
     rail: { id: 'rail', name: 'VX-3 Lance', short: 'VX-3', auto: false, rpm: 48, dmg: 160, head: 2.5, pellets: 1, pierce: 4, hitPad: 0.15,
       spreadHip: 2.4, spreadAds: 0, spreadMove: 2.0, spreadAir: 5, bloom: 0, bloomMax: 0, mag: 4, reserve: 12, maxReserve: 24,
-      reload: 2.5, reloadEmpty: 2.5, magInAt: 0.6, falloff: [400, 500, 1], recoil: [4.5, 0.6, 0.11, 0.24], adsFov: 0.28, adsTime: 0.26, scope: true,
+      reload: 2.5, reloadEmpty: 2.5, magInAt: 0.6, falloff: [400, 500, 1], recoil: [4.5, 0.6, 0.11, 0.24], adsFov: 0.26, zoom: [0.26, 0.14, 0.08], adsTime: 0.26, scope: true,
       hip: [0.13, -0.14, -0.27], adsZ: -0.3, equip: 0.55, sound: 'rail', tracerEvery: 1, shell: 0, moveMul: 0.9, noise: 55, knock: 7 },
     pistol: { id: 'pistol', name: 'P-11 Hollow', short: 'P-11', auto: false, rpm: 400, dmg: 32, head: 2.0, pellets: 1,
       spreadHip: 1.1, spreadAds: 0.22, spreadMove: 1.0, spreadAir: 2.5, bloom: 0.5, bloomMax: 2.0, mag: 12, reserve: Infinity, maxReserve: Infinity,
@@ -481,11 +481,21 @@
     const vel = new THREE.Vector3().addScaledVector(_r, U.rand(1.6, 2.6)).addScaledVector(_u, U.rand(1.4, 2.4)).addScaledVector(_f, U.rand(-0.4, 0.3)).add(P.body.vel);
     CF.FX.shell(pos, vel, size);
   };
+  /** Field-of-view multiplier when fully aimed: the gun's adsFov, or for a variable scope the zoom ring, eased between steps. */
+  WP.adsFov = function (dt) {
+    const d = this.cur && this.cur.def;
+    if (!d) return 1;
+    if (!d.zoom) return d.adsFov;
+    const want = d.zoom[U.clamp(this.zoomIdx || 0, 0, d.zoom.length - 1)];
+    this.zoomFov = this.zoomFov ? U.damp(this.zoomFov, want, 14, dt || 0) : want;
+    return this.zoomFov;
+  };
   /** Scoped breathing sway (radians right, up). The camera carries it, so the reticle and the shot always agree. */
   WP.scopeSway = function (out) {
     const d = this.cur && this.cur.def, k = d && d.scope ? U.smoothstep(0.6, 1, this.adsE) : 0;
     if (!k) { out.x = 0; out.y = 0; return out; }
-    const t = this.t, steady = (this.steady ? 0.15 : 1) * k;
+    const zk = d.zoom && this.zoomFov ? Math.sqrt(this.zoomFov / d.zoom[0]) : 1; // higher zoom, steadier hands (so the view doesn't swim)
+    const t = this.t, steady = (this.steady ? 0.15 : 1) * k * zk;
     out.x = (Math.sin(t * 0.9) * 0.6 + Math.sin(t * 2.3) * 0.25) * 0.0022 * steady;
     out.y = (Math.cos(t * 1.1) * 0.5 + Math.sin(t * 1.7) * 0.3) * 0.0022 * steady;
     return out;
@@ -548,7 +558,8 @@
       const sl = this.slots();
       if (!(CF.ZM && CF.ZM.shopOpen)) for (let i = 0; i < sl.length; i++) if (inp.hit('Digit' + (i + 1))) this.select(sl[i]); // number keys buy while the Zombies shop is open
       if (inp.hit('KeyQ') && this.lastId && this.inv[this.lastId]) this.select(this.lastId);
-      if (inp.wheel) this.cycle(inp.wheel);
+      if (inp.wheel && d.zoom && this.adsE > 0.9) this.zoomIdx = U.clamp((this.zoomIdx || 0) - inp.wheel, 0, d.zoom.length - 1); // scoped: the wheel turns the zoom ring
+      else if (inp.wheel) this.cycle(inp.wheel);
       if (inp.hit('KeyR')) this.reload();
       if (inp.hit('KeyV')) this.melee();
       if (inp.hit('KeyG')) this.throwGrenade();

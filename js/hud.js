@@ -291,7 +291,7 @@
       cam.getWorldDirection(d);
       const h = CF.World.raycast(cam.position.x, cam.position.y, cam.position.z, d.x, d.y, d.z, 400);
       const mag = Math.tan(CF.settings.fov * Math.PI / 360) / Math.tan(cam.fov * Math.PI / 360);
-      const txt = (steady ? 'STEADY · ' : breath < 4 ? 'HOLD ' + CF.Keys.label('sprint').toUpperCase() + ' TO STEADY · ' : '') + mag.toFixed(1) + 'x · ' + (h ? Math.round(h.t) : '---') + ' m';
+      const txt = (steady ? 'STEADY · ' : breath < 4 ? 'HOLD ' + CF.Keys.label('sprint').toUpperCase() + ' TO STEADY · ' : '') + mag.toFixed(1) + 'x · ' + (h ? Math.round(h.t) : '---') + ' m' + (CF.Weapons.cur.def.zoom ? ' · SCROLL ZOOM' : '');
       if (this.last.sr !== txt) { this.el.scopeRead.textContent = txt; this.last.sr = txt; }
     }
   };

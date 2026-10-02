@@ -310,7 +310,7 @@
     _e.set(this.pitch + this.recoilP + ny * 0.035 + this.flinch * 0.02 + _sway.y, this.yaw + this.recoilY + nx * 0.035 - _sway.x, this.tilt - this.lean * this.leanReach * 0.21 + nr * 0.04 + (this.mantling ? Math.sin(Math.min(1, this.mantleT) * Math.PI) * 0.06 : 0));
     cam.quaternion.setFromEuler(_e);
     const base = st.fov + this.sprintT * 6 + this.slideT * 8;
-    const adsMul = WPN.cur ? U.lerp(1, WPN.cur.def.adsFov, WPN.adsE) : 1;
+    const adsMul = WPN.cur ? U.lerp(1, WPN.adsFov(dt), WPN.adsE) : 1;
     const fov = base * adsMul;
     if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
     cam.updateMatrixWorld();
