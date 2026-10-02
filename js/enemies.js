@@ -707,18 +707,19 @@
   };
   E.alertAll = function () { for (const e of this.list) if (e.alive) e.becomeAware(CF.Player.body.pos, true); };
 
-  E.raycast = function (o, d, maxT) {
-    let best = null, bt = maxT;
+  /** pad: metres added to every hit sphere (the rail rifle's forgiving hitbox); heads grow less so headshots still take aim. */
+  E.raycast = function (o, d, maxT, pad) {
+    let best = null, bt = maxT; pad = pad || 0;
     for (const e of this.list) {
       if (!e.alive || e.spawnT < 1) continue;
       if (e.raycastBoss) { const h = e.raycastBoss(o, d, bt); if (h) { best = h; bt = h.t; } continue; }
       e.center(_v);
-      const R = e.T.height * 0.75 + 0.6;
+      const R = e.T.height * 0.75 + 0.6 + pad;
       _v2.subVectors(o, _v); const bq = _v2.dot(d), cq = _v2.lengthSq() - R * R;
       if (cq > 0 && bq > 0) continue;
       if (bq * bq - cq < 0) continue;
       for (const h of e.m.hit) {
-        _v2.subVectors(o, h.w); const b2 = _v2.dot(d), c2 = _v2.lengthSq() - h.r * h.r, disc = b2 * b2 - c2;
+        _v2.subVectors(o, h.w); const r = h.r + (h.tag === 'head' ? pad * 0.4 : pad), b2 = _v2.dot(d), c2 = _v2.lengthSq() - r * r, disc = b2 * b2 - c2;
         if (disc < 0) continue;
         let t = -b2 - Math.sqrt(disc); if (t < 0) t = -b2 + Math.sqrt(disc);
         if (t > 0 && t < bt) { bt = t; best = { enemy: e, t, part: h, point: new THREE.Vector3().copy(o).addScaledVector(d, t), normal: null, center: h.w }; }
@@ -727,12 +728,12 @@
     if (best && !best.normal) best.normal = new THREE.Vector3().subVectors(best.point, best.center).normalize();
     return best;
   };
-  E.raycastAll = function (o, d, maxT, max) {
+  E.raycastAll = function (o, d, maxT, max, pad) {
     const out = [], save = this.list;
     for (const e of save) {
       if (!e.alive) continue;
       this.list = [e];
-      const h = this.raycast(o, d, maxT);
+      const h = this.raycast(o, d, maxT, pad);
       if (h) out.push(h);
     }
     this.list = save;

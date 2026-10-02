@@ -12,7 +12,7 @@
       spreadHip: 5.0, spreadAds: 3.4, spreadMove: 0.8, spreadAir: 2.0, bloom: 0, bloomMax: 0, mag: 7, reserve: 28, maxReserve: 49,
       shellReload: true, reloadStart: 0.32, reloadShell: 0.46, reloadEnd: 0.38, falloff: [8, 26, 0.22], recoil: [4.0, 1.0, 0.085, 0.2],
       adsFov: 0.86, adsTime: 0.2, hip: [0.13, -0.13, -0.27], adsZ: -0.34, equip: 0.5, sound: 'shotgun', tracerEvery: 1, shell: 1.9, pump: true, moveMul: 0.95, noise: 50, knock: 5 },
-    rail: { id: 'rail', name: 'VX-3 Lance', short: 'VX-3', auto: false, rpm: 48, dmg: 160, head: 2.5, pellets: 1, pierce: 4,
+    rail: { id: 'rail', name: 'VX-3 Lance', short: 'VX-3', auto: false, rpm: 48, dmg: 160, head: 2.5, pellets: 1, pierce: 4, hitPad: 0.15,
       spreadHip: 2.4, spreadAds: 0, spreadMove: 2.0, spreadAir: 5, bloom: 0, bloomMax: 0, mag: 4, reserve: 12, maxReserve: 24,
       reload: 2.5, reloadEmpty: 2.5, magInAt: 0.6, falloff: [400, 500, 1], recoil: [4.5, 0.6, 0.11, 0.24], adsFov: 0.28, adsTime: 0.26, scope: true,
       hip: [0.13, -0.14, -0.27], adsZ: -0.3, equip: 0.55, sound: 'rail', tracerEvery: 1, shell: 0, moveMul: 0.9, noise: 55, knock: 7 },
@@ -299,7 +299,7 @@
       const wbox = wh ? wh.box : null, wsurf = wbox ? wbox.surf : null;
       const wx = wh ? wh.x : 0, wy = wh ? wh.y : 0, wz = wh ? wh.z : 0, wnx = wh ? wh.nx : 0, wny = wh ? wh.ny : 0, wnz = wh ? wh.nz : 0;
       let endT = tWorld;
-      const hits = d.pierce ? CF.Enemies.raycastAll(_o, _d, tWorld, d.pierce) : (() => { const h = CF.Enemies.raycast(_o, _d, tWorld); return h ? [h] : []; })();
+      const hits = d.pierce ? CF.Enemies.raycastAll(_o, _d, tWorld, d.pierce, d.hitPad) : (() => { const h = CF.Enemies.raycast(_o, _d, tWorld, d.hitPad); return h ? [h] : []; })();
       for (const h of hits) {
         const dist = h.t;
         const fall = dist <= d.falloff[0] ? 1 : dist >= d.falloff[1] ? d.falloff[2] : U.lerp(1, d.falloff[2], (dist - d.falloff[0]) / (d.falloff[1] - d.falloff[0]));
