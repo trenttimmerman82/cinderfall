@@ -93,6 +93,7 @@
     ctf: { name: 'Capture the Flag', limit: 3, time: 600, protect: 1.5 }, // Voltage vs Ronin, flag rules in js/ctf.js
     sniper: { name: 'Sniper Valley', limit: 25, time: 600, protect: 2.0 }, // team deathmatch on the Sniper Valley map, rail rifles only
     zombies: { name: 'Zombies', limit: 0, time: 0, protect: 2.0, noClock: true }, // co-op waves (js/zombies.js); ends when everyone is down
+    zombiesnd: { name: 'Zombies · No drones', limit: 0, time: 0, protect: 2.0, noClock: true }, // the same waves without the flying Blight drones
     coop: { name: 'Co-op Campaign', limit: 0, time: 0, protect: 0, noClock: true } // two players through a campaign (js/coop.js, js/coop-campaign.js)
   };
   const W_IDX = CF.Weapons.order; // weapon id <-> index for compact state
@@ -104,6 +105,8 @@
     PRIMARIES, SECONDARIES, EQUIP, VEST, EQUIP_KEYS, VEST_KEYS, ROLE, DEFAULT_KITS, buildLoadout, kits: {}
   };
   MP.modeDef = () => MODES[MP.mode] || MODES.ffa;
+  /** Zombies in either form: the full waves, or the no-drones variant (mode zombiesnd). */
+  MP.zombies = (m) => { m = m || MP.mode; return m === 'zombies' || m === 'zombiesnd'; };
   /** Your version of a class: its saved edits on top of the default kit. */
   MP.kitFor = (k) => cleanKit(MP.kits[k], DEFAULT_KITS[k] || DEFAULT_KITS.assault);
   MP.isEdited = (k) => !!MP.kits[k];
@@ -160,7 +163,7 @@
   /** Two-team rules: TDM itself, Sniper Valley, and Capture the Flag. */
   MP.tdm = () => MP.mode === 'tdm' || MP.mode === 'sniper' || MP.mode === 'ctf'; // CTF: same two teams, but captures score, not kills
   /** Modes with sides: the team deathmatches, and Prop Hunt's Hunters vs Props. */
-  MP.teamMode = () => MP.tdm() || MP.mode === 'prophunt' || MP.mode === 'zombies' || MP.mode === 'coop'; // co-op: everyone on team 0
+  MP.teamMode = () => MP.tdm() || MP.mode === 'prophunt' || MP.zombies() || MP.mode === 'coop'; // co-op: everyone on team 0
   MP.teams = () => (MP.mode === 'prophunt' ? CF.PH.TEAMS : TEAM);
   MP.enemyOf = (id) => !MP.teamMode() || !MP.players[id] || MP.players[id].team !== MP.team;
 
@@ -448,7 +451,7 @@
     MP.timeLeft = MP.modeDef().time;
     await CF.Game.loadMap(mapId);
     CF.Game.enterMultiplayer();
-    CF.Bots.setup(MP.mode === 'zombies' ? 0 : bots, skill);
+    CF.Bots.setup(MP.zombies() ? 0 : bots, skill);
     CF.Game.renderMpMenu();
   };
   MP.status = function (text, error) {
@@ -481,7 +484,7 @@
     if (Math.abs(P.lean * P.leanReach) > 0.05) msg.l = +(P.lean * P.leanReach).toFixed(2);
     if (MP.mode === 'prophunt') CF.PH.stateFields(msg); // ph: disguise, pr: its facing
     if (CF.Coop.downed) msg.dn = 1;
-    if (MP.mode === 'zombies') msg.zp = CF.ZM.points;
+    if (MP.zombies()) msg.zp = CF.ZM.points;
     if (MP.role === 'client') CF.AC.observe(MP.myId, msg); // we're a target in everyone's aim check, our own included (the host's goes through onHostMsg)
     MP.postFast(msg);
   };
@@ -617,7 +620,7 @@
     if (victim) victim.deaths++;
     CF.CTF.dropFrom(k.victim);
     const suicide = !k.killer || k.killer === k.victim;
-    if (MP.mode === 'zombies' && victim) { CF.HUD.killfeed(victim.name + ' bled out', ''); CF.ZM.onDeath(); if (k.victim === MP.myId) CF.Game.mpKilledBy(null, ''); if (MP.remotes[k.victim]) MP.remotes[k.victim].die(); if (MP.isHost()) MP.checkEnd(); return; }
+    if (MP.zombies() && victim) { CF.HUD.killfeed(victim.name + ' bled out', ''); CF.ZM.onDeath(); if (k.victim === MP.myId) CF.Game.mpKilledBy(null, ''); if (MP.remotes[k.victim]) MP.remotes[k.victim].die(); if (MP.isHost()) MP.checkEnd(); return; }
     if (MP.mode === 'prophunt') CF.PH.onKill(k, killer, victim, suicide); // a found Prop joins the Hunters
     else if (killer && !suicide) {
       if (MP.tdm()) { if (killer.team !== (victim ? victim.team : -1)) { if (MP.mode !== 'ctf') MP.teamScores[killer.team]++; killer.kills++; } }
@@ -667,17 +670,17 @@
     if (MP.ended) return;
     let done = MP.timeLeft <= 0, winner = null;
     if (MP.mode === 'prophunt') { winner = CF.PH.result(); done = !!winner; }
-    else if (MP.mode === 'zombies') { winner = CF.ZM.result(); done = !!winner; }
+    else if (MP.zombies()) { winner = CF.ZM.result(); done = !!winner; }
     else if (MP.mode === 'coop') return; // the campaign ends through its own mission (js/coop-campaign.js)
     else if (MP.tdm()) done = done || MP.teamScores[0] >= MP.limit || MP.teamScores[1] >= MP.limit;
     else for (const id in MP.players) if (MP.players[id].kills >= MP.limit) done = true;
     if (!done) return;
-    const msg = { t: 'end', board: MP.players, teams: MP.teamScores, winner: winner || MP.winnerText(), zw: MP.mode === 'zombies' ? CF.ZM.snap() : undefined };
+    const msg = { t: 'end', board: MP.players, teams: MP.teamScores, winner: winner || MP.winnerText(), zw: MP.zombies() ? CF.ZM.snap() : undefined };
     CF.Net.broadcast(msg); MP.endMatch(msg);
   };
   MP.winnerText = function () {
     if (MP.mode === 'prophunt') return CF.PH.winner || 'Round over';
-    if (MP.mode === 'zombies') return CF.ZM.winner || 'Overrun on wave ' + CF.ZM.wave;
+    if (MP.zombies()) return CF.ZM.winner || 'Overrun on wave ' + CF.ZM.wave;
     if (MP.tdm()) { const [a, b] = MP.teamScores; return a === b ? 'Draw' : (a > b ? TEAM[0].name : TEAM[1].name) + ' win'; }
     let best = null; for (const id in MP.players) if (!best || MP.players[id].kills > best.kills) best = MP.players[id];
     return best ? best.name + ' wins' : 'Match over';
@@ -687,14 +690,14 @@
     if (msg.board) MP.players = msg.board;
     if (msg.teams) MP.teamScores = msg.teams;
     if (MP.mode === 'prophunt') CF.PH.onEnd(msg.winner);
-    if (MP.mode === 'zombies') { CF.ZM.onEnd(msg.winner); if (msg.zw) { CF.ZM.wave = msg.zw.w; CF.ZM.kills = msg.zw.k; } }
+    if (MP.zombies()) { CF.ZM.onEnd(msg.winner); if (msg.zw) { CF.ZM.wave = msg.zw.w; CF.ZM.kills = msg.zw.k; } }
     CF.Game.mpMatchEnd(msg.winner);
   };
   MP.restartMatch = function (msg) {
     MP.ended = false; MP.teamScores = [0, 0]; MP.timeLeft = msg.time;
     for (const id in MP.players) { MP.players[id].kills = 0; MP.players[id].deaths = 0; }
     if (MP.mode === 'prophunt') CF.PH.reset();
-    if (MP.mode === 'zombies') { CF.Coop.reset(); CF.ZM.reset(); }
+    if (MP.zombies()) { CF.Coop.reset(); CF.ZM.reset(); }
     if (MP.mode === 'ctf') CF.CTF.reset();
     if (MP.solo) CF.Bots.restart();
     CF.Game.mpRestart();
@@ -789,7 +792,7 @@
   };
   MP.renderBoard = function (el) {
     if (MP.mode === 'prophunt') { CF.PH.renderBoard(el); return; }
-    if (MP.mode === 'zombies' || MP.mode === 'coop') { CF.ZM.renderBoard(el); return; }
+    if (MP.zombies() || MP.mode === 'coop') { CF.ZM.renderBoard(el); return; }
     el.textContent = ''; el.classList.remove('ph');
     const rows = MP.boardRows();
     const head = document.createElement('div'); head.className = 'sb-row sb-head';
@@ -811,12 +814,12 @@
   };
   MP.teamNote = function () {
     if (MP.mode === 'prophunt') return CF.PH.teamNote();
-    if (MP.mode === 'zombies') return { text: 'Everyone is on one team. Revive downed teammates by holding ' + CF.Keys.label('interact') + ' next to them.', css: '#8dff6a' };
+    if (MP.zombies()) return { text: 'Everyone is on one team. Revive downed teammates by holding ' + CF.Keys.label('interact') + ' next to them.', css: '#8dff6a' };
     return MP.tdm() ? { text: 'You are on team ' + TEAM[MP.team].name + '.', css: TEAM[MP.team].css } : { text: '', css: '' };
   };
   MP.hudText = function () {
     if (MP.mode === 'prophunt') return Object.assign(CF.PH.hudText(), { room: CF.Net.code });
-    if (MP.mode === 'zombies') return Object.assign(CF.ZM.hudText(), { room: CF.Net.code });
+    if (MP.zombies()) return Object.assign(CF.ZM.hudText(), { room: CF.Net.code });
     if (MP.mode === 'ctf') return Object.assign(CF.CTF.hudText(), { time: U.fmtTime(MP.timeLeft), room: CF.Net.code });
     const me = MP.players[MP.myId] || { kills: 0 };
     let lead = 0; for (const id in MP.players) lead = Math.max(lead, MP.players[id].kills);

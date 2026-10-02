@@ -35,7 +35,9 @@
 
   // ------------------------------------------------------------ state
   const ZM = CF.ZM = { phase: 'wait', wave: 0, t: 0, left: 0, kills: 0, toSpawn: 0, spawnT: 0, sendT: 0, deaths: 0, best: 0, points: 0, shopOpen: false };
-  ZM.on = () => MP().active && MP().mode === 'zombies';
+  ZM.on = () => MP().active && MP().zombies();
+  /** The no-drones variant: no flying Blight drones in the waves (the Crawlers take their place). */
+  ZM.nd = () => MP().mode === 'zombiesnd';
   const playerCount = () => Math.max(1, Object.keys(MP().players).length);
   /** Wave size, enemy health and damage for this wave and team size (tune here). */
   ZM.scale = function (w, n) {
@@ -48,7 +50,7 @@
   };
   function pick(w) {
     const r = Math.random();
-    if (w >= 3 && r < 0.14) return CF.noDrones() ? 'crawler' : 'blight';
+    if (w >= 3 && r < 0.14) return ZM.nd() ? 'crawler' : 'blight';
     if (w >= 2 && r < 0.4) return 'crawler';
     if (w >= 7 && r < 0.43) return 'brute';
     return 'husk';

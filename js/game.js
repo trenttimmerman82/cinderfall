@@ -871,7 +871,7 @@
       if (this.collect(p)) {
         p.alive = false; p.mesh.visible = false;
         if (p.dropped) { this.scene.remove(p.mesh); L.pickups.splice(i, 1); }
-        else if (this.mode === 'mp' && CF.MP.mode !== 'revolver' && CF.MP.mode !== 'zombies') p.respawn = 20; // Zombies restocks at each break
+        else if (this.mode === 'mp' && CF.MP.mode !== 'revolver' && !CF.MP.zombies()) p.respawn = 20; // Zombies restocks at each break
       }
     }
     if (this.mode === 'mp') {
@@ -1105,11 +1105,11 @@
     $('mpPick').textContent = (tile ? tile.querySelector('b').textContent : '') + ' · ' + (sniper ? 'Team deathmatch · rail rifles' : mcard ? mcard.querySelector('b').textContent : '');
     // practice: bots play every mode but Prop Hunt and the co-op campaign; Zombies is just you against the waves
     const mode = sniper ? 'sniper' : this.mpSel.mode, noBots = mode === 'prophunt' || mode === 'coop';
-    for (const b of document.querySelectorAll('[data-bots]')) { b.setAttribute('aria-pressed', String(+b.dataset.bots === this.mpSel.bots)); b.disabled = mode === 'zombies'; }
+    for (const b of document.querySelectorAll('[data-bots]')) { b.setAttribute('aria-pressed', String(+b.dataset.bots === this.mpSel.bots)); b.disabled = CF.MP.zombies(mode); }
     for (const b of document.querySelectorAll('[data-botskill]')) b.setAttribute('aria-pressed', String(b.dataset.botskill === this.mpSel.skill));
     $('mpBotsBtn').disabled = noBots;
     const bn = $('mpBotNote');
-    bn.textContent = noBots ? 'Bots can’t play ' + CF.MP.MODES[mode].name + '. Pick another mode to practise.' : mode === 'zombies' ? 'Zombies practice is just you against the waves.' : '';
+    bn.textContent = noBots ? 'Bots can’t play ' + CF.MP.MODES[mode].name + '. Pick another mode to practise.' : CF.MP.zombies(mode) ? 'Zombies practice is just you against the waves.' : '';
     bn.hidden = !bn.textContent;
   };
   G.saveBotPrefs = function () { try { localStorage.setItem('cinderfall.bots', JSON.stringify({ n: this.mpSel.bots, s: this.mpSel.skill })); } catch (e) { /* storage unavailable */ } };
@@ -1238,8 +1238,8 @@
     document.body.classList.toggle('mp-revolver', M.mode === 'revolver');
     document.body.classList.toggle('mp-prophunt', M.mode === 'prophunt');
     document.body.classList.toggle('mp-sniper', M.mode === 'sniper');
-    document.body.classList.toggle('mp-zombies', M.mode === 'zombies');
-    if (M.mode === 'zombies' && !W.nav) W.buildNav(); // the infected path-find; multiplayer maps don't build this by default
+    document.body.classList.toggle('mp-zombies', M.zombies());
+    if (M.zombies() && !W.nav) W.buildNav(); // the infected path-find; multiplayer maps don't build this by default
     CF.Coop.reset();
     if (!M.loDefs()[M.nextLoadout]) M.nextLoadout = M.loKeys()[0]; // e.g. Assault picked, but Sniper Valley only offers rail kits
     this.initAudio(); A.resume(); A.setPaused(false);
@@ -1289,7 +1289,7 @@
     if (M.ended) { this.mpMatchEnd(M.winnerText()); return; }
     this.showScreen(null); CF.HUD.show(true);
     CF.Input.active = true; CF.Input.clearAll();
-    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN && !(M.mode === 'zombies' && !CF.ZM.canRespawn()))) { this.mpLobby = false; this.mpSpawn(); }
+    if (this.mpLobby || (!CF.Player.alive && this.deathT >= RESPAWN && !(M.zombies() && !CF.ZM.canRespawn()))) { this.mpLobby = false; this.mpSpawn(); }
     else this.state = CF.Player.alive ? 'playing' : 'mpdead';
     if (!CF.Input.freeLook) CF.Input.requestLock();
   };
@@ -1342,7 +1342,7 @@
       this.deathT += raw;
       CF.Post.setState({ fade: Math.max(0.35, 1 - this.deathT * 0.25) });
       if (M.mode !== 'revolver' && !CF.PH.unarmed()) { const keys = M.loKeys(); for (let i = 0; i < keys.length; i++) if (inp.hit('Digit' + (i + 1))) { M.setLoadout(keys[i]); this.renderLoadouts(); } }
-      const left = Math.max(0, RESPAWN - this.deathT), wait = M.mode === 'zombies' && !CF.ZM.canRespawn();
+      const left = Math.max(0, RESPAWN - this.deathT), wait = M.zombies() && !CF.ZM.canRespawn();
       const txt = M.ended ? 'Match over' : wait ? 'Back in at the next break' : left > 0 ? 'Respawning in ' + Math.ceil(left) : 'Respawning';
       if (this.ui.md !== txt) { $('mdTimer').textContent = txt; this.ui.md = txt; }
       if (left <= 0 && !M.ended && !wait) this.mpSpawn();

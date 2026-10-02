@@ -96,7 +96,7 @@
         s.deaths = s.deaths.filter((d) => t - d < 3); s.deaths.push(t);
         if (s.deaths.length > 3) flag(from, 'deaths', 3, 'Reported ' + s.deaths.length + ' deaths in 3 seconds');
         // the victim names their killer: only someone who actually hit them lately can get the credit
-        if (msg.killer && msg.killer !== from && MP.mode !== 'zombies') {
+        if (msg.killer && msg.killer !== from && !MP.zombies()) {
           const hit = s.hitBy[msg.killer];
           if (!hit || t - hit > 10) {
             flag(from, 'credit', 5, 'Gave kill credit to ' + ((MP.players[msg.killer] || {}).name || 'a player') + ', who never hit them');
@@ -192,7 +192,7 @@
      head almost all the time it is tracking one; a person's crosshair wobbles around it. Every browser keeps its own
      tally, so a player who isn't hosting (or a cheating host) is still caught and shown in the Players panel. */
   const LAGS = 26, LAG_STEP = 0.024, LOCK = 0.003, NEAR = 0.17, AIM_MIN = 60; // delays tried (0-0.6 s), "on the head" (~0.17°), "tracking" (~10°), samples before judging
-  AC.watching = () => { const MP = CF.MP; return MP.active && !MP.solo && MP.mode !== 'coop' && MP.mode !== 'zombies' && MP.mode !== 'prophunt'; };
+  AC.watching = () => { const MP = CF.MP; return MP.active && !MP.solo && MP.mode !== 'coop' && !MP.zombies() && MP.mode !== 'prophunt'; };
   const aimOf = (id) => AC.aim[id] || (AC.aim[id] = { hist: [], off: null, n: new Array(LAGS).fill(0), lock: new Array(LAGS).fill(0), named: false });
   function aimErr(eye, yaw, pitch, q) {
     const dx = q[0] - eye[0], dy = q[1] - eye[1], dz = q[2] - eye[2], flat = Math.hypot(dx, dz);

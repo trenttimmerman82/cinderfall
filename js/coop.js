@@ -17,7 +17,7 @@
   const MP = () => CF.MP;
   const C = CF.Coop = { targets: [], stands: {}, ghosts: {}, nid: 0, snapT: 0, downed: false, bleed: 0, reviveT: 0, reviveId: null, prompting: false, fallen: {}, COOP_HP, COOP_DMG };
 
-  C.on = () => !!(MP() && MP().active && (MP().mode === 'zombies' || MP().mode === 'coop'));
+  C.on = () => !!(MP() && MP().active && (MP().zombies() || MP().mode === 'coop'));
   C.campaign = () => C.on() && MP().mode === 'coop';
   /** This browser runs the enemies (the host, or anyone playing alone). */
   C.hostSim = () => C.on() && MP().isHost();
@@ -140,7 +140,7 @@
     CF.Net.sendTo(by, { t: 'ek', n: e.name, s: (e.T && e.T.score) || 100, h: head ? 1 : 0, x: info.explosive ? 1 : 0 });
     return true;
   };
-  C.zombies = () => MP() && MP().active && MP().mode === 'zombies';
+  C.zombies = () => MP() && MP().active && MP().zombies();
   /** Host: loot dropped by a kill shows up for everyone (each player can pick up their own copy). */
   C.onDrop = function (type, p, data) {
     if (!C.hostSim()) return;

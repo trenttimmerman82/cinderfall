@@ -108,6 +108,9 @@ bleed out. The scoreboard shows everyone's points.
 Out of health, you go **down**: you crawl and can't shoot; a teammate holds **E** next to you for 3 seconds to revive
 you (50 health). After 30 seconds down you bleed out until the next break. The game ends when nobody is standing; the
 scoreboard shows the wave reached and total kills.
+**Zombies · No drones** is the same mode (same points, shop and revives) with the flying Blight drones taken out of the
+waves; Crawlers fill their share. Pick it as its own card in the mode row (`zombiesnd` in `js/mp.js`, `CF.ZM.nd` in
+`js/zombies.js`). Kill-streak drones for the players still work.
 
 **Sniper Valley** is its own map and mode: team deathmatch (first to 25, 10 minutes) between two skyscraper rooftops
 60 m apart with nothing connecting them. Each roof has a spawn bunker and a watchtower. Loadouts are rail-rifle kits
