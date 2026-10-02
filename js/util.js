@@ -96,7 +96,7 @@ window.CF = window.CF || {};
     { id: 'crouch', label: 'Crouch · slide', canon: 'KeyC', def: ['KeyC', null] },
     { id: 'lean', label: 'Lean (hold, then A / D)', canon: 'ControlLeft', def: ['ControlLeft', null] },
     { id: 'sprint', label: 'Sprint · steady scope', canon: 'ShiftLeft', def: ['ShiftLeft', null] },
-    { id: 'aim', label: 'Aim · scope toggle (keyboard)', canon: 'KeyF', def: ['KeyQ', 'Tab'] },
+    { id: 'aim', label: 'Aim · scope (keyboard)', canon: 'KeyF', def: ['KeyQ', 'Tab'] },
     { id: 'reload', label: 'Reload', canon: 'KeyR', def: ['KeyR', null] },
     { id: 'interact', label: 'Interact', canon: 'KeyE', def: ['KeyE', null] },
     { id: 'grenade', label: 'Throw grenade', canon: 'KeyG', def: ['KeyG', null] },

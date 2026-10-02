@@ -555,12 +555,12 @@
       if (d.satchel && (inp.hit('KeyF') || inp.mpressed[2])) this.detonate();
     }
     // ADS
-    // Tab toggles aiming (trackpad-friendly); right mouse still aims while held
+    // Settings > Controls: hold (right mouse or the aim key aims while held) or toggle (a press of either flips it, trackpad-friendly)
     const toggleAim = CF.settings.aimMode === 'toggle';
-    if (live && (inp.hit('KeyF') || (toggleAim && inp.mpressed[2]))) this.adsToggle = !this.adsToggle;
+    if (live && toggleAim && (inp.hit('KeyF') || inp.mpressed[2])) this.adsToggle = !this.adsToggle;
     if (!live || P.sprinting || this.state === 'lower' || this.state === 'melee' || this.state === 'throw') this.adsToggle = false;
     if (d.noAds) this.adsToggle = false;
-    const canAds = live && !d.noAds && ((inp.mdown[2] && !toggleAim) || this.adsToggle) && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
+    const canAds = live && !d.noAds && ((!toggleAim && (inp.mdown[2] || inp.down('KeyF'))) || this.adsToggle) && (this.state === 'idle' || this.state === 'reload') && !P.sprinting && !P.mantling;
     this.adsT = U.clamp(this.adsT + (canAds ? 1 : -1) * dt / d.adsTime, 0, 1);
     this.adsE = U.easeInOut(this.adsT);
     this.steady = d.scope && this.adsE > 0.9 && inp.down('ShiftLeft') && this.breath > 0;
