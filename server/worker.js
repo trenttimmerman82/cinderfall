@@ -54,17 +54,16 @@ const SKINS = {
   w_carbon: ['w', 'rare'], w_cobalt: ['w', 'rare'], w_tiger: ['w', 'rare'], w_redline: ['w', 'rare'],
   w_negev: ['w', 'common'], w_israel: ['w', 'rare'], w_jerusalem: ['w', 'epic'],
   w_circuit: ['w', 'epic'], w_damascus: ['w', 'epic'], w_hologram: ['w', 'epic'], w_frostbite: ['w', 'epic'],
-  w_inferno: ['w', 'legendary'], w_void: ['w', 'legendary'], w_dragon: ['w', 'legendary'], w_isis: ['w', 'legendary'],
+  w_inferno: ['w', 'legendary'], w_void: ['w', 'legendary'], w_dragon: ['w', 'legendary'],
   w_champion: ['w', 'champion'],
   // operative suits
   p_ranger: ['p', 'common'], p_urban: ['p', 'common'], p_sand: ['p', 'common'], p_navy: ['p', 'common'],
   p_hazmat: ['p', 'rare'], p_arctic: ['p', 'rare'], p_crimson: ['p', 'rare'], p_stealth: ['p', 'rare'],
   p_idf: ['p', 'common'], p_israel: ['p', 'rare'],
   p_oni: ['p', 'epic'], p_chrome: ['p', 'epic'], p_samurai: ['p', 'epic'], p_cyber: ['p', 'epic'],
-  p_phantom: ['p', 'legendary'], p_inferno: ['p', 'legendary'], p_mech: ['p', 'legendary'], p_isis: ['p', 'legendary'],
+  p_phantom: ['p', 'legendary'], p_inferno: ['p', 'legendary'], p_mech: ['p', 'legendary'],
   p_champion: ['p', 'champion']
 };
-const GIFTS = ['p_isis', 'w_isis'];     // skins every profile owns: granted on its next visit, and kept out of the crates
 const CRATES = {
   field: { price: 300, odds: [['common', 0.62], ['rare', 0.27], ['epic', 0.09], ['legendary', 0.02]] },
   elite: { price: 750, odds: [['rare', 0.55], ['epic', 0.33], ['legendary', 0.12]] }
@@ -188,16 +187,7 @@ export class Board extends DurableObject {
 
   // ---------------------------------------------------------- profiles
   profile(token) { return /^[a-z0-9]{32}$/.test(token) ? this.sql.exec('SELECT * FROM profiles WHERE token = ?', token).toArray()[0] || null : null; }
-  /** Give the gift skins to a profile that doesn't have them yet (every profile, old and new, picks them up the next time it loads). */
-  gift(p) {
-    const skins = parse(p.skins, []), miss = GIFTS.filter((s) => !skins.includes(s));
-    if (!miss.length) return;
-    const all = skins.concat(miss);
-    this.sql.exec('UPDATE profiles SET skins = ?, updated = ? WHERE token = ?', JSON.stringify(all), Date.now(), p.token);
-    p.skins = JSON.stringify(all);
-  }
   view(p) {
-    this.gift(p);
     const held = this.heldBoards(p.pub);
     return { token: p.token, pub: p.pub, code: p.code.slice(0, 5) + '-' + p.code.slice(5), coins: p.coins, skins: parse(p.skins, []), equip: parse(p.equip, {}),
       progress: parse(p.progress, {}), champion: { now: held.length > 0, boards: held }, earnedToday: p.day === today() ? p.earned : 0, dailyCap: DAILY_CAP };
@@ -239,7 +229,6 @@ export class Board extends DurableObject {
     }
     const p = this.profile(String(b.token || ''));
     if (!p) return json({ error: 'Unknown profile' }, 401);
-    this.gift(p);
     if (op === 'get') return json(this.view(p));
     if (op === 'equip') {
       const slot = b.slot === 'w' ? 'w' : 'p', skin = b.skin == null ? null : String(b.skin);
@@ -287,7 +276,7 @@ export class Board extends DurableObject {
       if (p.coins < crate.price) return json({ error: 'Not enough coins' }, 402);
       let r = rnd01(), rarity = crate.odds[crate.odds.length - 1][0];
       for (const [k, w] of crate.odds) { if (r < w) { rarity = k; break; } r -= w; }
-      const pool = Object.keys(SKINS).filter((k) => SKINS[k][1] === rarity && !GIFTS.includes(k));
+      const pool = Object.keys(SKINS).filter((k) => SKINS[k][1] === rarity);
       const skin = pool[Math.floor(rnd01() * pool.length)];
       const skins = parse(p.skins, []), dup = skins.includes(skin), refund = dup ? DUP_REFUND[rarity] : 0;
       if (!dup) skins.push(skin);

@@ -34,7 +34,6 @@
     W('w_inferno', 'legendary', 'Inferno', 'Obsidian shell over molten cracks that breathe.'),
     W('w_void', 'legendary', 'Void', 'A drifting nebula held in black glass.'),
     W('w_dragon', 'legendary', 'Dragonscale', 'Jade and gold scales with a moving shimmer.'),
-    W('w_isis', 'legendary', 'Isis', 'Lapis-blue wing feathers edged in gold, with a sun-disc glow.'),
     W('w_champion', 'champion', 'Champion', 'Mirror gold with a travelling shine. Only for players who took #1 on a leaderboard.'),
     P('p_ranger', 'common', 'Ranger', 'Olive drab fatigues and a boonie hat.'),
     P('p_urban', 'common', 'Urban Ops', 'Charcoal gear, beanie and a patrol pack.'),
@@ -53,7 +52,6 @@
     P('p_phantom', 'legendary', 'Phantom', 'A glowing ghost of an operative, trailing wisps.'),
     P('p_inferno', 'legendary', 'Hellfire', 'Armour cracked with living magma under a crown of flame.'),
     P('p_mech', 'legendary', 'Warframe', 'Heavy exo-armour with a humming reactor on the back.'),
-    P('p_isis', 'legendary', 'Isis', 'Goddess of the Nile: lapis linen, a gold collar, horned sun-disc crown and beating wings.'),
     P('p_champion', 'champion', 'Champion', 'Gold armour, crown and cape. Only for players who took #1 on a leaderboard.')
   ];
   K.byId = {}; for (const s of K.list) K.byId[s.id] = s;
@@ -62,7 +60,6 @@
     field: { id: 'field', name: 'Field crate', price: 300, desc: 'A standard issue crate. Anything but Champion gear can drop.', odds: [['common', 0.62], ['rare', 0.27], ['epic', 0.09], ['legendary', 0.02]] },
     elite: { id: 'elite', name: 'Elite crate', price: 750, desc: 'No commons. Much better odds at Epic and Legendary.', odds: [['rare', 0.55], ['epic', 0.33], ['legendary', 0.12]] }
   };
-  K.GIFTS = ['p_isis', 'w_isis']; // owned by every profile (the server grants them too) and never in a crate
   K.DUP_REFUND = { common: 60, rare: 125, epic: 275, legendary: 600 };
   K.ECON = { phase: 40, finish: { foundry: 250, halden: 300, story: 400 }, diff: { recruit: 0.75, veteran: 1, elite: 1.5 }, welcome: 300 };
   /** Coins for clearing a campaign part (the server computes the same numbers; this is for offline play and display). */
@@ -76,7 +73,7 @@
   K.roll = (crate) => {
     const c = K.CRATES[crate]; let r = Math.random(), rarity = c.odds[c.odds.length - 1][0];
     for (const [k, w] of c.odds) { if (r < w) { rarity = k; break; } r -= w; }
-    const pool = K.list.filter((s) => s.rarity === rarity && !K.GIFTS.includes(s.id));
+    const pool = K.list.filter((s) => s.rarity === rarity);
     return pool[Math.floor(Math.random() * pool.length)];
   };
 
@@ -197,17 +194,6 @@
       x.strokeStyle = '#a8916a'; x.lineWidth = 3;
       for (let j = 0; j < 4; j++) { x.beginPath(); x.moveTo(0, j * h); x.lineTo(n, j * h); for (let i = 0; i < 3; i++) { const px = i * w + (j % 2) * w / 2; x.moveTo(px, j * h); x.lineTo(px, (j + 1) * h); } x.stroke(); }
     },
-    feathers: (x, n) => {
-      x.fillStyle = '#0c2466'; x.fillRect(0, 0, n, n);
-      const rows = 6, cols = 6, h = n / rows, w = n / cols;
-      for (let j = rows; j >= -1; j--) for (let i = -1; i <= cols; i++) {
-        const cx = i * w + (j % 2 ? w / 2 : 0), top = j * h;
-        x.beginPath(); x.moveTo(cx - w / 2, top); x.lineTo(cx - w / 2, top + h * 0.55); x.quadraticCurveTo(cx - w / 2, top + h * 1.25, cx, top + h * 1.25); x.quadraticCurveTo(cx + w / 2, top + h * 1.25, cx + w / 2, top + h * 0.55); x.lineTo(cx + w / 2, top); x.closePath();
-        const g = x.createLinearGradient(0, top, 0, top + h * 1.25); g.addColorStop(0, '#1b4bb5'); g.addColorStop(1, '#0a1c55');
-        x.fillStyle = g; x.fill(); x.strokeStyle = '#e6b84a'; x.lineWidth = 2.5; x.stroke();
-        x.strokeStyle = 'rgba(230,184,74,0.55)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(cx, top + h * 0.2); x.lineTo(cx, top + h * 1.0); x.stroke();
-      }
-    },
     stripes: (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); for (let i = 0; i < 8; i++) { x.fillStyle = '#fff'; x.fillRect(0, i * n / 8, n, n / 40); x.fillRect(i * n / 8 + n / 16, 0, n / 60, n); } }
   };
   const tex = (key) => paint(key, key === 'damascus' ? 256 : 256, PAT[key]);
@@ -264,7 +250,6 @@
     w_inferno: { body: { map: 'obsidian', metal: 0.3, rough: 0.35, emap: 'cracks', emissive: [4.5, 1.2, 0.15], anim: 'flow' }, trim: { color: 0x120c0a, metal: 0.2, rough: 0.5 }, accent: [5, 1.4, 0.2] },
     w_void: { body: { color: 0x05040a, metal: 0.4, rough: 0.08, env: 1.5, emap: 'nebula', emissive: [1.6, 1.3, 2], anim: 'drift' }, trim: { color: 0x0b0a14, metal: 0.4, rough: 0.2 }, accent: [2.2, 0.8, 4.2] },
     w_dragon: { body: { map: 'scales', metal: 0.5, rough: 0.35, env: 1.1, emissive: [0, 0, 0], anim: 'shimmer' }, trim: { color: 0x3a2a08, metal: 0.8, rough: 0.3 }, accent: [3.4, 2.6, 0.6] },
-    w_isis: { body: { map: 'feathers', metal: 0.7, rough: 0.3, env: 1.3, emissive: [0, 0, 0], anim: 'shimmer' }, trim: { color: 0xc9992f, metal: 0.9, rough: 0.25, env: 1.4 }, accent: [4.4, 3.2, 0.8] },
     w_champion: { body: { map: 'gold', color: 0xffe08a, metal: 0.8, rough: 0.2, env: 1.8, emissive: [0.32, 0.21, 0.04], anim: 'shine' }, trim: { color: 0x1d1608, metal: 0.7, rough: 0.3 }, accent: [5, 3.8, 1.2] }
   };
   const finCache = {};
@@ -327,7 +312,6 @@
     p_phantom: { suit: { map: 'white', color: 0x6fe3ff, rough: 0.3, metal: 0, emissive: [0.3, 1.8, 2.6], transparent: true, opacity: 0.42, anim: 'ghost' }, plate: { map: 'white', color: 0xbff4ff, rough: 0.2, metal: 0, emissive: [0.6, 2.2, 3], transparent: true, opacity: 0.55, anim: 'ghost' }, sleeve: 0x4fb8d8, glove: 0x9fe8ff, acc: ['phantomHood', 'wisps'] },
     p_inferno: { suit: { map: 'obsidian', rough: 0.5, metal: 0.2, emap: 'cracks', emissive: [4.5, 1.1, 0.1], anim: 'flow' }, plate: { color: 0x1a1210, metal: 0.4, rough: 0.35, emap: 'cracks', emissive: [3.2, 0.8, 0.05], anim: 'flow' }, sleeve: 0x1c1311, glove: 0x2a130b, acc: ['flames'] },
     p_mech: { suit: { color: 0x22262c, rough: 0.6, metal: 0.5 }, plate: { color: 0x5c6470, metal: 0.8, rough: 0.28, env: 1.3 }, sleeve: 0x3a4048, glove: 0x22262c, acc: ['mechShoulders', 'reactor', 'antenna'] },
-    p_isis: { suit: { map: 'white', color: 0x1a3d96, rough: 0.8, metal: 0 }, plate: { map: 'gold', color: 0xffe08a, metal: 0.85, rough: 0.2, env: 1.6, emissive: [0.28, 0.18, 0.03], anim: 'shine' }, sleeve: 0x1a3d96, glove: 0xd9b24a, acc: ['isisCrown', 'isisCollar', 'isisWings'] },
     p_champion: { suit: { color: 0x1a1408, rough: 0.5, metal: 0.4 }, plate: { map: 'gold', color: 0xffe08a, metal: 0.8, rough: 0.2, env: 1.8, emissive: [0.32, 0.21, 0.04], anim: 'shine' }, sleeve: 0x2a1f0a, glove: 0xd9b24a, acc: ['crown', 'cape'] }
   };
   const suitCache = {};
@@ -397,37 +381,6 @@
       const g = am('crownGold', { map: 'gold', color: 0xffe08a, metal: 0.8, rough: 0.2, env: 1.8, emissive: [0.32, 0.21, 0.04], anim: 'shine' });
       add(p.head, cyl(), g, 0, 0.24, 0, 0.13, 0.05, 0.13);
       for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; add(p.head, cone(), g, Math.cos(a) * 0.12, 0.3, Math.sin(a) * 0.12, 0.03, 0.08, 0.03); add(p.head, sph(), glowMat(i % 2 ? 4 : 0.5, i % 2 ? 0.4 : 1.5, i % 2 ? 0.5 : 5), Math.cos(a) * 0.132, 0.245, Math.sin(a) * 0.132, 0.018, 0.018, 0.018); }
-    },
-    isisCrown: (p, hooks) => {
-      const g = am('isisGold', { map: 'gold', color: 0xffe08a, metal: 0.85, rough: 0.2, env: 1.6 }), lap = am('isisLapis', { color: 0x1a3d96, metal: 0.3, rough: 0.35 });
-      add(p.head, cyl(), g, 0, 0.19, 0, 0.125, 0.025, 0.13); // circlet
-      for (const s of [-1, 1]) {
-        add(p.head, cone(), g, s * 0.11, 0.27, 0, 0.035, 0.14, 0.035, 0, 0, -s * 0.55); // cow horns: out, then curling back in
-        add(p.head, cone(), g, s * 0.17, 0.35, 0, 0.026, 0.1, 0.026, 0, 0, s * 0.5);
-        add(p.head, box(), lap, s * 0.13, 0.15, -0.115, 0.03, 0.2, 0.04, 0, 0, s * 0.08); // striped lappets either side of the face
-      }
-      const sun = glowMat(5, 3.2, 0.7); add(p.head, sph(), sun, 0, 0.32, 0, 0.06, 0.06, 0.03);
-      add(p.head, tor(), g, 0, 0.32, 0, 0.075, 0.075, 0.5);
-      hooks.push((t) => sun.color.setRGB(4.4 + Math.sin(t * 2.2) * 0.8, 2.8 + Math.sin(t * 2.2) * 0.5, 0.6));
-    },
-    isisCollar: (p) => {
-      const g = am('isisGold', { map: 'gold', color: 0xffe08a, metal: 0.85, rough: 0.2, env: 1.6 }), lap = am('isisLapis', { color: 0x1a3d96, metal: 0.3, rough: 0.35 });
-      add(p.torso, tor(), g, 0, 0.5, -0.01, 0.21, 0.15, 0.9, Math.PI / 2);
-      add(p.torso, tor(), lap, 0, 0.49, -0.01, 0.17, 0.12, 0.9, Math.PI / 2);
-      add(p.torso, sph(), glowMat(0.4, 1.4, 5), 0, 0.43, -0.165, 0.025, 0.025, 0.012);
-    },
-    isisWings: (p, hooks) => {
-      const g = am('isisGold', { map: 'gold', color: 0xffe08a, metal: 0.85, rough: 0.2, env: 1.6 }), lap = am('isisLapis', { color: 0x1a3d96, metal: 0.3, rough: 0.35 });
-      const wings = [];
-      for (const s of [-1, 1]) {
-        const w = new THREE.Group(); w.position.set(s * 0.1, 0.48, 0.24); p.torso.add(w); wings.push([w, s]);
-        for (let i = 0; i < 6; i++) { // feathers fan out from the shoulder blade, longest at the tip
-          const a = 0.25 + i * 0.2, l = 0.38 + i * 0.1, f = new THREE.Group(); f.rotation.z = -s * a; w.add(f);
-          add(f, box(), i % 2 ? g : lap, 0, l / 2, 0, 0.07, l, 0.012);
-          add(f, box(), i % 2 ? lap : g, 0, l + 0.01, 0, 0.07, 0.02, 0.013);
-        }
-      }
-      hooks.push((t, sp) => { const k = Math.sin(t * (1.8 + Math.min(2, (sp || 0) * 0.3))) * 0.08; for (const [w, s] of wings) { w.rotation.z = -s * k; w.rotation.y = s * (0.5 + k); } });
     },
     cape: (p, hooks) => {
       const m = am('cape', { color: 0x8a1420, rough: 0.7, metal: 0 }); m.side = THREE.DoubleSide;
