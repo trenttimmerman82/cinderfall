@@ -4,7 +4,7 @@
    on the server, equips are checked against what you own. This browser only keeps a copy to show while offline.
    Without a server everything lives in this browser. */
 (function (CF) {
-  const KEY = 'cinderfall.profile.v1', LOCAL = 'cinderfall.localprofile.v1', CLAIMS = 'cinderfall.claims.v1', GIFTS = 'cinderfall.gifts.v1';
+  const KEY = 'cinderfall.profile.v1', LOCAL = 'cinderfall.localprofile.v1', CLAIMS = 'cinderfall.claims.v1';
   const server = () => String(CF.SERVER || '').replace(/\/+$/, '');
   const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } };
@@ -37,19 +37,6 @@
     if (cache !== false) write(Pr.mode === 'local' ? LOCAL : KEY, s);
     Pr.emit();
   }
-  /** The gift skins are everyone's: add any a stored or offline profile is missing (the server grants them to its profiles itself). */
-  function withGifts(d) {
-    if (!d || !Array.isArray(d.skins)) return d;
-    const miss = CF.Skins.GIFTS.filter((s) => !d.skins.includes(s));
-    return miss.length ? Object.assign({}, d, { skins: d.skins.concat(miss) }) : d;
-  }
-  /** Once per browser: tell the player about the gift. */
-  function giftToast() {
-    const seen = read(GIFTS, []);
-    if (CF.Skins.GIFTS.every((s) => seen.includes(s))) return;
-    write(GIFTS, CF.Skins.GIFTS);
-    setTimeout(() => { CF.Toast('A gift for you: Isis', 'coin', 'The Isis operative suit and weapon finish are yours. Equip them in the Locker.'); if (CF.Audio && CF.Audio.ready) CF.Audio.play('coins', null, { ui: true }); }, 2500);
-  }
   Pr.emit = function () {
     for (const el of document.querySelectorAll('[data-coins]')) el.textContent = Pr.coins().toLocaleString('en-US');
     for (const fn of this.listeners) try { fn(Pr.data); } catch (e) { console.error(e); }
@@ -76,9 +63,9 @@
     if (!Array.isArray(this.claims.q) || typeof this.claims.runs !== 'object') this.claims = { q: [], runs: {} };
     if (this.mode === 'local') {
       const d = read(LOCAL, null);
-      set(withGifts(d || { coins: CF.Skins.ECON.welcome, skins: [], equip: {}, local: true }));
+      set(d || { coins: CF.Skins.ECON.welcome, skins: [], equip: {}, local: true });
       if (!d) setTimeout(() => CF.Toast('Welcome bonus', 'coin', '+' + CF.Skins.ECON.welcome + ' coins to spend in the shop'), 1500);
-      this.status = 'ready'; this.emit(); giftToast();
+      this.status = 'ready'; this.emit();
       return Promise.resolve();
     }
     const cached = read(KEY, null);
@@ -94,7 +81,7 @@
         const tok = this.data && this.data.token;
         return (tok ? api({ op: 'get', token: tok }) : Promise.reject(Object.assign(new Error('new'), { status: 401 })))
           .catch((e) => { if (e.status === 401) return api({ op: 'new' }).then((d) => { if (d.welcome) setTimeout(() => CF.Toast('Welcome bonus', 'coin', '+' + d.welcome + ' coins to spend in the shop'), 1200); return d; }); throw e; })
-          .then((d) => { set(d); this.status = 'ready'; giftToast(); if (CF.Progress) CF.Progress.mergeCloud(d.progress); this.processClaims(); });
+          .then((d) => { set(d); this.status = 'ready'; if (CF.Progress) CF.Progress.mergeCloud(d.progress); this.processClaims(); });
       })
       .catch(() => { this.status = 'offline'; setTimeout(() => { if (this.status === 'offline') this.connect(); }, 60000); })
       .finally(() => this.emit());
