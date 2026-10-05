@@ -378,10 +378,11 @@
       p.torso.rotation.x = this.pitch * 0.6 + this.crouch * 0.15;
       p.head.rotation.x = this.pitch * 0.4;
       p.torso.rotation.z = -this.lean * 0.35; p.head.rotation.z = -this.lean * 0.15; // leaning (hit boxes follow the bones)
-      p.armR.rotation.set(-1.2 - this.pitch * 0.3, 0, 0.1); p.foreR.rotation.x = -0.5;
-      p.armL.rotation.set(-1.3 - this.pitch * 0.3, 0.35, -0.4); p.foreL.rotation.x = -0.9;
+      // Limbs extend down local -Y; positive X bends them toward the weapon at -Z.
+      p.armR.rotation.set(1.2, 0, 0.1); p.foreR.rotation.x = 0.5;
+      p.armL.rotation.set(1.3, 0.35, -0.4); p.foreL.rotation.x = 0.9;
       this.root.position.copy(b.pos); this.root.rotation.set(0, this.yaw, 0);
-      if (this.downed) { p.hips.position.y = 0.3; this.root.rotation.x = -1.3; p.armR.rotation.set(-2.6, 0, 0.2); p.armL.rotation.set(-2.6 + Math.sin(this.phase) * 0.4, 0, -0.2); } // crawling, waiting for a revive
+      if (this.downed) { p.hips.position.y = 0.3; this.root.rotation.x = -1.3; p.armR.rotation.set(2.6, 0, 0.2); p.armL.rotation.set(2.6 + Math.sin(this.phase) * 0.4, 0, -0.2); } // crawling, waiting for a revive
       if (this.prop) CF.PH.updateRemote(this);
       this.root.updateMatrixWorld(true); this.cacheHits();
       this.stepD += d;

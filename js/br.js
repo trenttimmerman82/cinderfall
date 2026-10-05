@@ -255,7 +255,7 @@
       p.legL.rotation.x = 0.35; p.legR.rotation.x = 0.35; p.kneeL.rotation.x = 0.6; p.kneeR.rotation.x = 0.6; p.torso.rotation.x = 0; p.head.rotation.x = -0.6;
     } else if (fl === 2) {
       root.rotation.x = 0; p.hips.position.y = 0.95;
-      p.armL.rotation.set(-2.9, 0, -0.35); p.armR.rotation.set(-2.9, 0, 0.35); p.foreL.rotation.x = 0; p.foreR.rotation.x = 0;
+      p.armL.rotation.set(2.9, 0, -0.35); p.armR.rotation.set(2.9, 0, 0.35); p.foreL.rotation.x = 0; p.foreR.rotation.x = 0;
       p.legL.rotation.x = 0.15 + Math.sin(t * 3) * 0.1; p.legR.rotation.x = 0.15 - Math.sin(t * 3) * 0.1; p.kneeL.rotation.x = 0.2; p.kneeR.rotation.x = 0.2;
     }
   };

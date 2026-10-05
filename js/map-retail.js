@@ -59,7 +59,7 @@
       if (i === n - 1) break;
       const len = alongX ? x1 - x0 : z1 - z0;
       for (let a = 0.1; a < len - 0.3;) {
-        const w = 0.25 + rnd() * 0.45, hh = 0.2 + rnd() * 0.32, m = stock[(rnd() * stock.length) | 0];
+        const w = Math.min(0.25 + rnd() * 0.45, len - a - 0.08), hh = Math.min(0.2 + rnd() * 0.32, (h - 0.2) / (n - 1) - 0.06), m = stock[(rnd() * stock.length) | 0];
         if (alongX) deco(x0 + a, y + 0.04, z0 + 0.08, x0 + a + w, y + 0.04 + hh, z1 - 0.08, m);
         else deco(x0 + 0.08, y + 0.04, z0 + a, x1 - 0.08, y + 0.04 + hh, z0 + a + w, m);
         a += w + 0.04 + rnd() * 0.12;
@@ -378,7 +378,7 @@
 
   // ------------------------------------------------------------ the parking lot, the pylon, the crossroads
   function lot(rnd) {
-    deco(-42, 0.02, -17.4, 37.6, 0.06, -14, 'concrete'); // sidewalk in front of the shops
+    deco(-42, 0.02, MZF, 37.6, 0.06, -14, 'concrete'); // sidewalk in front of the shops
     deco(-46, 0.02, NZ0, -42, 0.06, 12, 'concrete');     // and in front of Noms
     deco(-42, 0.02, -14, 37.6, 0.04, 13, 'asphalt');
     const line = (x0, z0, x1, z1) => deco(x0, 0.04, z0, x1, 0.05, z1, 'lineWhite');
@@ -404,7 +404,7 @@
   function roads() {
     // Main Street (east-west) and Market Road (north-south); Maple Lane runs behind the first row of houses
     deco(-EDGE - 20, 0.02, 14, EDGE + 20, 0.04, 22, 'asphalt');
-    for (const [z0, z1] of [[-EDGE - 20, 14], [22, 46], [52, EDGE + 20]]) deco(38, 0.02, z0, 46, 0.04, z1, 'asphalt');
+    for (const [z0, z1] of [[-EDGE - 20, 14], [22, EDGE + 20]]) deco(38, 0.02, z0, 46, 0.04, z1, 'asphalt');
     deco(-112, 0.02, 46, 38, 0.04, 52, 'asphalt'); deco(46, 0.02, 46, 112, 0.04, 52, 'asphalt');
     const y = (x0, z0, x1, z1) => deco(x0, 0.041, z0, x1, 0.05, z1, 'paintYellow');
     for (let x = -EDGE - 14; x < EDGE + 14; x += 6) if (x < 34 || x > 48) y(x, 17.9, x + 3, 18.1);
@@ -597,7 +597,7 @@
     K.wall('z', z0, z1, x0, 0, H, [[-86, -83, 1.2, 2.6]], OUT, IN, -1); K.wall('z', z0, z1, x1, 0, H, [], OUT, IN, 1);
     // hay loft: a floor at the west end and a ladder-steep stair
     slab(x0, z0, x0 + 7, z1, 2.8, 'wood', 'wood'); steps('x', x0 + 7, x0 + 11.5, z0 + 0.3, z0 + 1.4, 0, 2.8, -1, 'wood');
-    K.gableRoof((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, H, 3.4, 'rrBarn', 'roofTin', false, true);
+    K.gableRoof((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, H, 3.4, 'rrBarn', 'rrBarnRoof', false, true);
     for (let i = 0; i < 4; i++) L.box(x0 + 0.5 + i * 1.5, 2.8, z0 + 1, x0 + 1.8 + i * 1.5, 3.8, z0 + 2.4, 'hay');
     L.box(x1 - 4, 0, z0 + 1, x1 - 1, 1.2, z0 + 3, 'hay');
     loot(x0 + 3, 2.8, z1 - 4); loot(x1 - 4, G, z1 - 4); chest(x0 + 1.4, 2.8, z0 + 6, Math.PI / 2);
@@ -620,6 +620,8 @@
     M.rrTower = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0x8fc6e8, metalness: 0.3, roughness: 0.45, envMapIntensity: 0.8 });
     M.rrOrange = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xf08a24, metalness: 0.1, roughness: 0.5 });
     M.rrPurple = new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xb07ad8, metalness: 0, roughness: 0.8 });
+    // The barn has no ceiling: show the underside of its pitched roof indoors.
+    M.rrBarnRoof = M.roofTin.clone(); M.rrBarnRoof.side = THREE.DoubleSide;
     M.rrOrangeDoor = tint(Tx.siding, 0xf09a2a, { metalness: 0.3 }); M.rrBarn = tint(Tx.planks, 0xa8352a); M.hay = tint(Tx.grass, 0xe0c46a);
     // ground: grass everywhere, roads and lots laid on top
     L.box(-1600, -1, -1600, 1600, 0.02, 1600, 'grass', { ao: false }); // wide enough that the edge never shows from the Battle Bus

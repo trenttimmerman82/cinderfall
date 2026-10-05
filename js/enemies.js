@@ -546,8 +546,9 @@
         p.torso.rotation.z = Math.sin(ph) * 0.04 * amp + (Math.random() - 0.5) * fl * 0.2;
         p.head.rotation.x = this.aimPitch * 0.4 * aimK;
         if (t === 'sentry') {
-          p.armR.rotation.set(-1.15 * aimK - 0.2, 0, 0.1); p.elbowR.rotation.x = -0.55 * aimK;
-          p.armL.rotation.set(-1.25 * aimK - 0.15, 0.3 * aimK, -0.45 * aimK); p.elbowL.rotation.x = -0.9 * aimK;
+          // Positive X brings the down-pointing arms forward toward -Z.
+          p.armR.rotation.set(1.15 * aimK + 0.2, 0, 0.1); p.elbowR.rotation.x = 0.55 * aimK;
+          p.armL.rotation.set(1.25 * aimK + 0.15, 0.3 * aimK, -0.45 * aimK); p.elbowL.rotation.x = 0.9 * aimK;
           p.gun.position.set(0.14, 0.3 - (1 - aimK) * 0.25, -0.3 + this.recoil * 0.06 + (1 - aimK) * 0.15);
           p.gun.rotation.x = -(1 - aimK) * 0.9;
         } else {
