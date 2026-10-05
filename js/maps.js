@@ -138,6 +138,50 @@
     inside: (p) => (p.x > -84 && p.x < -60 && p.z > -90 && p.z < -72) || (p.x > 52 && p.x < 96 && p.z > -102.4 && p.z < -86) || (p.x > 52 && p.x < 58 && p.z > -4 && p.z < 14),
     menuCam: (t, cam) => { const a = t * 0.025 + 1.2; cam.position.set(-9 + Math.sin(a) * 42, 24 + Math.sin(a * 1.3) * 3, 20 + Math.cos(a) * 42); cam.lookAt(-9, 10, 20); }
   };
+  // Green Hell: the Song Lam valley. The mission relights it (dawn, day, afternoon, dusk, night, and the dark of the tunnels; js/map-jungle.js).
+  CF.Maps.jungle = {
+    id: 'jungle', name: 'Song Lam valley', campaign: true, nav: true, boss: false,
+    bounds: { minX: -140, maxX: 140, minZ: -140, maxZ: 140 },
+    theme: base({
+      fog: [0.62, 0.68, 0.62], fogDensity: 0.0085,
+      hemi: [0xd8e4d8, 0x3c4426, 0.66], moon: { color: 0xfff2dc, intensity: 1.75, dir: [0.35, 0.82, 0.3] },
+      sky: { zen: [0.24, 0.42, 0.66], hor: [0.78, 0.82, 0.78], glow: [0.4, 0.38, 0.28], glowDir: [0.35, 0.3], glow2: [0.1, 0.12, 0.08], glow2Dir: [-1, 0],
+        cloudDark: [0.72, 0.74, 0.74], cloudLit: [1.08, 1.06, 1.0], stars: 0, moon: 2 },
+      env: { top: [0.55, 0.66, 0.78], bottom: [0.22, 0.26, 0.14], band: [0.6, 0.62, 0.5], panels: [[1.3, 1.4, 1.2], [1.2, 1.3, 1.3], [1.3, 1.3, 1.1], [1.2, 1.25, 1.2]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 210, r1: 380, count: 54, hMin: 30, hMax: 90, rock: [0.1, 0.14, 0.08], snow: [0.16, 0.22, 0.12], haze: 0.0055, seed: 68 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.76, sat: 1.1, shadow: [0, 0.003, 0.004], high: [0.01, 0.006, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => { CF.MapJungle.build(); CF.World.flowMax = 110; },
+    enemies: ['vc', 'nva', 'vcmg', 'vcrpg', 'vcsniper', 'ghost', 'sapper', 'tunnel', 'sampan'],
+    inside: (p) => (p.x > -138 && p.x < -84 && p.z > -138 && p.z < -100),
+    menuCam: (t, cam) => { const a = t * 0.02 + 0.4; cam.position.set(5 + Math.sin(a) * 48, 18 + Math.sin(a * 1.3) * 3, -5 + Math.cos(a) * 48); cam.lookAt(5, 3, -5); }
+  };
+  // The Eleventh Hour: the Saint-Aubin sector, 11 November 1918. The mission relights it (pre-dawn, mist, gas, grey, clearing; js/map-western.js).
+  CF.Maps.western = {
+    id: 'western', name: 'Saint-Aubin sector', campaign: true, nav: true, boss: false,
+    bounds: { minX: -140, maxX: 140, minZ: -140, maxZ: 140 },
+    theme: base({
+      fog: [0.56, 0.58, 0.58], fogDensity: 0.011,
+      hemi: [0xc8d0d4, 0x3c3828, 0.66], moon: { color: 0xf0ece0, intensity: 1.2, dir: [0.4, 0.6, 0.35] },
+      sky: { zen: [0.4, 0.45, 0.5], hor: [0.68, 0.68, 0.66], glow: [0.35, 0.32, 0.26], glowDir: [0.4, 0.35], glow2: [0.1, 0.1, 0.1], glow2Dir: [-1, 0],
+        cloudDark: [0.55, 0.57, 0.6], cloudLit: [0.9, 0.88, 0.84], stars: 0, moon: 1 },
+      env: { top: [0.48, 0.52, 0.58], bottom: [0.22, 0.2, 0.16], band: [0.56, 0.54, 0.5], panels: [[1.2, 1.2, 1.2], [1.1, 1.15, 1.2], [1.2, 1.15, 1.1], [1.15, 1.15, 1.15]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 230, r1: 380, count: 40, hMin: 6, hMax: 20, rock: [0.22, 0.22, 0.18], snow: [0.28, 0.28, 0.22], haze: 0.005, seed: 1918 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.8, sat: 0.74, shadow: [0, 0.002, 0.006], high: [0.01, 0.006, -0.004], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => { CF.MapWestern.build(); CF.World.flowMax = 110; },
+    enemies: ['german', 'gmg', 'flamer', 'storm', 'gsniper', 'gofficer', 'fieldgun', 'fokker'],
+    inside: () => false,
+    menuCam: (t, cam) => { const a = t * 0.02 + 1.4; cam.position.set(Math.sin(a) * 40, 9 + Math.sin(a * 1.3) * 2, 32 + Math.cos(a) * 30); cam.lookAt(0, 0, 30); }
+  };
   // Oregon: overcast Pacific Northwest morning; grey-green light, mist in the firs, snow on the far peaks
   CF.Maps.oregon = {
     id: 'oregon', name: 'Oregon', mp: true, nav: false, blurb: 'A fenced compound in the Oregon woods: dorms, a basement, a meeting hall, the Big Tower and a garage roof.',

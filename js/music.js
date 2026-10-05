@@ -49,13 +49,42 @@
     riff: 'C..mm.m.C..mm.mmC..mm.m.3.5.6.5.',
     clean: [0, 1, 2, 1, 3, 1, 2, 1]
   };
-  const THEMES = { neon: NEON, frost: FROST, desert: DESERT, grunge: GRUNGE };
+  // Green Hell: late-sixties swamp rock in E. A tremolo guitar and a Hammond-ish organ while the jungle is quiet,
+  // walking bass and a shuffle when contact starts, the fuzz riff and crashes when it gets loud. Em – G – D – A
+  const SWAMP = {
+    bpm: 108,
+    chords: [
+      { root: 40, tones: [64, 67, 71, 76] },   // Em
+      { root: 43, tones: [62, 67, 71, 74] },   // G
+      { root: 38, tones: [62, 66, 69, 74] },   // D
+      { root: 45, tones: [61, 64, 69, 73] }    // A
+    ],
+    // two-bar fuzz riff, one char per sixteenth: R root, 3/5/7/b (b = minor seventh) that many semitones up, - hold, . rest
+    riff: 'R.R.3.R.5.7-5.3.R.R.3.R.b.7.5.3.',
+    walk: [0, 0, 7, 10, 12, 10, 7, 5],
+    trem: [0, 1, 2, 3, 2, 1, 2, 3]
+  };
+  // The Eleventh Hour: a slow march in D minor. Low strings and a lone bugle-ish horn while it's quiet, a side drum
+  // marching under it, timpani and the full brass when the whistles go. Dm – Gm – Bb – A
+  const TRENCH = {
+    bpm: 76,
+    chords: [
+      { root: 38, tones: [50, 53, 57, 62] },
+      { root: 43, tones: [55, 58, 62, 67] },
+      { root: 46, tones: [53, 58, 62, 65] },
+      { root: 45, tones: [52, 57, 61, 64] }
+    ],
+    // the horn's tune, one note per beat (scale steps of D minor, -1 rest)
+    tune: [4, -1, 4, 5, 6, -1, 5, 4, 3, -1, 2, 3, 4, -1, -1, -1, 6, -1, 6, 7, 8, -1, 7, 6, 5, -1, 4, 3, 2, -1, -1, -1],
+    scale: [50, 52, 53, 55, 57, 58, 60, 62, 64, 65]
+  };
+  const THEMES = { neon: NEON, frost: FROST, desert: DESERT, grunge: GRUNGE, swamp: SWAMP, trench: TRENCH };
 
   const M = CF.Music = {
     ctx: null, A: null, bus: null, lp: null, playing: false, timer: null,
     intensity: 0, target: 0, step: 0, nextTime: 0, bpm: 104, mode: 'menu', boss: false, theme: 'neon', T: NEON
   };
-  /** 'neon' (Cinder Foundry), 'frost' (Whiteout), 'desert' (Story Campaign) or 'grunge' (Story Act III). */
+  /** 'neon' (Cinder Foundry), 'frost' (Whiteout), 'desert' (Story Campaign), 'grunge' (Story Act III) or 'swamp' (Green Hell). */
   M.setTheme = function (name) {
     const T = THEMES[name] || NEON;
     if (this.T === T) return;
@@ -120,6 +149,8 @@
     if (frost) { this.frostStep(s, t, six, I, chord, bar, inBar); return; }
     if (this.theme === 'desert') { this.desertStep(s, t, six, I, chord, bar, inBar); return; }
     if (this.theme === 'grunge') { this.grungeStep(s, t, six, I, chord, bar, inBar); return; }
+    if (this.theme === 'swamp') { this.swampStep(s, t, six, I, chord, bar, inBar); return; }
+    if (this.theme === 'trench') { this.trenchStep(s, t, six, I, chord, bar, inBar); return; }
     if (s % 32 === 0) this.pad(chord, t, six * 32, I);
     if (I > 0.28 && inBar % 2 === 0) {
       const e = (inBar / 2) | 0;
@@ -194,6 +225,85 @@
     if (heavy && bar % 4 === 3 && inBar >= 12) { this.kick(t); if (inBar % 2) this.snare(t); }   // fill into the next phrase
     if (heavy && (this.boss || I > 0.9) && bar % 4 === 2 && inBar === 0) this.squeal(r + 36, t, six * 14);
     if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  // ---------------------------------------------------------------- The Eleventh Hour arrangement
+  M.trenchStep = function (s, t, six, I, chord, bar, inBar) {
+    const T = this.T, menu = this.mode === 'menu';
+    if (s % 32 === 0) this.strings(chord, t, six * 32, menu ? 0.3 : 0.2 + I * 0.5);
+    // the horn: a slow tune on the beat; louder and doubled in the fighting
+    if (inBar % 4 === 0 && (menu || I < 0.85 || bar % 2 === 0)) {
+      const st = T.tune[(bar % 8) * 4 + inBar / 4]; if (st >= 0) this.horn(T.scale[st] + (I > 0.7 ? 0 : -12), t, six * 3.6, menu ? 0.035 : 0.03 + I * 0.025);
+    }
+    // the side drum: a march pattern, rolls before the phrase turns
+    if (!menu && I > 0.25 && (inBar === 0 || inBar === 6 || inBar === 8 || (I > 0.5 && (inBar === 12 || inBar === 14)))) this.sideDrum(t, inBar === 0 ? 0.12 : 0.07);
+    if (!menu && I > 0.4 && bar % 4 === 3 && inBar >= 12) this.sideDrum(t, 0.05);
+    // timpani on the downbeats once it's loud
+    if (!menu && I > 0.55 && (inBar === 0 || inBar === 8)) this.tom(t, chord.root > 42 ? 55 : 48, 1.2);
+    if (!menu && I > 0.35 && inBar % 8 === 0) this.bassF(chord.root, t, six * 7, I);
+    if (I > 0.85 && inBar === 0 && bar % 2 === 0) this.crash(t, 0.06);
+    if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  M.horn = function (note, t, dur, gain) {   // a brass voice: sawtooth through a swelling lowpass, slight vibrato
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(500, t); f.frequency.linearRampToValueAtTime(1800, t + 0.25); f.frequency.linearRampToValueAtTime(900, t + dur);
+    f.connect(this.bus); f.connect(this.rev);
+    const o = this.osc('sawtooth', mtof(note), t, dur, gain, f, 0.08, dur * 0.5);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 5; const lg = ctx.createGain(); lg.gain.value = 8; lfo.connect(lg); lg.connect(o.detune); lfo.start(t); lfo.stop(t + dur + 0.1);
+    this.osc('triangle', mtof(note), t, dur, gain * 0.6, f, 0.06, dur * 0.5, 4);
+  };
+  M.sideDrum = function (t, gain) {   // snare with the wires rattling
+    this.A.noise(this.bus, t, { type: 'bandpass', f0: 2600, dur: 0.12, gain, Q: 0.8 });
+    this.A.noise(this.rev, t, { type: 'highpass', f0: 4000, dur: 0.15, gain: gain * 0.5 });
+    this.A.tone(this.bus, t, { f0: 240, f1: 180, dur: 0.06, gain: gain * 0.5 });
+  };
+  // ---------------------------------------------------------------- Green Hell arrangement
+  M.swampStep = function (s, t, six, I, chord, bar, inBar) {
+    const T = this.T, menu = this.mode === 'menu', r = chord.root;
+    const groove = !menu && I > 0.32, loud = I > 0.58, heavy = I > 0.84;
+    // the organ holds the chord under everything
+    if (s % 32 === 0) this.organ(chord, t, six * 32, menu ? 0.5 : 0.35 + I * 0.4);
+    // tremolo guitar: picks the chord in eighths while it's quiet, steps back once the fuzz comes in
+    if ((menu || !loud) && inBar % 2 === 0) this.tremGtr(chord.tones[T.trem[inBar / 2]] - 12, t, six * 2, menu ? 0.035 : 0.045 * (1 - Math.max(0, I - 0.3)));
+    // walking bass and a shuffle
+    if (groove && inBar % 2 === 0) this.bass(r - 12 + T.walk[inBar / 2], t, six * 1.8, I);
+    if (groove) { if (inBar % 4 === 0 || inBar % 4 === 3) this.hat(t, inBar % 4 === 0 ? 0.04 : 0.022); }
+    if (groove && (inBar === 0 || inBar === 8 || (I > 0.5 && inBar === 11))) this.kick(t);
+    if (groove && I > 0.45 && (inBar === 4 || inBar === 12)) this.snare(t);
+    // the fuzz riff
+    const c = T.riff[(bar % 2) * 16 + inBar];
+    if (!menu && loud && c !== '.' && c !== '-') {
+      const iv = c === 'R' ? 0 : c === 'b' ? 10 : +c;
+      const hold = T.riff[(bar % 2) * 16 + inBar + 1] === '-';
+      this.fuzz(40 + iv, t, six * (hold ? 1.9 : 0.95), heavy ? 1 : 0.8);
+    }
+    if (loud && inBar === 0 && bar % 4 === 0) this.crash(t, heavy ? 0.09 : 0.06);
+    if (heavy && bar % 4 === 3 && inBar >= 12) { this.kick(t); if (inBar % 2) this.snare(t); }
+    if (I > 0.35 && s % 64 === 60) this.riser(t, six * 4);
+  };
+  M.organ = function (chord, t, dur, k) {   // drawbar organ: stacked sines through a slow Leslie-ish wobble
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2400; f.connect(this.bus); f.connect(this.rev);
+    const total = dur + 1;
+    for (let i = 0; i < 3; i++) {
+      const fr = mtof(chord.tones[i] - 12);
+      for (const [mul, g] of [[1, 0.016], [2, 0.009], [3, 0.004]]) {
+        const o = this.osc('sine', fr * mul, t, total, g * k, f, 0.08, 0.8, (i - 1) * 4);
+        const lfo = ctx.createOscillator(); lfo.frequency.value = 5.8; const lg = ctx.createGain(); lg.gain.value = 6; lfo.connect(lg); lg.connect(o.detune); lfo.start(t); lfo.stop(t + total + 0.1);
+      }
+    }
+    this.osc('sine', mtof(chord.root - 12), t, total, 0.05 * k, this.bus, 0.1, 0.8);
+  };
+  M.tremGtr = function (note, t, dur, gain) {   // a clean guitar through a tremolo pedal
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(2800, t); f.frequency.exponentialRampToValueAtTime(1200, t + dur);
+    const trem = ctx.createGain(); trem.gain.value = 0.55; const lfo = ctx.createOscillator(); lfo.frequency.value = 7.5; const lg = ctx.createGain(); lg.gain.value = 0.45;
+    lfo.connect(lg); lg.connect(trem.gain); lfo.start(t); lfo.stop(t + dur + 0.2);
+    trem.connect(f); f.connect(this.echoIn); f.connect(this.rev);
+    this.osc('triangle', mtof(note), t, dur + 0.3, gain, trem, 0.003, dur * 0.8, -6);
+    this.osc('sawtooth', mtof(note), t, dur * 0.6, gain * 0.25, trem, 0.003, dur * 0.5, 6);
+  };
+  M.fuzz = function (note, t, dur, g) {   // single-note fuzz riff, doubled an octave up
+    const ctx = this.ctx, f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200; f.connect(this.amp());
+    this.osc('sawtooth', mtof(note), t, dur, 0.11 * g, f, 0.004, dur * 0.5, -7);
+    this.osc('square', mtof(note + 12), t, dur, 0.04 * g, f, 0.004, dur * 0.5, 7);
   };
   /** Shared amp for the distorted guitar: drive into a soft clipper, then a cabinet-ish band. Built on first use. */
   M.amp = function () {

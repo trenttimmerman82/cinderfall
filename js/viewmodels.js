@@ -574,6 +574,8 @@
   }
 
   const BUILDERS = { carbine, shotgun, pistol, rail, rocket, minigun, satchel, revolver, lmg, flamer, wasp, magnum, sawnoff, tempo, pip, arc };
+  // shared with the period weapons (js/eras.js)
+  VM.kit = { part, B, CZ, node, hand, forearm, box, cyl, tube, sph, caps, mats: () => VM.materials(), satchel };
   VM.build = function (id, hands) {
     VM.materials();
     const r = BUILDERS[id](hands);

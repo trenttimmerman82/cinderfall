@@ -20,6 +20,29 @@ It is set in a rain-soaked neon city.
   walled school in three waves) and *Extraction* (hold the stadium until the last helicopter lands). Your squad fights
   alongside you. Enemies are militia riflemen, machine gunners, RPG gunners who shout before they fire, snipers with a
   visible laser, and technicals (armoured to rifle fire; blow them up or shoot the gunner).
+- **Campaign: Green Hell.** The Song Lam valley, 1968. A long-range patrol, Copperhead, went quiet after reporting
+  "the whole hill is hollow". Seven missions: *Hot LZ* (ride a Huey in, fire from the door, clear the elephant grass),
+  *The Trail* (booby traps, an ambush at a stream ford, a sniper called the Ghost), *Ap Lo* (search a deserted hamlet,
+  fight off VC in the paddies and spider holes), *Tunnel Rat* (alone underground with a .45, a shotgun and a flashlight;
+  find the attack plans and Copperhead's survivor, then watch the hill burn), *Ambush* (night: plant claymores, let the
+  column walk into them), *River Run* (a PBR up-river past bunkers and sampans) and *Kestrel* (hold a firebase until dawn
+  through sappers, mortars and flares, with Spooky overhead). Period weapons (M16A1, Ithaca 37, M21, M1911A1, M79, M60,
+  C-4) replace the usual seven slots for this campaign only. The enemy mostly doesn't come to you: concealed riflemen wait
+  in the undergrowth, pop up for a burst, duck and crawl to the next bush; spider holes open and close; snipers give
+  themselves away with a scope glint. Foliage blocks sight both ways (crouch in the grass and they lose you). Your tells:
+  muzzle flashes, rustling, birds bursting out of the canopy. Hold your aim on a hiding man for half a second to mark him,
+  and your squad calls contacts by the clock. Your point man calls tripwires and punji pits; hold E to disarm them.
+- **Campaign: The Eleventh Hour.** The Saint-Aubin sector, France, 11 November 1918. The armistice was signed at five
+  and the guns stop at eleven, but General Hollis-Pryce, cut off in Saint-Aubin behind the German lines, has ordered one
+  last attack for half past ten and the telephone lines are cut. You're Private Avery, carrying the order that calls it
+  off. Six missions: *Over the Top* (the whistles go at 05:40; cross no-man's-land through the gaps in the wire under
+  machine-gun and shell fire and take the German trench), *Gas!* (clear their trench bay by bay with a trench gun; gas
+  shells, a flamethrower, a counter-attack), *Iron Horse* (escort the Mark IV tank "Fat Annie" through the second line
+  and knock out the field gun that stops her), *Wings* (rear gunner in a Bristol Fighter, Fokker D.VIIs on your tail),
+  *Saint-Aubin* (a shelled village, a sniper in the church tower) and *The Eleventh Hour* (climb the tower, fire the
+  recall flares, hold until the bells ring at eleven). Period weapons: Lee-Enfield (a real bolt action), Winchester 1897
+  trench gun, P14 sniper rifle, Webley revolver, rifle grenade, Lewis gun and a gun-cotton charge. Gas: press **T** to
+  pull on your mask before the cloud reaches you.
 - **Ghost Protocol (stealth).** Suppressed pistol and carbine only. Darkness hides you, lamps and the guards' torch
   beams give you away, crouching keeps you quiet, a melee attack from behind is a silent takedown. A guard who spots you
   raises the alarm after a few seconds unless you silence him; a guard who finds a body comes looking. If the alarm
@@ -30,7 +53,7 @@ It is set in a rain-soaked neon city.
   helmets, shemaghs, detailed weapons and generated camo, fabric, webbing, leather and skin textures (about 9,000
   triangles and ~26 draw calls per person). Its script (`js/enemy-models-enhanced.js`) is downloaded, and its textures
   painted, only when Enhanced is picked; Standard players never load it.
-- All three campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
+- All five campaigns have three threat levels (every point you earn is worth 0.8× on Recruit, 1× on Veteran and 1.4× on Elite, so harder runs score higher) and a **No drones** option (no enemy drones) that works with any of them.
 - **Kill streak.** 5 kills within 30 seconds earns an attack drone with 60 rounds.
 - **Co-op campaign.** Play Cinder Foundry or Whiteout with a friend through a room code: shared objectives, revive each
   other when down, ranked on its own Co-op leaderboard.

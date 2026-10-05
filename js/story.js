@@ -32,7 +32,7 @@
       this.state = 'idle'; this.alive = true; this.flinch = 0; this.staggerT = 0; this.recoil = 0;
       this.slot = o.slot || 0; this.shoots = !!o.shoots && !!this.m.gunSpec; this.fireCd = U.rand(0.5, 1.5); this.burst = 0; this.target = null;
       this.follow = o.follow !== false; this.hold = null; this.ci = 0; this.stuckT = 0; this.crouch = o.crouch || 0; this.handsUp = !!o.handsUp;
-      this.dmg = o.dmg || 11; this.color = o.color || '#9dffb0';
+      this.dmg = o.dmg || 11; this.color = o.color || '#9dffb0'; this.redTracer = !!o.redTracer; this.noTracer = !!o.noTracer;
       this.root.position.copy(this.body.pos); this.root.rotation.y = this.yaw;
     }
     /** Where this ally wants to be: a held spot, or their place along your trail. */
@@ -119,6 +119,7 @@
           const d = e.body.pos.distanceTo(b.pos); if (d > bd) continue;
           e.center(_c);
           if (!W.segmentClear(b.pos.x, b.pos.y + 1.6, b.pos.z, _c.x, _c.y, _c.z)) continue;
+          if (CF.Enemies.veilAlly && CF.Enemies.veilAlly(this, e, _c)) continue; // can't shoot what the jungle hides
           bd = d; this.target = e;
         }
       }
@@ -130,12 +131,14 @@
       if (this.burst <= 0) { this.burst = 3; }
       this.burst--; this.fireCd = this.burst > 0 ? 0.12 : U.rand(0.9, 1.7);
       const muzzle = this.m.p.muzzle.getWorldPosition(new THREE.Vector3());
-      const hit = Math.random() < 0.55;
+      const hit = Math.random() < (e.concealed ? (e.crouch > 0.8 ? 0.08 : 0.25) : 0.55); // dug-in men are hard to hit, and they duck
       const aim = _c.clone(); if (!hit) aim.add(new THREE.Vector3(U.gauss() * 1.2, U.gauss() * 0.8, U.gauss() * 1.2));
       const dir = aim.clone().sub(muzzle).normalize();
-      CF.FX.tracer(muzzle, aim, { speed: 380, len: 4, w: 0.025, r: 3.2, g: 2.1, b: 1.0 });
+      const red = this.redTracer, gs = this.m.gunSpec;
+      if (!this.noTracer) CF.FX.tracer(muzzle, aim, red ? { speed: 380, len: 4, w: 0.025, r: 5, g: 0.9, b: 0.6 } : { speed: 380, len: 4, w: 0.025, r: 3.2, g: 2.1, b: 1.0 });
       CF.FX.muzzle(muzzle, dir, 5, 3.2, 1.2, 0.35);
-      A.play('akShot', muzzle, { ref: 5, vol: 0.55 });
+      A.play((gs && gs.sfx) || 'akShot', muzzle, { ref: 5, vol: 0.55 });
+      this.lastFired = CF.time;
       this.recoil = 1;
       if (hit) e.damage(this.dmg, { dir, point: aim, normal: dir.clone().negate(), part: null, weapon: null, source: 'npc', from: b.pos.clone(), knock: 1 });
     }
@@ -160,9 +163,9 @@
   // ---------------------------------------------------------------- helicopters
   const LEFT_SEAT = new THREE.Vector3(-0.6, 0.92, -0.35);
   class Heli {
-    constructor(x, y, z, yaw, name) {
+    constructor(x, y, z, yaw, name, model) {
       this.name = name || 'Dust';
-      this.root = CF.StoryModels.heli(); CF.Game.scene.add(this.root);
+      this.root = CF.StoryModels[model || 'heli'](); CF.Game.scene.add(this.root);
       this.pos = new THREE.Vector3(x, y, z); this.yaw = yaw || 0; this.pitch = 0; this.roll = 0; this.spin = 1; this.spinYaw = 0;
       this.curve = null; this.t = 0; this.speed = 20; this.onArrive = null; this.prevYaw = this.yaw; this.vel = new THREE.Vector3();
       this.sound = null; this.smoke = 0; this.dead = false;
@@ -225,7 +228,7 @@
     remove() { if (this.sound) { this.sound.stop(); this.sound = null; } if (this.root.parent) this.root.parent.remove(this.root); this.unboard(); }
   }
   ST.Heli = Heli;
-  ST.addHeli = function (x, y, z, yaw, name) { const h = new Heli(x, y, z, yaw, name); this.helis.push(h); return h; };
+  ST.addHeli = function (x, y, z, yaw, name, model) { const h = new Heli(x, y, z, yaw, name, model); this.helis.push(h); return h; };
   ST.removeHeli = function (h) { h.remove(); const i = this.helis.indexOf(h); if (i >= 0) this.helis.splice(i, 1); };
   ST.clearHelis = function () { for (const h of this.helis) h.remove(); this.helis.length = 0; };
 

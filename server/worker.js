@@ -1,6 +1,6 @@
 /* Cinderfall server (Cloudflare Worker).
    GET  /                → { ok, name, v } (v is the API version; the game uses it to tell an outdated server)
-   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden|story&mode=all|drones|nodrones|coop&player=&name=
+   GET  /scores          → campaign leaderboard (top 10, ?limit= up to 100). ?campaign=foundry|halden|story|nam|ww1&mode=all|drones|nodrones|coop&player=&name=
                            'all' covers the two solo modes; co-op runs ('coop', two callsigns) have their own board and never earn Champion.
    POST /scores          → submit a run {player, name, campaign, mode, prog, score, stage, diff, time, token?, run?}; keeps each player's best per campaign and mode.
                            A run that takes #1 on a board with enough entries, backed by a server-tracked campaign run, unlocks the Champion skins.
@@ -18,7 +18,7 @@
    Relay frames: host → server {to, d} | {b:1, x, d}; server → host {j:id} | {l:id} | {f:id, d}; client ↔ server: the bare message. */
 import { DurableObject } from 'cloudflare:workers';
 
-const API = 6; // 4: co-op board · 5: Story Campaign (Dust Off) · 6: public match list
+const API = 8; // 4: co-op board · 5: Story Campaign (Dust Off) · 6: public match list · 7: Green Hell · 8: The Eleventh Hour
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 
@@ -42,10 +42,10 @@ const clean = (s, n) => String(s || '').replace(/[<>\u0000-\u001f]/g, '').trim()
 const cleanName = (s) => clean(s, 16) || 'Operative';
 
 // ------------------------------------------------------------ economy (the game's js/skins.js mirrors the catalog for visuals)
-const CAMPAIGNS = ['foundry', 'halden', 'story'], MODES = ['drones', 'nodrones'], BOARDS = MODES.concat('coop'); // MODES: solo (Champion-eligible)
-const PHASES = { foundry: 5, halden: 6, story: 8 };
+const CAMPAIGNS = ['foundry', 'halden', 'story', 'nam', 'ww1'], MODES = ['drones', 'nodrones'], BOARDS = MODES.concat('coop'); // MODES: solo (Champion-eligible)
+const PHASES = { foundry: 5, halden: 6, story: 8, nam: 7, ww1: 6 };
 const DIFF_MUL = { recruit: 0.75, veteran: 1, elite: 1.5 };
-const PHASE_COINS = 40, FINISH_COINS = { foundry: 250, halden: 300, story: 400 }, WELCOME = 300, DAILY_CAP = 6000;
+const PHASE_COINS = 40, FINISH_COINS = { foundry: 250, halden: 300, story: 400, nam: 400, ww1: 400 }, WELCOME = 300, DAILY_CAP = 6000;
 const MIN_PHASE_SECS = 35;           // a part can't be cleared faster than this (cumulative from the run's start)
 const CHAMP_MIN_ENTRIES = 5;         // a board needs this many players before its #1 counts
 const SKINS = {

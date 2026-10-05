@@ -160,6 +160,8 @@
     <div class="frost-edge" id="frostEdge"></div>
     <div class="stealth" id="stealth" hidden><span class="st-text" id="stealthText">Hidden</span><span class="st-bar"><i id="stealthFill"></i></span></div>
     <div class="st-marks" id="stealthMarks"></div>
+    <div class="st-marks" id="spotMarks"></div>
+    <div class="gas-mask" id="gasMask" hidden aria-hidden="true"><i></i><i></i></div>
     <div class="ally-tags" id="allyTags"></div>
     <div class="fps" id="fps" hidden>0 fps</div>
     <div class="flash" id="flash"></div>
@@ -198,7 +200,7 @@
       <h1 class="logo" data-text="CINDERFALL">CINDER<b>FALL</b></h1>
       <p class="tagline">Three operations: take Cinder Foundry back from its rogue security AI, find out what came up the borehole at Halden Deep, or bring a captured recon team home from Dar Masir. Or deploy online and fight your friends across the neon districts.</p>
       <nav class="menu" aria-label="Main menu">
-        <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry, Whiteout or Dust Off</span></button>
+        <button class="menu-item" data-act="campaigns"><span class="mi-label">Campaign</span><span class="mi-note">Cinder Foundry, Whiteout, Dust Off, Green Hell or The Eleventh Hour</span></button>
         <button class="menu-item" data-act="multiplayer"><span class="mi-label">Multiplayer</span><span class="mi-note">Host or join an online match</span></button>
         <button class="menu-item" data-act="leaderboard"><span class="mi-label">Leaderboard</span><span class="mi-note">Furthest runs and high scores</span></button>
         <button class="menu-item" data-act="locker"><span class="mi-label">Locker &amp; Shop</span><span class="mi-note">Skins, crates and your save code</span></button>
@@ -251,6 +253,30 @@
           <span class="cc-actions">
             <button class="cc-continue" data-continue="story" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
             <button class="btn" data-campaign="story">Start operation</button>
+          </span>
+        </div>
+        <div class="cc-card cc-nam" data-cc="nam">
+          <span class="cc-art" aria-hidden="true"><i class="sc-huey"></i></span>
+          <span class="cc-where">Song Lam valley · 1968 · Story campaign</span>
+          <span class="cc-name">Green Hell</span>
+          <span class="cc-desc">A lost patrol said the hill was hollow. Hunt an enemy who hides in the grass, go down the tunnels alone, spring a night ambush and hold the firebase until dawn.</span>
+          <span class="cc-meta">7 missions · Hidden enemies · Booby traps · Tunnels</span>
+          <span class="cc-best"></span>
+          <span class="cc-actions">
+            <button class="cc-continue" data-continue="nam" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
+            <button class="btn" data-campaign="nam">Start operation</button>
+          </span>
+        </div>
+        <div class="cc-card cc-ww1" data-cc="ww1">
+          <span class="cc-art" aria-hidden="true"><i class="sc-biplane"></i></span>
+          <span class="cc-where">Saint-Aubin sector · 11 November 1918 · Story campaign</span>
+          <span class="cc-name">The Eleventh Hour</span>
+          <span class="cc-desc">The armistice is signed and the guns stop at eleven, but a general cut off behind the lines has ordered one last attack. Go over the top, ride a tank, fly a Bristol and get the order through in time.</span>
+          <span class="cc-meta">6 missions · Gas · Tanks · Biplanes · Trench raids</span>
+          <span class="cc-best"></span>
+          <span class="cc-actions">
+            <button class="cc-continue" data-continue="ww1" hidden><b>Continue</b><span class="cc-cont-where"></span><span class="cc-cont-meta"></span></button>
+            <button class="btn" data-campaign="ww1">Start operation</button>
           </span>
         </div>
       </div>
@@ -435,7 +461,7 @@
         <label class="field callsign"><span>Your callsign</span><input id="lbName" maxlength="16" autocomplete="off" spellcheck="false"></label>
         <div class="lb-filter" role="group" aria-label="Campaign">
           <span class="lb-filter-label">Campaign</span>
-          <div class="seg"><button data-lbcampaign="foundry" aria-selected="true">Cinder Foundry</button><button data-lbcampaign="halden" aria-selected="false">Whiteout</button><button data-lbcampaign="story" aria-selected="false">Dust Off</button></div>
+          <div class="seg"><button data-lbcampaign="foundry" aria-selected="true">Cinder Foundry</button><button data-lbcampaign="halden" aria-selected="false">Whiteout</button><button data-lbcampaign="story" aria-selected="false">Dust Off</button><button data-lbcampaign="nam" aria-selected="false">Green Hell</button><button data-lbcampaign="ww1" aria-selected="false">The Eleventh Hour</button></div>
         </div>
         <div class="lb-filter" role="group" aria-label="Drone mode" id="lbModeGroup">
           <span class="lb-filter-label">Drone mode</span>
@@ -707,14 +733,19 @@
 <script src="js/map-retail.js"></script>
 <script src="js/map-halden.js"></script>
 <script src="js/map-story.js"></script>
+<script src="js/map-jungle.js"></script>
+<script src="js/map-western.js"></script>
 <script src="js/effects.js"></script>
 <script src="js/viewmodels.js"></script>
+<script src="js/eras.js"></script>
 <script src="js/weapons.js"></script>
 <script src="js/player.js"></script>
 <script src="js/enemy-models.js"></script>
 <script src="js/enemy-models-frost.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/story-models.js"></script>
+<script src="js/nam-models.js"></script>
+<script src="js/ww1-models.js"></script>
 <script src="js/boss.js"></script>
 <script src="js/boss-heart.js"></script>
 <script src="js/hud.js"></script>
@@ -723,6 +754,10 @@
 <script src="js/mission-halden.js"></script>
 <script src="js/story.js"></script>
 <script src="js/mission-story.js"></script>
+<script src="js/jungle.js"></script>
+<script src="js/mission-nam.js"></script>
+<script src="js/ww1.js"></script>
+<script src="js/mission-ww1.js"></script>
 <script src="js/net.js"></script>
 <script src="js/mp.js"></script>
 <script src="js/anticheat.js"></script>

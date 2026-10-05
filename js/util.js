@@ -103,7 +103,7 @@ window.CF = window.CF || {};
     { id: 'melee', label: 'Melee', canon: 'KeyV', def: ['KeyF', 'Mouse3'] },
     { id: 'last', label: 'Last weapon', canon: 'KeyQ', def: ['KeyX', null] },
     { id: 'streak', label: 'Deploy drone (kill streak)', canon: 'KeyB', def: ['KeyZ', null] },
-    { id: 'gadget', label: 'RC car: drive · detonate', canon: 'KeyT', def: ['KeyT', null] },
+    { id: 'gadget', label: 'RC car · gas mask (1918)', canon: 'KeyT', def: ['KeyT', null] },
     { id: 'shop', label: 'Zombies shop (between waves)', canon: 'Shop', def: ['KeyB', null] },
     { id: 'brmap', label: 'Battle Royale map', canon: 'BRMap', def: ['KeyM', null] },
     { id: 'slot1', label: 'Weapon 1 · loadout 1', canon: 'Digit1', def: ['Digit1', null] },

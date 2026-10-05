@@ -78,6 +78,8 @@
     prog(0.05, 'Loading ' + def.name); await U.nextFrame(); await U.nextFrame();
     if (this.scene) {
       if (CF.MapHalden) CF.MapHalden.dispose();
+      if (CF.MapJungle) CF.MapJungle.dispose();
+      if (CF.MapWestern) CF.MapWestern.dispose();
       CF.Enemies.clear(); CF.FX.reset(); CF.FX.clearDecals();
       CF.Weapons.clearLive(); CF.Streak.clear();
       L.dispose();
@@ -164,7 +166,7 @@
     if (this.lava) { this.lava.stop(); this.lava = null; }
     if (this.mapId === 'foundry') { this.lava = A.loop('lava', { x: 0, y: 0.5, z: -30 }); if (this.lava) this.lava.set(0.6, 1); }
     if (CF.Frost.th && !CF.Frost.wind) { CF.Frost.wind = A.loop('blizzard'); }
-    A.setAmbience(this.mapId === 'story' ? 'city' : this.mapDef && this.mapDef.theme.frost ? 'polar' : 'industrial');
+    A.setAmbience(this.mapId === 'story' ? 'city' : this.mapId === 'jungle' ? 'jungle' : this.mapId === 'western' ? 'front' : this.mapDef && this.mapDef.theme.frost ? 'polar' : 'industrial');
     const wet = this.mapDef && this.mapDef.theme.rain && this.mapDef.theme.rain.count;
     if (wet && !this.rainSnd) { this.rainSnd = A.loop('rain'); if (this.rainSnd) this.rainSnd.set(0.16, 2); }
     else if (!wet && this.rainSnd) { this.rainSnd.stop(); this.rainSnd = null; }
@@ -458,7 +460,7 @@
     CF.Enemies.clear(); CF.FX.reset(); CF.HUD.reset(); CF.HUD.show(false);
     this.stopHold(); this.pending.length = 0;
     CF.Frost.reset(); CF.Frost.setStorm(0.1); CF.Player.chillT = 0; CF.Player.ride = null;
-    if (CF.Missions.story && CF.Missions.story.entered) CF.Missions.story.teardown();
+    for (const k in CF.Missions) { const m = CF.Missions[k]; if (m.entered && m.teardown) m.teardown(); } // story campaigns: allies, helicopters, period kit
     if (CF.Story) { CF.Story.clear(); CF.Story.closeBriefing(); }
     this.failReason = null;
     this.renderStoryCard();
@@ -478,16 +480,16 @@
     this.initAudio(); A.resume();
     const C = CF.campaign();
     CF.Mission = C.mission;
-    if (C.story && CF.settings.characters === 'enhanced' && !CF.Human.hd) {
+    if (C.id === 'story' && CF.settings.characters === 'enhanced' && !CF.Human.hd) {
       // the enhanced people are only downloaded and built when someone asks for them
       progress(0.02, 'Loading enhanced characters'); this.showScreen('loading');
       try { await CF.lazy('js/enemy-models-enhanced.js'); } catch (e) { CF.Toast('Enhanced characters could not load', 'error', 'Playing with standard models.'); }
     }
-    if (C.story && CF.settings.characters === 'enhanced' && CF.Human.hd && !CF.Human.hdWarm) {
+    if (C.id === 'story' && CF.settings.characters === 'enhanced' && CF.Human.hd && !CF.Human.hdWarm) {
       // paint the textures and cut the shapes now, behind the loading screen, not at the first enemy spawn
       progress(0.04, 'Building enhanced characters'); this.showScreen('loading'); await U.nextFrame();
       CF.Human.hdWarm = true;
-      for (const k of Object.keys(CF.Human.LOOKS)) CF.Human.hd(k, 1);
+      for (const k of Object.keys(CF.Human.LOOKS)) if (!CF.Human.LOOKS[k].nam && !CF.Human.LOOKS[k].ww1) CF.Human.hd(k, 1); // Green Hell's and the Western Front's people are always built standard
     }
     if (this.mapId !== C.map) {
       // grab the mouse while we still have the click, then build the campaign map

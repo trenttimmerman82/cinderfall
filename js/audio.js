@@ -358,6 +358,75 @@
   R.charge = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 3000, dur: 0.05, gain: 0.2, Q: 2 }); A.tone(d, t + 0.1, { type: 'square', f0: 2000, dur: 0.05, gain: 0.04 }); A.tone(d, t + 0.35, { type: 'square', f0: 2000, dur: 0.05, gain: 0.04 }); };
   R.cellDoor = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 1800, f1: 900, dur: 0.5, gain: 0.35, Q: 2 }); A.tone(d, t + 0.4, { f0: 180, f1: 90, dur: 0.2, gain: 0.3 }); };
 
+  // Vietnam (Green Hell): period rifles, the jungle and what hides in it
+  R.m16 = (d, t) => { // sharp, high and light: 5.56 out of a 20-inch barrel
+    A.noise(d, t, { type: 'highpass', f0: 3200, dur: 0.03, gain: 0.75 });
+    A.noise(d, t, { type: 'lowpass', f0: 7500, f1: 900, dur: 0.12, gain: 0.9, Q: 0.8 });
+    A.tone(d, t, { f0: 170, f1: 55, dur: 0.11, gain: 0.8 });
+    A.noise(d, t + 0.015, { type: 'bandpass', f0: 600, f1: 240, dur: 0.45, gain: 0.13, Q: 0.6 });
+  };
+  R.m14 = (d, t) => { // 7.62 NATO: a heavier crack that rolls away down the valley
+    A.noise(d, t, { type: 'highpass', f0: 2400, dur: 0.045, gain: 0.85 });
+    A.noise(d, t, { type: 'lowpass', f0: 6000, f1: 380, dur: 0.3, gain: 1.15, Q: 0.7 });
+    A.tone(d, t, { f0: 120, f1: 34, dur: 0.24, gain: 1.15 });
+    A.noise(d, t + 0.03, { type: 'bandpass', f0: 420, f1: 140, dur: 1.2, gain: 0.22, Q: 0.5 });
+  };
+  R.m60 = (d, t) => { R.m14(d, t); A.tone(d, t, { f0: 90, f1: 40, dur: 0.12, gain: 0.35 }); };
+  R.colt = (d, t) => { // .45 ACP: a slow, fat thump more than a crack
+    A.noise(d, t, { type: 'highpass', f0: 2400, dur: 0.035, gain: 0.55 });
+    A.noise(d, t, { type: 'lowpass', f0: 5000, f1: 600, dur: 0.16, gain: 0.95, Q: 0.8 });
+    A.tone(d, t, { f0: 150, f1: 48, dur: 0.15, gain: 0.95 });
+    A.noise(d, t + 0.01, { type: 'bandpass', f0: 500, f1: 220, dur: 0.45, gain: 0.12, Q: 0.6 });
+  };
+  R.thump = (d, t) => { // the M79's hollow bloop
+    A.tone(d, t, { f0: 160, f1: 55, dur: 0.2, gain: 1.0 });
+    A.noise(d, t, { type: 'bandpass', f0: 700, f1: 260, dur: 0.18, gain: 0.5, Q: 1.4 });
+    A.tone(d, t + 0.005, { type: 'triangle', f0: 420, f1: 180, dur: 0.12, gain: 0.12 });
+  };
+  R.rustle = (d, t) => { for (let i = 0; i < 4; i++) A.noise(d, t + i * U.rand(0.06, 0.12), { type: 'bandpass', f0: U.rand(2400, 4200), dur: U.rand(0.06, 0.14), gain: 0.16, Q: 0.9, attack: 0.02 }); };
+  R.birds = (d, t) => { // a flock bursting out of the canopy: wingbeats and alarm chirps
+    for (let i = 0; i < 16; i++) A.noise(d, t + i * U.rand(0.03, 0.07), { type: 'bandpass', f0: U.rand(700, 1300), dur: 0.05, gain: 0.18, Q: 1.5 });
+    for (let i = 0; i < 6; i++) { const f = U.rand(2600, 4200); A.tone(d, t + i * U.rand(0.08, 0.18), { type: 'triangle', f0: f, f1: f * 0.75, dur: 0.07, gain: 0.05 }); }
+  };
+  R.bird = (d, t) => { // one call: a whistled phrase of two to four notes
+    const base = U.rand(1800, 3400), n = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) A.tone(d, t + i * 0.13, { f0: base * (1 + (i % 2) * 0.25), f1: base * (i % 2 ? 0.9 : 1.2), dur: 0.09, gain: 0.04 });
+  };
+  R.gecko = (d, t) => { for (let i = 0; i < 3; i++) A.tone(d, t + i * 0.32, { type: 'square', f0: 620, f1: 420, dur: 0.11, gain: 0.025, lp: 1500 }); };
+  R.tripClick = (d, t) => { A.tone(d, t, { type: 'square', f0: 2600, dur: 0.012, gain: 0.12 }); A.noise(d, t, { type: 'highpass', f0: 4000, dur: 0.02, gain: 0.2 }); A.noise(d, t + 0.06, { type: 'bandpass', f0: 1800, dur: 0.05, gain: 0.12, Q: 3 }); };
+  R.punji = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 900, f1: 300, dur: 0.18, gain: 0.5, Q: 1 }); A.noise(d, t, { type: 'highpass', f0: 3000, dur: 0.08, gain: 0.3 }); R.impactFlesh(d, t + 0.05); };
+  R.flarePop = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 1200, dur: 0.06, gain: 0.4, Q: 1 }); A.noise(d, t + 0.05, { type: 'highpass', f0: 3000, f1: 1500, dur: 0.6, gain: 0.08, attack: 0.05 }); };
+  R.clacker = (d, t) => { for (let i = 0; i < 3; i++) { A.tone(d, t + i * 0.09, { type: 'square', f0: 1700, dur: 0.01, gain: 0.1 }); A.noise(d, t + i * 0.09, { type: 'bandpass', f0: 2600, dur: 0.02, gain: 0.25, Q: 3 }); } };
+  R.spooky = (d, t) => { // Puff the Magic Dragon: three miniguns heard from far below, one long groan
+    A.noise(d, t, { type: 'lowpass', f0: 520, dur: 1.6, gain: 0.9, attack: 0.08 });
+    A.tone(d, t, { type: 'sawtooth', f0: 95, f1: 92, dur: 1.6, gain: 0.18, lp: 600, attack: 0.08 });
+    A.tone(d, t, { type: 'square', f0: 100, f1: 98, dur: 1.6, gain: 0.06, lp: 900, attack: 0.08 });
+  };
+  R.jet = (d, t) => { A.noise(d, t, { type: 'bandpass', f0: 400, f1: 2200, dur: 1.8, gain: 0.7, Q: 0.6, attack: 0.6 }); A.noise(d, t + 1.2, { type: 'lowpass', f0: 1800, f1: 300, dur: 2.2, gain: 0.6 }); };
+  R.napalm = (d, t) => { R.bigBoom(d, t); A.noise(d, t + 0.1, { type: 'lowpass', f0: 900, f1: 200, dur: 3.2, gain: 0.9, attack: 0.2 }); A.noise(d, t + 0.2, { type: 'bandpass', f0: U.rand(2000, 3500), dur: 2.6, gain: 0.08, Q: 0.6 }); };
+  R.incoming = (d, t) => { A.tone(d, t, { f0: 1700, f1: 520, dur: 1.4, gain: 0.07, attack: 0.15 }); A.tone(d, t, { f0: 1715, f1: 525, dur: 1.4, gain: 0.05, attack: 0.15 }); };
+  // The Eleventh Hour (Western Front, 1918)
+  R.enfield = (d, t) => { // .303: a big flat crack and a long roll across the open ground
+    A.noise(d, t, { type: 'highpass', f0: 2200, dur: 0.05, gain: 0.9 });
+    A.noise(d, t, { type: 'lowpass', f0: 5600, f1: 320, dur: 0.34, gain: 1.2, Q: 0.7 });
+    A.tone(d, t, { f0: 115, f1: 32, dur: 0.26, gain: 1.2 });
+    A.noise(d, t + 0.04, { type: 'bandpass', f0: 380, f1: 120, dur: 1.5, gain: 0.25, Q: 0.5 });
+  };
+  R.lewis = (d, t) => { R.m14(d, t); A.noise(d, t, { type: 'bandpass', f0: 900, dur: 0.05, gain: 0.2, Q: 2 }); };
+  R.mauser = (d, t) => { R.enfield(d, t); };
+  R.trenchWhistle = (d, t) => { // the officer's whistle: a shrill trilled blast
+    const o = A.ctx.createOscillator(), g = A.ctx.createGain(), lfo = A.ctx.createOscillator(), lg = A.ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 2650; lfo.frequency.value = 28; lg.gain.value = 140; lfo.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.03); g.gain.setValueAtTime(0.16, t + 0.9); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    o.connect(g); g.connect(d); o.start(t); lfo.start(t); o.stop(t + 1.15); lfo.stop(t + 1.15);
+    A.noise(d, t, { type: 'bandpass', f0: 2600, dur: 1.0, gain: 0.05, Q: 4 });
+  };
+  R.gasRattle = (d, t) => { for (let i = 0; i < 24; i++) A.noise(d, t + i * 0.045, { type: 'bandpass', f0: 1400 + (i % 2) * 300, dur: 0.03, gain: 0.25, Q: 3 }); };
+  R.bell = (d, t) => { bell(d, t, 220, 6, 0.2); bell(d, t, 220 * 2.4, 4, 0.06); bell(d, t, 220 * 3.1, 3, 0.04); A.tone(d, t, { f0: 110, dur: 5, gain: 0.08, attack: 0.01 }); };
+  R.gasShell = (d, t) => { A.noise(d, t, { type: 'lowpass', f0: 900, f1: 200, dur: 0.4, gain: 0.5 }); A.tone(d, t, { f0: 90, f1: 50, dur: 0.25, gain: 0.4 }); A.noise(d, t + 0.1, { type: 'highpass', f0: 2500, dur: 1.6, gain: 0.12, attack: 0.2 }); };
+  R.fieldGun = (d, t) => { R.bigBoom(d, t); A.noise(d, t, { type: 'highpass', f0: 1800, dur: 0.08, gain: 0.8 }); };
+  R.splash = (d, t) => { A.noise(d, t, { type: 'lowpass', f0: 2400, f1: 400, dur: 0.5, gain: 0.5 }); A.noise(d, t + 0.05, { type: 'bandpass', f0: 1200, dur: 0.8, gain: 0.15, Q: 0.6 }); };
+
   // Throttle: max plays of a given sound within a short window
   const LIMIT = { wasp: 4, arc: 3, akShot: 4, impactFlesh: 3, death: 2, shout: 2, shardShot: 4, shatter: 3, spikes: 3, chime: 1, iceCrack: 2, impactConcrete: 3, impactMetal: 3, impactBot: 3, shell: 2, step: 2, hit: 1, whiz: 2, enemyShot: 4, droneShot: 3, bounce: 2 };
 
@@ -446,6 +515,30 @@
     } else if (kind === 'engine') { // diesel pickup
       const o = osc('sawtooth', 48); const f = A.filter(out, 'lowpass', 300, 2); o.connect(f); freq = o.frequency;
       const n = noiseSrc(); const nf = A.filter(out, 'lowpass', 180, 1); const ng = ctx.createGain(); ng.gain.value = 0.6; n.connect(ng); ng.connect(nf);
+    } else if (kind === 'insects') { // cicadas: a shimmering buzz that swells and falls
+      const n = noiseSrc(); const f = A.filter(out, 'bandpass', 4600, 9); const g = ctx.createGain(); g.gain.value = 0.6; n.connect(g); g.connect(f);
+      const am = osc('sine', 38); const ag = ctx.createGain(); ag.gain.value = 0.4; am.connect(ag); ag.connect(g.gain);
+      const sw = osc('sine', 0.11); const sg = ctx.createGain(); sg.gain.value = 0.35; sw.connect(sg); sg.connect(g.gain);
+      const n2 = noiseSrc(); const f2 = A.filter(out, 'bandpass', 6800, 14); const g2 = ctx.createGain(); g2.gain.value = 0.25; n2.connect(g2); g2.connect(f2);
+    } else if (kind === 'frogs') { // night: crickets in a steady pulse, frogs croaking under them
+      const c = osc('sine', 4300); const cg = ctx.createGain(); cg.gain.value = 0; c.connect(cg); cg.connect(out);
+      const ch = osc('square', 17); const chg = ctx.createGain(); chg.gain.value = 0.25; ch.connect(chg); chg.connect(cg.gain);
+      const fr = osc('sawtooth', 120); const frf = A.filter(out, 'bandpass', 420, 4); const frg = ctx.createGain(); frg.gain.value = 0; fr.connect(frg); frg.connect(frf);
+      const fl = osc('square', 1.3); const flg = ctx.createGain(); flg.gain.value = 0.5; fl.connect(flg); flg.connect(frg.gain);
+    } else if (kind === 'boat') { // PBR: twin diesels and the water jets
+      const o = osc('sawtooth', 56); const f = A.filter(out, 'lowpass', 340, 2); o.connect(f); freq = o.frequency;
+      const n = noiseSrc(); const nf = A.filter(out, 'bandpass', 900, 0.8); const ng = ctx.createGain(); ng.gain.value = 0.5; n.connect(ng); ng.connect(nf);
+    } else if (kind === 'rotary') { // a rotary aero engine: a fast blatting buzz
+      const o = osc('sawtooth', 95); const f = A.filter(out, 'lowpass', 900, 2); o.connect(f); freq = o.frequency;
+      const am = osc('square', 19); const ag = ctx.createGain(); ag.gain.value = 0.5; am.connect(ag); const vg = ctx.createGain(); vg.gain.value = 0.5; ag.connect(vg.gain); o.connect(vg); vg.connect(f);
+      const n = noiseSrc(); const nf = A.filter(out, 'bandpass', 600, 0.7); const ng = ctx.createGain(); ng.gain.value = 0.5; n.connect(ng); ng.connect(nf);
+    } else if (kind === 'tank') { // Daimler sleeve-valve: a slow clattering thump and the tracks
+      const o = osc('sawtooth', 32); const f = A.filter(out, 'lowpass', 220, 2); o.connect(f); freq = o.frequency;
+      const n = noiseSrc(); const nf = A.filter(out, 'bandpass', 1300, 1.2); const ng = ctx.createGain(); ng.gain.value = 0; n.connect(ng); ng.connect(nf);
+      const tr = osc('square', 6); const tg = ctx.createGain(); tg.gain.value = 0.35; tr.connect(tg); tg.connect(ng.gain);
+    } else if (kind === 'breath') { // breathing through a gas mask: slow, rasping, close
+      const n = noiseSrc(); const f = A.filter(out, 'bandpass', 700, 1.5); const g = ctx.createGain(); g.gain.value = 0; n.connect(g); g.connect(f);
+      const lfo = osc('sine', 0.32); const lg = ctx.createGain(); lg.gain.value = 0.5; lfo.connect(lg); lg.connect(g.gain);
     } else if (kind === 'tinnitus') {
       const a = osc('sine', 3950); a.connect(out);
     }
@@ -471,11 +564,24 @@
   /** 'industrial' (foundry clanks, plant hum), 'polar' (ice cracks and crystal chimes, no hum) or 'city' (distant gunfire). */
   A.setAmbience = function (kind) {
     this.ambKind = kind;
-    if (this.ambient) this.ambient.plant.set(kind === 'industrial' ? 0.025 : 0, 2);
+    if (!this.ambient) return;
+    this.ambient.plant.set(kind === 'industrial' ? 0.025 : 0, 2);
+    this.ambient.wind.set(kind === 'jungle' ? 0.03 : 0.07, 2);
+    this.setJungleNight(this.jungleNight);
+  };
+  /** Jungle: cicadas by day, crickets and frogs by night (started on first use, faded rather than stopped). */
+  A.setJungleNight = function (night) {
+    this.jungleNight = !!night;
+    if (!this.ambient) return;
+    const on = this.ambKind === 'jungle';
+    if (on && !this.ambient.insects) { this.ambient.insects = this.loop('insects'); this.ambient.frogs = this.loop('frogs'); }
+    if (this.ambient.insects) { this.ambient.insects.set(on && !night ? 0.05 : 0, 2.5); this.ambient.frogs.set(on && night ? 0.03 : 0, 2.5); }
   };
   A.stopAmbience = function () {
     if (!this.ambient) return;
-    this.ambient.wind.stop(); this.ambient.plant.stop(); this.ambient = null;
+    this.ambient.wind.stop(); this.ambient.plant.stop();
+    if (this.ambient.insects) { this.ambient.insects.stop(); this.ambient.frogs.stop(); }
+    this.ambient = null;
   };
 
   A.concuss = function (amount) {
@@ -516,7 +622,20 @@
       if (this.clankTimer <= 0) {
         this.clankTimer = U.rand(5, 14);
         const a = Math.random() * Math.PI * 2;
-        if (this.ambKind === 'city') { // a city at war: far-off bursts of rifle fire
+        if (this.ambKind === 'front') { // the Western Front: guns rumbling along the line, a machine gun far off, a lark
+          this.clankTimer = U.rand(2.5, 7);
+          const far = { x: this.lx + Math.cos(a) * 160, y: this.ly, z: this.lz + Math.sin(a) * 160 }, k = Math.random();
+          if (this.frontQuiet) { if (k < 0.3) this.play('bird', { x: this.lx + Math.cos(a) * 30, y: this.ly + 12, z: this.lz + Math.sin(a) * 30 }, { ref: 18 }); }
+          else if (k < 0.55) { this.play('explosion', far, { ref: 110, vol: 0.45 }); if (Math.random() < 0.5) this.play('explosion', far, { ref: 110, vol: 0.3, delay: U.rand(0.3, 0.9) }); }
+          else if (k < 0.8) { const n = 4 + Math.floor(Math.random() * 8); for (let i = 0; i < n; i++) this.play('pkmShot', far, { ref: 70, vol: 0.35, delay: i * 0.1 }); }
+          else this.play('bird', { x: this.lx + Math.cos(a) * 30, y: this.ly + 14, z: this.lz + Math.sin(a) * 30 }, { ref: 16 });
+        } else if (this.ambKind === 'jungle') { // birds and geckos close by; now and then artillery far up the valley
+          this.clankTimer = U.rand(3, 8);
+          const r = U.rand(15, 40), p = { x: this.lx + Math.cos(a) * r, y: this.ly + U.rand(3, 9), z: this.lz + Math.sin(a) * r };
+          if (Math.random() < 0.12) this.play('explosion', { x: this.lx + Math.cos(a) * 150, y: this.ly, z: this.lz + Math.sin(a) * 150 }, { ref: 100, vol: 0.35 });
+          else if (this.jungleNight) { if (Math.random() < 0.5) this.play('gecko', p, { ref: 12 }); }
+          else this.play('bird', p, { ref: 14 });
+        } else if (this.ambKind === 'city') { // a city at war: far-off bursts of rifle fire
           const p = { x: this.lx + Math.cos(a) * 140, y: this.ly + 5, z: this.lz + Math.sin(a) * 140 }, n = 1 + Math.floor(Math.random() * 5);
           for (let i = 0; i < n; i++) this.play('akShot', p, { ref: 60, vol: 0.5, delay: i * U.rand(0.09, 0.16) });
           if (Math.random() < 0.15) this.play('explosion', p, { ref: 90, vol: 0.4, delay: 0.8 });

@@ -538,7 +538,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .countdown.warn b { color: #ff6a4a; animation: pulse-cold 0.6s ease-in-out infinite; }
 
 /* ---------------- campaign picker */
-.campaign-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.campaign-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
 .cc-card { position: relative; display: grid; align-content: start; gap: 8px; padding: 0 0 18px; text-align: left; overflow: hidden; border: 1px solid var(--line-2); background: rgba(16, 13, 30, 0.85); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
 .cc-card > span:not(.cc-art) { padding: 0 20px; }
 .cc-card:hover, .cc-card:focus-visible { transform: translateY(-3px); }
@@ -555,7 +555,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .cc-halden .cc-art::before { background: linear-gradient(180deg, #e8eef6 0%, #9fb0c8 60%, #56647c 100%); clip-path: polygon(0 100%, 0 70%, 8% 58%, 14% 66%, 22% 44%, 30% 60%, 36% 52%, 44% 64%, 52% 38%, 60% 58%, 66% 50%, 74% 62%, 82% 46%, 90% 60%, 100% 54%, 100% 100%); }
 .cc-halden .cc-art::after { background: linear-gradient(180deg, transparent 78%, #eef3fa 78%, #dfe7f1 100%), radial-gradient(circle at 18% 84%, rgba(255, 150, 70, 0.9) 0 3px, transparent 4px), radial-gradient(circle at 84% 86%, rgba(255, 150, 70, 0.8) 0 2px, transparent 3px); }
 .cc-where { font: 500 11px/1.2 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-dim); }
-.cc-name { font: 900 38px/1 var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; }
+.cc-name { font: 900 34px/1 var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; }
 .cc-foundry .cc-name { color: #ffd0f2; } .cc-halden .cc-name { color: #d8f4ff; }
 .cc-desc { font: 500 15px/1.45 var(--f-body); color: var(--bone-dim); }
 .cc-meta { font: 600 12px/1.2 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sodium); }
@@ -563,7 +563,7 @@ body.mp .objective, body.mp .score, body.mp .world-marker { display: none !impor
 .cc-best { font: 600 13px/1.2 var(--f-body); color: rgba(233, 247, 255, 0.55); }
 .cc-foundry:hover, .cc-foundry.sel { border-color: #ff3cc8; box-shadow: 0 0 24px rgba(255, 60, 200, 0.18); }
 .cc-halden:hover, .cc-halden.sel { border-color: #7fe3ff; box-shadow: 0 0 24px rgba(127, 227, 255, 0.2); }
-@media (max-width: 1100px) { .campaign-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1300px) { .campaign-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 860px) { .campaign-cards { grid-template-columns: 1fr; } .cc-art { height: 72px; } }
 
 /* ---------------- leaderboard filters and drone-mode labels */
@@ -959,3 +959,36 @@ body.rc-driving .crosshair, body.rc-driving .weapon-panel, body.rc-driving .hitm
 .cc-story .cc-art::after { background: radial-gradient(circle at 44.5% 30%, rgba(255, 230, 180, 0.9) 0 3px, transparent 4px); }
 .cc-story .cc-name { color: #ffe2bf; } .cc-story .cc-meta { color: #ffb05a; }
 .cc-story:hover, .cc-story.sel { border-color: #ffb05a; box-shadow: 0 0 24px rgba(255, 176, 90, 0.18); }
+
+/* ===================== Green Hell ===================== */
+/* card: a jungle tree line at dusk, a Huey low over it */
+.cc-nam .cc-art { background: radial-gradient(ellipse 55% 50% at 30% 88%, rgba(255, 170, 80, 0.75), transparent 70%), linear-gradient(180deg, #24331e 0%, #5a6a3a 46%, #c49050 80%, #e0b070 100%); box-shadow: inset 0 -2px 0 #9fd06a; }
+.cc-nam .cc-art::before { background: #0c120a; clip-path: polygon(0 100%, 0 60%, 4% 52%, 7% 58%, 10% 44%, 14% 50%, 17% 40%, 21% 48%, 25% 56%, 29% 46%, 33% 52%, 37% 38%, 41% 47%, 45% 55%, 50% 44%, 54% 50%, 58% 42%, 62% 54%, 66% 48%, 70% 58%, 74% 46%, 78% 52%, 82% 40%, 86% 50%, 90% 56%, 95% 46%, 100% 52%, 100% 100%); }
+.cc-nam .cc-art::after { background: linear-gradient(180deg, transparent 84%, rgba(40, 60, 30, 0.6) 84%); }
+.sc-huey { position: absolute; left: 58%; top: 16%; width: 52px; height: 16px; background: #0c120a; border-radius: 12px 6px 3px 3px; transform: rotate(-4deg); }
+.sc-huey::before { content: ''; position: absolute; left: 44px; top: 4px; width: 42px; height: 3px; background: #0c120a; }
+.sc-huey::after { content: ''; position: absolute; left: -30px; top: -6px; width: 112px; height: 2px; background: rgba(12, 18, 10, 0.85); }
+.cc-nam .cc-name { color: #d8f0b8; } .cc-nam .cc-meta { color: #9fd06a; }
+.cc-nam:hover, .cc-nam.sel { border-color: #9fd06a; box-shadow: 0 0 24px rgba(159, 208, 106, 0.18); }
+/* spotted enemies: a red diamond over the head; a muzzle flash in the leaves flashes it amber */
+.spot-mark { position: absolute; left: 0; top: 0; width: 12px; height: 12px; border: 2px solid #ff4a3a; transform-origin: 50% 50%; rotate: 45deg; box-shadow: 0 0 6px rgba(0, 0, 0, 0.8); }
+.spot-mark.flash { border-color: #ffb040; animation: spotFlash 0.3s ease-in-out infinite alternate; }
+@keyframes spotFlash { to { opacity: 0.35; } }
+
+/* ===================== The Eleventh Hour ===================== */
+/* card: a grey dawn over no-man's-land, shattered trees, a biplane */
+.cc-ww1 .cc-art { background: radial-gradient(ellipse 60% 45% at 74% 78%, rgba(230, 180, 130, 0.6), transparent 70%), linear-gradient(180deg, #3a3e46 0%, #6a6a68 50%, #a89a84 80%, #6a5a46 100%); box-shadow: inset 0 -2px 0 #c8a878; }
+.cc-ww1 .cc-art::before { background: #1c1814; clip-path: polygon(0 100%, 0 76%, 8% 74%, 10% 50%, 11% 74%, 22% 78%, 30% 72%, 31% 44%, 32.5% 72%, 44% 76%, 52% 74%, 60% 78%, 66% 72%, 67% 56%, 68% 72%, 80% 76%, 88% 72%, 89% 40%, 90.5% 72%, 100% 76%, 100% 100%); }
+.cc-ww1 .cc-art::after { background: repeating-linear-gradient(170deg, transparent 0 9px, rgba(40, 32, 26, 0.5) 9px 10px) 0 86% / 100% 6px no-repeat; }
+.sc-biplane { position: absolute; left: 30%; top: 18%; width: 36px; height: 6px; background: #1c1814; border-radius: 3px; transform: rotate(-5deg); }
+.sc-biplane::before { content: ''; position: absolute; left: 8px; top: -7px; width: 14px; height: 2px; background: #1c1814; box-shadow: 0 14px 0 #1c1814; }
+.sc-biplane::after { content: ''; position: absolute; left: -12px; top: -9px; width: 2px; height: 16px; background: rgba(28, 24, 20, 0.7); }
+.cc-ww1 .cc-name { color: #f0e0c4; } .cc-ww1 .cc-meta { color: #c8a878; }
+.cc-ww1:hover, .cc-ww1.sel { border-color: #c8a878; box-shadow: 0 0 24px rgba(200, 168, 120, 0.18); }
+/* the gas mask: two fogged round eyepieces in a dark rubber face */
+.gas-mask { position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(circle at 32% 48%, transparent 0 21vh, rgba(180, 190, 170, 0.12) 25vh, rgba(8, 9, 7, 0.97) 27vh),
+              radial-gradient(circle at 68% 48%, transparent 0 21vh, rgba(180, 190, 170, 0.12) 25vh, rgba(8, 9, 7, 0.97) 27vh);
+  background-blend-mode: lighten; }
+.gas-mask i { position: absolute; top: 48%; width: 54vh; height: 54vh; margin-top: -27vh; border-radius: 50%; box-shadow: inset 0 0 6vh rgba(200, 210, 200, 0.18); }
+.gas-mask i:first-child { left: calc(32% - 27vh); } .gas-mask i:last-child { left: calc(68% - 27vh); }

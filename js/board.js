@@ -36,6 +36,8 @@
     return id;
   };
 
+  /** Story campaigns (Dust Off, Green Hell) have no drones and no co-op: one solo board each. */
+  const isStory = (c) => !!(CF.Campaigns && CF.Campaigns[c] && CF.Campaigns[c].story);
   /** Record the current campaign run. prog: parts cleared (phases.length = mission complete). Keeps each callsign's best per campaign and mode. */
   Board.record = function (prog, done) {
     const G = CF.Game, M = CF.Mission, C = CF.campaign();
@@ -96,7 +98,7 @@
   Board.submit = function (run) {
     if (!server()) return;
     // learn which server version answers before sending a run it might misfile (old servers only know the foundry)
-    if ((this.v2 === null && run.campaign !== 'foundry') || (run.mode === 'coop' && this.coopOk == null) || (run.campaign === 'story' && !this.known)) { request('GET').then(() => { if (canSend(run)) this.submit(run); }).catch(() => {}); return; }
+    if ((this.v2 === null && run.campaign !== 'foundry') || (run.mode === 'coop' && this.coopOk == null) || (isStory(run.campaign) && !this.known)) { request('GET').then(() => { if (canSend(run)) this.submit(run); }).catch(() => {}); return; }
     if (!canSend(run)) return;
     // the profile token and server-tracked run let the server check a #1 before it awards the Champion skins
     const G = CF.Game, auth = { token: CF.Profile.token() || undefined, run: (G && CF.Profile.runId(G.runKey)) || undefined, limit: TOP };
@@ -150,10 +152,10 @@
     this.render();
   };
   Board.show = function (tab) { this.tab = tab; this.render(); };
-  Board.setCampaign = function (c) { if (this.campaign === c) return; this.campaign = c; if (c === 'story') this.mode = 'all'; if (server()) this.fetch(); this.render(); };
+  Board.setCampaign = function (c) { if (this.campaign === c) return; this.campaign = c; if (isStory(c)) this.mode = 'all'; if (server()) this.fetch(); this.render(); };
   Board.setMode = function (m) { if (this.mode === m) return; this.mode = m; if (server()) this.fetch(); this.render(); };
   function row(el, cells, cls, mode) {
-    if (mode === 'drones' && Board.campaign === 'story') mode = 'solo'; // the Story Campaign has one solo board
+    if (mode === 'drones' && isStory(Board.campaign)) mode = 'solo'; // story campaigns have one solo board
     const d = document.createElement('div'); d.className = 'lb-row' + (cls || '');
     cells.forEach((t, i) => {
       const s = document.createElement('span');
@@ -179,7 +181,7 @@
     for (const b of document.querySelectorAll('[data-lbtab]')) b.setAttribute('aria-selected', String(b.dataset.lbtab === (online ? this.tab : 'local')));
     for (const b of document.querySelectorAll('[data-lbcampaign]')) b.setAttribute('aria-selected', String(b.dataset.lbcampaign === this.campaign));
     for (const b of document.querySelectorAll('[data-lbmode]')) b.setAttribute('aria-pressed', String(b.dataset.lbmode === this.mode));
-    const mg = document.getElementById('lbModeGroup'); if (mg) mg.hidden = this.campaign === 'story'; // one solo board: the story has no drones and no co-op
+    const mg = document.getElementById('lbModeGroup'); if (mg) mg.hidden = isStory(this.campaign); // one solo board: the stories have no drones and no co-op
     const C = CF.Campaigns && CF.Campaigns[this.campaign];
     $('lbEyebrow').textContent = (C ? C.name : 'Campaign') + ' · furthest part first, then score';
     const el = $('lbTable'), rank = $('lbRank'), note = $('lbNote');

@@ -668,7 +668,7 @@
       const mat = M[key] || M.concrete;
       const mesh = new THREE.Mesh(g, mat);
       const lit = mat.isMeshStandardMaterial;
-      mesh.castShadow = lit && !mat.transparent; mesh.receiveShadow = lit;
+      mesh.castShadow = lit && !mat.transparent && !mat.userData.noShadow; mesh.receiveShadow = lit; // noShadow: small foliage (jungle undergrowth)
       mesh.matrixAutoUpdate = false; mesh.updateMatrix();
       this.scene.add(mesh);
     }

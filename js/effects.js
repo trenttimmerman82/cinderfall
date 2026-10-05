@@ -485,6 +485,9 @@
           if (Math.random() < 0.3) this.smoke.spawn(e.x, e.y + 0.3, e.z, U.gauss() * 0.3, U.rand(1, 2), U.gauss() * 0.3, 2.5, 0.8, 3, 0.18, 0.1, 0.06, 0.35, -0.1, 0.4, 1);
         } else if (e.type === 'smoke') {
           this.smoke.spawn(e.x, e.y, e.z, U.rand(0.2, 0.6), U.rand(1.2, 2), U.gauss() * 0.2, U.rand(3, 5), 0.5, 3.2, 0.1, 0.1, 0.11, 0.5, -0.1, 0.3, 1);
+        } else if (e.type === 'colorSmoke') { // a smoke grenade marking an LZ: thick, coloured, drifting downwind
+          const c = e.color || [0.5, 0.2, 0.6];
+          this.smoke.spawn(e.x + U.gauss() * 0.2, e.y, e.z + U.gauss() * 0.2, U.rand(0.4, 1.0), U.rand(0.8, 1.6), U.gauss() * 0.3, U.rand(5, 8), 0.6, 4.5, c[0], c[1], c[2], 0.75, -0.06, 0.25, 1);
         } else if (e.type === 'fire') { // burning wreck: flame licks, embers and a column of black smoke
           const s = e.size || 1;
           this.add.spawn(e.x + U.gauss() * 0.5 * s, e.y + U.rand(0, 0.4), e.z + U.gauss() * 0.5 * s, U.gauss() * 0.3, U.rand(1, 2.4), U.gauss() * 0.3, U.rand(0.35, 0.7), 0.5 * s, 1.1 * s, 4, U.rand(1.3, 2), 0.35, 1, -1, 0.5, 1);

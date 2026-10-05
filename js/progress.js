@@ -32,7 +32,7 @@
       if (!cp || cp.phase !== s.phase || !cp.spawn || !['x', 'y', 'z', 'yaw'].every((k) => fin(cp.spawn[k])) || !fin(cp.armor) || cp.armor < 0 || cp.armor > 100 || !fin(cp.score) || cp.score < 0) return false;
       const lo = cp.loadout, WD = CF.Weapons.defs;
       if (!lo || !lo.weapons || !WD[lo.current] || !lo.weapons[lo.current] || !Number.isInteger(lo.grenades) || lo.grenades < 0 || lo.grenades > 4) return false;
-      for (const w in lo.weapons) { const x = lo.weapons[w]; if (!WD[w] || !Number.isInteger(x.mag) || x.mag < 0 || x.mag > WD[w].mag || !(x.reserve === 'inf' || (Number.isInteger(x.reserve) && x.reserve >= 0))) return false; }
+      for (const w in lo.weapons) { const x = lo.weapons[w]; if (!WD[w] || !Number.isInteger(x.mag) || x.mag < 0 || x.mag > CF.Weapons.maxMag(w) || !(x.reserve === 'inf' || (Number.isInteger(x.reserve) && x.reserve >= 0))) return false; }
       const m = cp.mission;
       if (!m || typeof m !== 'object') return false;
       if (id === 'foundry' && !(Array.isArray(m.breakers) && m.breakers.every((b) => /^breaker[ABC]$/.test(b)))) return false;

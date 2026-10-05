@@ -12,7 +12,7 @@
       spreadHip: 5.0, spreadAds: 3.4, spreadMove: 0.8, spreadAir: 2.0, bloom: 0, bloomMax: 0, mag: 7, reserve: 28, maxReserve: 49,
       shellReload: true, reloadStart: 0.32, reloadShell: 0.46, reloadEnd: 0.38, falloff: [8, 26, 0.22], recoil: [4.0, 1.0, 0.085, 0.2],
       adsFov: 0.86, adsTime: 0.2, hip: [0.13, -0.13, -0.27], adsZ: -0.34, equip: 0.5, sound: 'shotgun', tracerEvery: 1, shell: 1.9, pump: true, moveMul: 0.95, noise: 50, knock: 5 },
-    rail: { id: 'rail', name: 'VX-3 Lance', short: 'VX-3', auto: false, rpm: 48, dmg: 160, head: 2.5, pellets: 1, pierce: 4, hitPad: 0.15,
+    rail: { id: 'rail', name: 'VX-3 Lance', short: 'VX-3', auto: false, rpm: 48, dmg: 160, head: 2.5, pellets: 1, pierce: 4, hitPad: 0.15, coil: true,
       spreadHip: 2.4, spreadAds: 0, spreadMove: 2.0, spreadAir: 5, bloom: 0, bloomMax: 0, mag: 4, reserve: 12, maxReserve: 24,
       reload: 2.5, reloadEmpty: 2.5, magInAt: 0.6, falloff: [400, 500, 1], recoil: [4.5, 0.6, 0.11, 0.24], adsFov: 0.26, zoom: [0.26, 0.14, 0.08], adsTime: 0.26, scope: true,
       hip: [0.13, -0.14, -0.27], adsZ: -0.3, equip: 0.55, sound: 'rail', tracerEvery: 1, shell: 0, moveMul: 0.9, noise: 55, knock: 7 },
@@ -125,6 +125,41 @@
     for (const id of ORDER) if (this.vm[id].suppressor) this.vm[id].suppressor.visible = this.suppressed;
   };
   WP.quiet = function () { return this.suppressed && (this.curId === 'carbine' || this.curId === 'pistol'); };
+  /** Period kit (js/eras.js): a campaign set in another war renames, retunes and re-models the seven campaign slots.
+      The ids stay the same, so saves, number keys and the network never notice. null puts the stock guns back. */
+  const ERA_BACKUP = {};
+  WP.era = null;
+  WP.setEra = function (name) {
+    const E = name && CF.Eras && CF.Eras[name];
+    if ((E ? name : null) === this.era) return;
+    for (const id in ERA_BACKUP) { // undo the last era: restore changed fields, drop the ones it added
+      const d = DEFS[id], b = ERA_BACKUP[id];
+      for (const k in b) { if (b[k] === undefined) delete d[k]; else d[k] = b[k]; }
+      delete ERA_BACKUP[id];
+    }
+    const cur = this.curId;
+    if (cur) this.vm[cur].root.visible = false;
+    for (const id of CAMPAIGN) { if (this.vm[id].stock) { this.vmScene.remove(this.vm[id].root); this.vm[id] = this.vm[id].stock; this.vmScene.add(this.vm[id].root); } }
+    this.era = E ? name : null;
+    if (E) {
+      for (const id in E.weapons) {
+        const d = DEFS[id], o = E.weapons[id], b = ERA_BACKUP[id] = {};
+        for (const k in o) { b[k] = d[k]; d[k] = o[k]; }
+        d.era = name; b.era = undefined;
+      }
+      for (const id in E.vm) {
+        const v = CF.Eras.model(name, id); v.stock = this.vm[id]; v.root.visible = false;
+        this.vmScene.remove(this.vm[id].root); this.vm[id] = v; this.vmScene.add(v.root);
+      }
+    }
+    if (cur && this.inv[cur]) { this.vm[cur].root.visible = true; CF.HUD.setWeapon(this.cur.def, this.inv, this.slots()); this.hudAmmo(); }
+  };
+  /** Biggest magazine a slot can hold in any era (saves are checked before a campaign picks its era). */
+  WP.maxMag = function (id) {
+    let m = DEFS[id] ? (ERA_BACKUP[id] && ERA_BACKUP[id].mag !== undefined ? ERA_BACKUP[id].mag : DEFS[id].mag) : 0;
+    for (const k in (CF.Eras || {})) { const o = CF.Eras[k].weapons && CF.Eras[k].weapons[id]; if (o && o.mag > m) m = o.mag; }
+    return m;
+  };
   WP.reset = function (loadout) {
     this.setSuppressed(false);
     this.inv = {}; this.cur = null; this.curId = null; this.lastId = null;
@@ -281,6 +316,7 @@
     w.mag--; this.fireCd = 60 / d.rpm; this.shotCount++;
     if (d.pump) this.cycleT = 0;
     if (d.id === 'rail') this.cycleT = 0;
+    if (d.bolt) { this.cycleT = 0; A.play('bolt', null, { delay: 60 / d.rpm * 0.3 }); } // bolt action: work the bolt between shots
     if (d.cylinder) { this.cylTurn = (this.cylTurn || 0) + Math.PI / 3; this.hammerT = 0; }
     const st = CF.Game.stats; st.shots++;
     cam.getWorldDirection(_f); _o.copy(cam.position);
@@ -317,7 +353,7 @@
       }
       _hp.copy(_o).addScaledVector(_d, Math.min(endT, reach));
       if (ends) ends.push(_hp.clone());
-      if (d.id === 'rail') {
+      if (d.coil) {
         CF.FX.tracer(muzzle, _hp, { r: 0.8, g: 3.2, b: 5, w: 0.07, life: 0.55 });
         CF.FX.tracer(muzzle, _hp, { r: 2, g: 2.4, b: 3, w: 0.02, life: 0.3 });
         const len = muzzle.distanceTo(_hp), n = Math.min(80, Math.floor(len * 1.5));
@@ -344,16 +380,16 @@
     P.shake(d.id === 'shotgun' || d.id === 'sawnoff' ? 0.22 : d.id === 'rail' ? 0.3 : d.flame || d.arc ? 0.03 : d.id === 'magnum' ? 0.12 : 0.07);
     const quiet = this.quiet();
     A.play(quiet ? 'suppressed' : d.sound, null, { send: 0.3 + A.room * 0.8 });
-    this.flashT = d.id === 'rail' ? 0.06 : 0.035;
+    this.flashT = d.coil ? 0.06 : 0.035;
     this.flash.material.rotation = Math.random() * Math.PI * 2;
     const fs = d.id === 'shotgun' || d.id === 'sawnoff' ? 0.36 : d.id === 'rail' || d.id === 'revolver' || d.id === 'magnum' ? 0.3 : d.sidearm || d.flame ? 0.16 : 0.22;
     this.flash.scale.setScalar(fs * U.rand(0.8, 1.2) * (quiet ? 0.25 : 1));
-    const blue = d.id === 'rail' || d.arc;
+    const blue = d.coil || d.arc;
     this.flash.material.color.setRGB(blue ? 1.5 : 5, blue ? 4 : 3.6, blue ? 6 : 2.2);
     if (!quiet) CF.FX.flashLight(muzzle, blue ? 0x60c8ff : 0xffa850, d.id === 'shotgun' || d.id === 'sawnoff' ? 5 : 3, 9, 0.07);
     if (d.shell && !d.pump) this.eject(P, d.shell);
     CF.Enemies.noise(cam.position, quiet ? 4 : d.noise);
-    if (d.id === 'rail') A.play('railCharge', null, { delay: 0.25 });
+    if (d.coil) A.play('railCharge', null, { delay: 0.25 });
     if (d.pump) { A.play('pumpBack', null, { delay: 0.3 }); A.play('pumpFwd', null, { delay: 0.48 }); }
     this.hudAmmo(); CF.HUD.ammoBump();
     if (w.mag === 0) this.chamberEmpty = true;
@@ -642,7 +678,7 @@
           w.mag += take; if (w.reserve !== Infinity) w.reserve -= take;
           this.hudAmmo();
         }
-        if (this.chamberEmpty && k > 0.8 && !snd.c) { snd.c = 1; A.play(this.vm[this.curId].parts.slide ? 'slide2' : this.curId === 'rail' ? 'railCharge' : 'bolt'); }
+        if (this.chamberEmpty && k > 0.8 && !snd.c) { snd.c = 1; A.play(this.vm[this.curId].parts.slide ? 'slide2' : d.coil ? 'railCharge' : 'bolt'); }
         if (k >= 1) { this.state = 'idle'; this.chamberEmpty = false; }
       }
     } else if (this.state === 'melee') {
@@ -707,8 +743,11 @@
     }
     const rp = this.animateReload(v, d, dt);
     px += rp.px; py += rp.py; rx += rp.rx; rz += rp.rz;
+    // bolt action: the rifle rolls over while the hand works the bolt back and forward
+    this.boltK = d.bolt && this.cycleT < 1 && this.state !== 'reload' ? U.pulse(this.cycleT, 0.15, 0.85) : 0;
+    if (this.boltK) { const k = this.boltK * (1 - ads * 0.4); rz += 0.34 * k; rx += 0.06 * k; py -= 0.035 * k; px -= 0.02 * k; }
     // mechanical parts
-    if (parts.bolt) parts.bolt.position.z = 0.06 + (this.flashT > 0 ? 0.03 : 0) + (this.reloadBolt || 0);
+    if (parts.bolt) parts.bolt.position.z = 0.06 + (this.flashT > 0 ? 0.03 : 0) + (this.reloadBolt || 0) + this.boltK * 0.09;
     if (parts.slide) parts.slide.position.z = (this.flashT > 0 ? 0.028 : 0) + ((this.cur.mag === 0 && this.state !== 'reload') || this.slideBack ? 0.028 : 0);
     if (parts.pump) {
       let pk = 0;
@@ -735,7 +774,7 @@
       if (this.quiet()) { const sp = this.vm[this.curId].suppressor; sp.getWorldPosition(this.flash.position); }
       this.flash.visible = true;
       this.muzzleLight.position.copy(this.flash.position); this.muzzleLight.intensity = this.quiet() ? 0.3 : d.id === 'shotgun' ? 5 : 3;
-      this.muzzleLight.color.set(d.id === 'rail' ? 0x60c8ff : 0xffb060);
+      this.muzzleLight.color.set(d.coil ? 0x60c8ff : 0xffb060);
     } else { this.flash.visible = false; this.muzzleLight.intensity = 0; }
     root.position.set(px, py, pz);
     root.rotation.set(rx, ry, rz);

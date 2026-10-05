@@ -168,6 +168,7 @@
         see = cosA > this.T.fovCos && dist < this.T.sight * 0.8 * crouchK * E.sightMul;
       }
       if (see) see = W.segmentClear(_eye.x, _eye.y, _eye.z, _pc.x, _pc.y, _pc.z) || W.segmentClear(_eye.x, _eye.y, _eye.z, _pc.x, P.body.pos.y + P.eye, _pc.z);
+      if (see && E.veil) see = !E.veil(this, _eye, _pc, P); // thick foliage between you hides you (and them)
       this.canSee = see; this.dist = dist;
       const unaware = this.state === 'idle' || this.state === 'patrol';
       if (see && unaware) {
@@ -352,7 +353,8 @@
       if (T.aimTime && this.aimT > 0) { // snipers: a visible laser settles on you before the shot
         this.aimT -= dt;
         const from = this.m.p.muzzle.getWorldPosition(_v), to = P.chestPos(_v2);
-        E.line(from, to, 6, 0.3, 0.2, 0.012 + (1 - this.aimT / T.aimTime) * 0.02);
+        if (T.glint && E.onGlint) E.onGlint(this, 1 - this.aimT / T.aimTime); // a scope catching the light, not a laser
+        else E.line(from, to, 6, 0.3, 0.2, 0.012 + (1 - this.aimT / T.aimTime) * 0.02);
         if (!this.canSee) { this.aimT = 0; this.burstLeft = 0; }
         return;
       }
@@ -365,7 +367,7 @@
       if (this.fireCd <= 0 && this.canSee && dist < T.range[1] + 6) {
         this.burstLeft = T.burst + (T.aimTime ? 0 : Math.random() < 0.3 ? 1 : 0); this.burstT = 0;
         this.fireCd = U.rand(T.cool[0], T.cool[1]);
-        if (T.aimTime) { this.aimT = T.aimTime / Math.max(0.7, CF.diff().aggro); A.play('laserCharge', this.body.pos, { ref: 10, vol: 0.5 }); }
+        if (T.aimTime) { this.aimT = T.aimTime / Math.max(0.7, CF.diff().aggro); A.play(T.glint ? 'bolt' : 'laserCharge', this.body.pos, { ref: 10, vol: 0.5 }); }
       }
     }
 
@@ -646,7 +648,8 @@
       }
       this.vSpeed = U.damp(this.vSpeed || 0, speed, 2.2, dt);
       b.pos.x += -Math.sin(this.yaw) * this.vSpeed * dt; b.pos.z += -Math.cos(this.yaw) * this.vSpeed * dt;
-      const gy = W.navHeight(b.pos.x, b.pos.z); if (!isNaN(gy)) b.pos.y = U.damp(b.pos.y, gy, 10, dt);
+      if (T.floatY != null) b.pos.y = T.floatY; // boats ride the water
+      else { const gy = W.navHeight(b.pos.x, b.pos.z); if (!isNaN(gy)) b.pos.y = U.damp(b.pos.y, gy, 10, dt); }
       b.vel.set(-Math.sin(this.yaw) * this.vSpeed, 0, -Math.cos(this.yaw) * this.vSpeed);
       if (this.state === 'idle' || this.state === 'patrol') this.state = 'hunt';
       if (this.canSee) { this.state = 'combat'; this.seenT = CF.time; }
@@ -763,7 +766,7 @@
 
   // ------------------------------------------------------------ projectiles
   const BOLT = { bolt: { c: [6, 1.1, 0.35], len: 1.3, w: 0.075, r: 0.22 }, laser: { c: [5.5, 0.4, 2.2], len: 1.0, w: 0.05, r: 0.2 }, slug: { c: [6, 2.6, 0.6], len: 1.6, w: 0.11, r: 0.3 }, mortar: { c: [6, 2, 0.4], len: 0.8, w: 0.3, r: 0.4 },
-    shard: { c: [0.9, 3.6, 5.5], len: 1.1, w: 0.07, r: 0.22 }, tracer: { c: [5.5, 3.4, 1.3], len: 2.2, w: 0.03, r: 0.16 }, shardHeavy: { c: [1.2, 3.8, 6], len: 1.5, w: 0.11, r: 0.3 }, shardLob: { c: [1.5, 4, 6], len: 0.9, w: 0.28, r: 0.4 } };
+    shard: { c: [0.9, 3.6, 5.5], len: 1.1, w: 0.07, r: 0.22 }, tracer: { c: [5.5, 3.4, 1.3], len: 2.2, w: 0.03, r: 0.16 }, tracerGreen: { c: [1.4, 5.5, 1.5], len: 2.4, w: 0.032, r: 0.16 }, shardHeavy: { c: [1.2, 3.8, 6], len: 1.5, w: 0.11, r: 0.3 }, shardLob: { c: [1.5, 4, 6], len: 0.9, w: 0.28, r: 0.4 } };
   E.shoot = function (kind, pos, dir, speed, dmg, owner) {
     const s = BOLT[kind] || BOLT.bolt;
     this.proj.push({ kind, pos: pos.clone(), prev: pos.clone(), vel: dir.clone().multiplyScalar(speed), dmg, owner, life: 3, r: s.r, whiz: false, spec: s, src: owner ? 'a ' + owner.name : 'enemy fire' });
