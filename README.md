@@ -59,7 +59,7 @@ It is set in a rain-soaked neon city.
   other when down, ranked on its own Co-op leaderboard.
 - **Multiplayer.** Play online with friends: free-for-all, team deathmatch (Voltage vs Ronin), **Revolver One-Shot**
   (revolvers only, every hit kills), **Prop Hunt** (hide as crates, barrels and chairs; Hunters find you), co-op
-  **Zombies** (survive waves of infected) or **Battle Royale** (ride the Battle Bus over **Retail Row**, loot, outlast the storm) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow) and **Retail Row** (a shopping town in open country, built for Battle Royale), with eight classes you can edit in the lobby (any primary, eight secondaries including a machine pistol, hand cannon, burst pistol, sawn-off, arc pistol and grenade pistol, plus equipment and vest). Kill-streak drones
+  **Zombies** (survive waves of infected) or **Battle Royale** (ride the Battle Bus over **Retail Row** or **Tilted Towers**, loot, outlast the storm) on **Sniper Valley** (rail rifles only, two rooftops across a 60 m drop), **Neon Market**, **Skyline**, **Nuketown**, **Oregon**, **Terminal** (an airport with a walk-through airliner), **Dust II** (Long A, the catwalk, mid doors and the tunnels to B) **The Pit** (a UNSC training facility with two bases, sniper towers, the Sword Room and a sunken live-fire range), **Rust** (a desert oil yard round a climbable drilling tower) **Highrise** (a skyscraper roof with a helipad, two floors of offices, a mechanical well and a tower crane) **Hijacked** (a superyacht under way, from the pool deck and the cabins below to the bridge, the sun deck and the helipad on the bow) **Retail Row** (a shopping town in open country) and **Tilted Towers** (a city of towers round a clock tower), both built for Battle Royale, with eight classes you can edit in the lobby (any primary, eight secondaries including a machine pistol, hand cannon, burst pistol, sawn-off, arc pistol and grenade pistol, plus equipment and vest). Kill-streak drones
   work here too. Nuketown has an **RC-XD** chest: take it, drive the bomb car on a chase camera while your body stands
   shielded, and blow it up.
 - **Saves.** Campaign progress saves at every checkpoint, separately for each campaign, and survives closing the tab.
@@ -135,11 +135,26 @@ scoreboard shows the wave reached and total kills.
 waves; Crawlers fill their share. Pick it as its own card in the mode row (`zombiesnd` in `js/mp.js`, `CF.ZM.nd` in
 `js/zombies.js`). Kill-streak drones for the players still work.
 
-**Battle Royale** is played on **Retail Row**, a small shopping town in open country after the Fortnite landmark:
-the Noms supermarket, a two-storey row of shops (Ruckus Sports, Sofa Kingdom, Toy Barn, Bean There, Hammer & Co.) with a
-balcony walk and a roof you reach from the west stair, the parking lot and the RETAIL ROW pylon, the water tower with a
-switchback stair up to its catwalk, the Gas-N-Go, two streets of houses with garages, the park, a self-storage yard and
-a red barn. Picking the mode picks the map (and the other way round).
+**Battle Royale** is played on two maps after Fortnite landmarks. **Retail Row** is a small shopping town in open
+country: the Noms supermarket, a two-storey row of shops (Ruckus Sports, Sofa Kingdom, Toy Barn, Bean There, Hammer & Co.)
+with a balcony walk and a roof you reach from the west stair, the parking lot and the RETAIL ROW pylon, the water tower
+with a switchback stair up to its catwalk, the Gas-N-Go, two streets of houses with garages, the park, a self-storage yard
+and a red barn. **Tilted Towers** is a dense city of towers in a green valley, four streets in a grid with traffic lights
+round Founders Plaza and its fountain:
+- the **clock tower** (eight storeys of brick and stone, clock faces on all four sides, a belfry with its bell, a copper
+  spire), an eight-storey brick tower with **Pizza Pit** downstairs and a fire escape up its side, the **Vertex** glass
+  office block with a helipad, the **Maple Court** apartments with balconies, **Durr Burger** with the giant burger on its
+  roof (you can stand on the bun), the pharmacy, **Hotel Tilted** with its canopy, pool and fire escape, a loft block over
+  the **Brick & Page** bookshop with a Llama Cola billboard, the **Grand Mercantile** department store and a white tower
+  over the **Tower Café**;
+- **Tilted Heights**, a half-built seven-storey frame with scaffolding, a site office and an excavator under a **tower
+  crane** whose jib (and the steel beams hanging off it) you can land on;
+- every tower is furnished floor by floor (offices, apartments, hotel rooms, lofts, a diner, shop floors) and has a
+  scissor stair to every storey and a hut out onto its roof; the upper windows are open, so you can glide straight in;
+- outside town: woods, a farm shed and hay bales, a pond with a jetty, a gas station and welcome signs on the roads in.
+
+Picking Battle Royale picks a Battle Royale map (Retail Row unless one is already picked); picking either map picks the
+mode.
 - **Warm-up.** Until the bus leaves you run around with a pistol and respawn. Online, the Battle Bus leaves 20 seconds
   after a second player is in; in practice, 5 seconds after you deploy. No classes: everyone drops with a P-11.
 - **The drop.** Everyone rides the **Battle Bus** (a bus under a hot-air balloon) across the map on a random line. Press
@@ -163,8 +178,8 @@ a red barn. Picking the mode picks the map (and the other way round).
   through doors; like everywhere, the grid maps one floor per spot, so bots don't loot house and shop ground floors.
 - **Online:** the host runs the countdown, the bus line, the storm circles and the loot seed, and decides every pickup and
   chest; every client builds the same loot from the seed, flies its own drop and takes its own storm damage. Rules and
-  tuning (storm table, rarities, loot pool) are at the top of `js/br.js`; the map is `js/map-retail.js`, which lists its
-  loot spots and chests in `L.points.loot` / `L.points.chests`. The anticheat allows the bus ride and the drop and the
+  tuning (storm table, rarities, loot pool) are at the top of `js/br.js`; the maps are `js/map-retail.js` and
+  `js/map-tilted.js`, which list their loot spots (about 170 on Tilted Towers) and chests (44) in `L.points.loot` / `L.points.chests`. The anticheat allows the bus ride and the drop and the
   higher damage of rare guns. The network version is now `v9`, so everyone needs the updated page.
 
 **Sniper Valley** is its own map and mode: team deathmatch (first to 25, 10 minutes) between two skyscraper rooftops
@@ -194,7 +209,7 @@ wind-up telegraphs.
 ## Practice vs bots
 
 **Practice vs bots** on the main menu (or the same section of the Multiplayer screen) plays any map in Free for all, Team
-deathmatch, Capture the Flag, Revolver One-Shot, Sniper Valley or Battle Royale (Retail Row) against 1, 3, 5 or 7 computer players, offline, on
+deathmatch, Capture the Flag, Revolver One-Shot, Sniper Valley or Battle Royale (Retail Row or Tilted Towers) against 1, 3, 5 or 7 computer players, offline, on
 Easy, Normal or Hard. Zombies practice is you alone against the waves. **Esc** pauses. Bots can't play Prop Hunt or the
 co-op campaign. The bots (`js/bots.js`) are ordinary multiplayer players driven by the host: they walk the map's
 navigation grid, spot you in their field of view or by the sound of your shots, and in CTF they take, carry, return and

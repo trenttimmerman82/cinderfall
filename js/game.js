@@ -202,8 +202,8 @@
       if (b.dataset.diff) { CF.settings.difficulty = b.dataset.diff; CF.saveSettings(); this.startMission(); return; }
       if (b.dataset.campaign) { this.newOperation(b.dataset.campaign); return; }
       if (b.dataset.continue) { this.continueMission(b.dataset.continue); return; }
-      if (b.dataset.map) { this.mpSel.map = b.dataset.map; if (b.dataset.map === 'retail') this.mpSel.mode = 'br'; else if (this.mpSel.mode === 'br') this.mpSel.mode = 'ffa'; this.renderMpPick(); return; }
-      if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; if (b.dataset.mode === 'br') this.mpSel.map = 'retail'; this.renderMpPick(); return; }
+      if (b.dataset.map) { this.mpSel.map = b.dataset.map; const br = CF.Maps[b.dataset.map] && CF.Maps[b.dataset.map].br; if (br) this.mpSel.mode = 'br'; else if (this.mpSel.mode === 'br') this.mpSel.mode = 'ffa'; this.renderMpPick(); return; }
+      if (b.dataset.mode) { this.mpSel.mode = b.dataset.mode; if (b.dataset.mode === 'br' && !(CF.Maps[this.mpSel.map] || {}).br) this.mpSel.map = 'retail'; this.renderMpPick(); return; }
       if (b.dataset.loadout) { CF.MP.setLoadout(b.dataset.loadout); this.renderLoadouts(); return; }
       if (b.dataset.kit) { const i = b.dataset.kit.indexOf(':'); CF.MP.editKit(CF.MP.nextLoadout, b.dataset.kit.slice(0, i), b.dataset.kit.slice(i + 1)); this.renderLoadouts(); return; }
       if (b.dataset.bots) { this.mpSel.bots = +b.dataset.bots; this.saveBotPrefs(); this.renderMpPick(); return; }

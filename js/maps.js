@@ -361,5 +361,27 @@
       (p.x > 70 && p.x < 84 && p.z > -12 && p.z < 2 && p.y < 4.2) || (p.y < 5.9 && ((p.z > 30 && p.z < 40) || (p.z > 58 && p.z < 68)) && [-100, -76, -52, 60, 84, -96, -70, -44, 62, 88].some((c) => p.x > c - 6 && p.x < c + 12 && (p.x < c + 6 || p.z < (p.z > 50 ? 65 : 37)))),
     menuCam: (t, cam) => { const a = t * 0.03 + 0.4; cam.position.set(-10 + Math.sin(a) * 70, 30 + Math.sin(a * 1.3) * 4, -10 + Math.cos(a) * 60); cam.lookAt(-10, 3, -14); }
   };
-  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'hijacked', 'retail', 'sniper'];
+  // Tilted Towers: a warm, clear afternoon over a valley town; a deep blue sky, the sun low enough to throw long tower shadows
+  CF.Maps.tilted = {
+    id: 'tilted', name: 'Tilted Towers', mp: true, nav: false, br: true, blurb: 'A city of towers in a green valley: the clock tower over the plaza, brick and glass towers, Durr Burger, Hotel Tilted and a building site with a crane. Battle Royale.',
+    bounds: { minX: -124, maxX: 124, minZ: -124, maxZ: 124 },
+    theme: base({
+      fog: [0.72, 0.8, 0.9], fogDensity: 0.0018,
+      hemi: [0xd4e2f4, 0x5c6c42, 0.66], moon: { color: 0xffeccc, intensity: 1.9, dir: [-0.5, 0.62, 0.6] },
+      sky: { zen: [0.12, 0.3, 0.7], hor: [0.76, 0.82, 0.9], glow: [0.62, 0.48, 0.3], glowDir: [-0.5, 0.6], glow2: [0.08, 0.1, 0.12], glow2Dir: [1, 0],
+        cloudDark: [0.78, 0.8, 0.86], cloudLit: [1.12, 1.06, 0.98], stars: 0, moon: 2.6 },
+      env: { top: [0.5, 0.64, 0.9], bottom: [0.32, 0.36, 0.26], band: [0.68, 0.7, 0.74], panels: [[1.5, 1.45, 1.4], [1.3, 1.45, 1.65], [1.5, 1.4, 1.25], [1.4, 1.42, 1.4]] },
+      poolMul: 0, rainBright: 0, embers: 0,
+      skyline: Object.assign(base().skyline, { count: 1, clearX: 1e9, clearZ: 1e9, holo: 0, neon: false, flares: false }),
+      mountains: { r0: 200, r1: 380, count: 54, hMin: 22, hMax: 78, rock: [0.2, 0.28, 0.16], snow: [0.42, 0.5, 0.34], haze: 0.0045, seed: 2019 },
+      rain: { count: 0, roofs: [] }, traffic: { count: 0 },
+      post: { bloom: 0.1, exposure: 0.82, sat: 1.12, shadow: [0, 0.002, 0.006], high: [0.012, 0.005, -0.006], threshold: 1.6 },
+      wet: false, shadowBias: -0.0012, shadowNormalBias: 0.12
+    }),
+    build: () => CF.MapTilted.build(),
+    // every tower, below its roof
+    inside: (p) => CF.MapTilted.inside(p),
+    menuCam: (t, cam) => { const a = t * 0.03 + 0.9; cam.position.set(Math.sin(a) * 66, 34 + Math.sin(a * 1.3) * 4, Math.cos(a) * 62); cam.lookAt(0, 12, -6); }
+  };
+  CF.mpMaps = ['market', 'rooftops', 'nuketown', 'oregon', 'terminal', 'dust2', 'pit', 'rust', 'highrise', 'hijacked', 'retail', 'tilted', 'sniper'];
 })(window.CF);

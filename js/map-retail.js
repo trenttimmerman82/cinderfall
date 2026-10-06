@@ -608,6 +608,12 @@
     deco(54, 0.75, -70.04, 112, 0.85, -69.96, 'wood'); deco(54, 0.35, -70.04, 112, 0.45, -69.96, 'wood'); solid(54, 0, -70.06, 112, 1.1, -69.94);
   }
 
+  /** The town kit, shared with Tilted Towers (js/map-tilted.js). */
+  RR.kit = function () {
+    K = CF.MapNuketown.kit;
+    return { steps, openSteps, rail, glass, shelfRun, counter, lampPost, oak, fir, rock, boxTruck, cart, dumpster, wallSign, flat };
+  };
+
   // ------------------------------------------------------------ build
   RR.build = function () {
     K = CF.MapNuketown.kit;
