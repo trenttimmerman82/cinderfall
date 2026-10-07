@@ -272,11 +272,15 @@
     e.state = 'combat';
     if (dist > 6.5) { e.lastKnown.copy(pp); e.chase(e.T.run * 0.8, dt); e.flaming = false; }
     else { e.moveDir(0, 0, 0, dt); e.faceTarget(P, dt, 4); e.flaming = e.canSee; }
+    // bursts of ~1.8 s with a ~1.4 s pause to re-pressurise: a window to shoot back or get out of the bay
+    e.flameT = (e.flameT || 0) + dt;
+    if (e.flameT > (e.flamePausing ? 1.4 : 1.8)) { e.flameT = 0; e.flamePausing = !e.flamePausing; }
+    if (e.flamePausing) e.flaming = false;
     if (e.flaming) {
       const muzzle = e.m.p.muzzle.getWorldPosition(_v), to = P.chestPos(_w);
       CF.FX.flame(muzzle, to.clone().add(new THREE.Vector3(U.gauss() * 0.4, U.gauss() * 0.3, U.gauss() * 0.4)), 3);
       e.flameSnd = (e.flameSnd || 0) - dt; if (e.flameSnd <= 0) { e.flameSnd = 0.12; A.play('flamer', muzzle, { ref: 6 }); }
-      if (dist < 8.5) { P.damage(26 * dt * 4 * (F.mask > 0.85 ? 0.85 : 1), b.pos, 'a flamethrower'); }
+      if (dist < 7) { P.damage(38 * dt * (1 - Math.max(0, dist - 3) / 5) * (F.mask > 0.85 ? 0.85 : 1), b.pos, 'a flamethrower'); } // ~38/s close, fading past 3 m
     }
     e.physics(dt); e.pose(dt, Math.hypot(b.vel.x, b.vel.z));
   }

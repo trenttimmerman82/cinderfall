@@ -18,27 +18,29 @@
   /** A crenellated fire trench along x at z (front = -1: faces north, +1: faces south). */
   function fireTrench(x0, x1, z, front) {
     for (let x = x0; x < x1; x += 10) {
-      const bay = [x, z - 1.2, x + 7, z + 1.2];
+      const bay = [x, z - 1, x + 7, z + 1];
       floors.push(bay);
-      steps.push(front < 0 ? [x, z - 2.0, x + 7, z - 1.2] : [x, z + 1.2, x + 7, z + 2.0]);          // the fire step on the enemy side
-      if (x + 10 < x1) floors.push(front < 0 ? [x + 5.8, z + 1.2, x + 11.2, z + 3.6] : [x + 5.8, z - 3.6, x + 11.2, z - 1.2]); // round the traverse
+      steps.push(front < 0 ? [x, z - 2, x + 7, z - 1] : [x, z + 1, x + 7, z + 2]);          // the fire step on the enemy side
+      if (x + 10 < x1) floors.push(front < 0 ? [x + 6, z + 1, x + 11, z + 3] : [x + 6, z - 3, x + 11, z - 1]); // round the traverse
     }
   }
   const BRIT = 70, GER1 = -6, GER2 = -48;
   fireTrench(-120, 120, BRIT, -1);
   fireTrench(-110, 110, GER1, 1);
   fireTrench(-80, 100, GER2, 1);
-  floors.push([-60, 99, 60, 101.4]);                       // British support line
-  floors.push([-1.2, 71, 1.2, 99.5]);                      // British communication trench
-  floors.push([-41.2, 71, -38.8, 99.5]); floors.push([38.8, 71, 41.2, 99.5]);
-  floors.push([18.8, -46.8, 21.2, -7.2]);                  // German communication trenches
-  floors.push([-31.2, -46.8, -28.8, -7.2]);
-  floors.push([58.8, -46.8, 61.2, -7.2]);
+  // every rectangle sits on whole metres: the terrain mesh and the ground collision are both 1 m grids, so the walls land
+  // exactly on cell edges (fractional edges made the visible trench and the walkable one disagree)
+  floors.push([-60, 99, 60, 101]);                         // British support line
+  floors.push([-1, 71, 1, 99]);                            // British communication trench
+  floors.push([-41, 71, -39, 99]); floors.push([39, 71, 41, 99]);
+  floors.push([19, -47, 21, -7]);                          // German communication trenches
+  floors.push([-31, -47, -29, -7]);
+  floors.push([59, -47, 61, -7]);
   // dugouts: rooms dug under the rear wall (floor depth, roofed over at ground level)
-  dugouts.push({ id: 'brHQ', r: [-6, 101.4, 6, 106] });
-  dugouts.push({ id: 'phone', r: [-6, -12, 2, -8.6] });
-  dugouts.push({ id: 'gerDug2', r: [24, -12, 30, -8.6] });
-  dugouts.push({ id: 'gerDug3', r: [-46, -54, -38, -50.6] });
+  dugouts.push({ id: 'brHQ', r: [-6, 101, 6, 106] });
+  dugouts.push({ id: 'phone', r: [-6, -11, 2, -7] });     // the German dugouts open straight off the back of their bays
+  dugouts.push({ id: 'gerDug2', r: [24, -11, 30, -7] });
+  dugouts.push({ id: 'gerDug3', r: [-46, -53, -38, -49] });
   for (const d of dugouts) floors.push(d.r);
   MW.floors = floors; MW.dugouts = dugouts;
   const inR = (r, x, z) => x >= r[0] && x < r[2] && z >= r[1] && z < r[3];
@@ -188,12 +190,20 @@
   }
 
   // ---------------------------------------------------------------- terrain
+  const inCut = (x, z) => floors.some((r) => inR(r, x, z)) || steps.some((r) => inR(r, x, z));
+  /** Mesh height at a grid vertex: where any of the four cells round it is cut, the lowest of them (the revetting hides the
+      1 m slope behind it), so the visible floor covers exactly the cells you can walk on. */
+  function vertexHeight(x, z) {
+    const c = [[x - 0.5, z - 0.5], [x + 0.5, z - 0.5], [x - 0.5, z + 0.5], [x + 0.5, z + 0.5]];
+    if (!c.some(([a, b]) => inCut(a, b))) return height(x, z);
+    return Math.min(...c.map(([a, b]) => height(a, b)));
+  }
   function terrain() {
     const SEG = 280, size = B.maxX - B.minX;
     const g = new THREE.PlaneGeometry(size, size, SEG, SEG); g.rotateX(-PI / 2);
     const P = g.attributes.position, col = new Float32Array(P.count * 3), rnd = U.mulberry32(77);
     for (let i = 0; i < P.count; i++) {
-      const x = P.getX(i), z = P.getZ(i), h = height(x, z);
+      const x = P.getX(i), z = P.getZ(i), h = vertexHeight(x, z);
       P.setY(i, h + (h === 0 ? Math.sin(x * 0.41) * Math.cos(z * 0.37) * 0.07 : 0));
       // churned brown in no-man's-land, greener (but battered) fields behind the lines, chalky spoil by the trenches
       const nml = z > -62 && z < 66, back = z < -62 || z > 104;
@@ -225,6 +235,25 @@
       flush();
     }
   }
+  /** Wattle revetting round a cut rectangle, a metre at a time, only where the ground beyond is higher (never across the
+      mouth of a traverse, a communication trench or a dugout), up to the fire step or to just under the surface. */
+  function revet(r, y0) {
+    const T = 0.04;
+    const side = (n, at, put) => { // n unit segments; at(k) = the cell centre beyond segment k; put(k0, k1, top) draws a run
+      let k0 = -1, top = 0;
+      for (let k = 0; k <= n; k++) {
+        let t = null;
+        if (k < n) { const [x, z] = at(k), h = height(x, z); if (h > y0 + 0.01) t = h <= STEP + 0.01 ? STEP : -0.1; }
+        if (k0 >= 0 && t !== top) { put(k0, k, top); k0 = -1; }
+        if (t !== null && k0 < 0) { k0 = k; top = t; }
+      }
+    };
+    const nx = r[2] - r[0], nz = r[3] - r[1];
+    side(nx, (k) => [r[0] + k + 0.5, r[1] - 0.5], (a, b, t) => deco(r[0] + a, y0, r[1] - T, r[0] + b, t, r[1], 'wattle'));
+    side(nx, (k) => [r[0] + k + 0.5, r[3] + 0.5], (a, b, t) => deco(r[0] + a, y0, r[3], r[0] + b, t, r[3] + T, 'wattle'));
+    side(nz, (k) => [r[0] - 0.5, r[1] + k + 0.5], (a, b, t) => deco(r[0] - T, y0, r[1] + a, r[0], t, r[1] + b, 'wattle'));
+    side(nz, (k) => [r[2] + 0.5, r[1] + k + 0.5], (a, b, t) => deco(r[2], y0, r[1] + a, r[2] + T, t, r[1] + b, 'wattle'));
+  }
   /** Trench furniture: revetted walls, duckboards, sandbag parapets, ladders over the top, dugout roofs. */
   function trenchDressing(rnd) {
     for (const r of floors) {
@@ -233,19 +262,17 @@
       if (dug) {
         // the roof: timber and earth over the room, a doorway blanket at the trench side
         L.box(r[0] - 0.2, -0.45, r[1] - 0.2, r[2] + 0.2, 0.05, r[3] + 0.2, 'timber', { nav: false });
-        for (let x = r[0] + 1; x < r[2]; x += 1.5) deco(x - 0.08, FLOOR, r[1] + 0.1, x + 0.08, -0.45, r[1] + 0.26, 'timber');
+        const zd = r[1] > 0 ? r[1] + 0.1 : r[3] - 0.26; // the door frame on the trench side
+        for (let x = r[0] + 1; x < r[2]; x += 1.5) deco(x - 0.08, FLOOR, zd, x + 0.08, -0.45, zd + 0.16, 'timber');
         continue;
       }
-      // wattle revetting on the long walls
-      const alongX = r[2] - r[0] > r[3] - r[1];
-      if (alongX) { deco(r[0], FLOOR, r[1] - 0.04, r[2], -0.1, r[1], 'wattle'); deco(r[0], FLOOR, r[3], r[2], -0.1, r[3] + 0.04, 'wattle'); }
-      else { deco(r[0] - 0.04, FLOOR, r[1], r[0], -0.1, r[3], 'wattle'); deco(r[2], FLOOR, r[1], r[2] + 0.04, -0.1, r[3], 'wattle'); }
+      revet(r, FLOOR);
     }
-    for (const r of steps) deco(r[0] + 0.1, STEP, r[1] + 0.05, r[2] - 0.1, STEP + 0.06, r[3] - 0.05, 'boards');
+    for (const r of steps) { deco(r[0] + 0.1, STEP, r[1] + 0.05, r[2] - 0.1, STEP + 0.06, r[3] - 0.05, 'boards'); revet(r, STEP); }
     // parapets: a low sandbag ridge in front of each fire trench (stops nothing you can't climb, hides your head)
-    for (const [z, front] of [[BRIT - 2.2, -1], [GER1 + 2.2, 1], [GER2 + 2.2, 1]]) {
+    for (const [z, front] of [[BRIT - 2, -1], [GER1 + 2, 1], [GER2 + 2, 1]]) {
       for (let x = -120; x < 120; x += 10) {
-        if (z === BRIT - 2.2 ? x < -120 || x > 110 : z === GER1 + 2.2 ? x < -110 || x > 100 : x < -80 || x > 90) continue;
+        if (z === BRIT - 2 ? x < -120 || x > 110 : z === GER1 + 2 ? x < -110 || x > 100 : x < -80 || x > 90) continue;
         const z0 = front < 0 ? z - 0.6 : z, z1 = front < 0 ? z : z + 0.6;
         deco(x, 0, z0, x + 7, 0.45, z1, 'sandbag', { ao: true });
       }
@@ -254,7 +281,7 @@
     MW.ladders = [];
     for (let x = -100; x < 100; x += 10) {
       const lx = x + 3.5;
-      for (let i = 0; i < 5; i++) L.box(lx - 0.4, FLOOR + i * 0.42, BRIT - 1.2 + (4 - i) * 0.22, lx + 0.4, FLOOR + (i + 1) * 0.42, BRIT - 1.2 + (5 - i) * 0.22, 'timber', { surf: 'wood' });
+      for (let i = 0; i < 5; i++) L.box(lx - 0.4, FLOOR + i * 0.42, BRIT - 1 + (4 - i) * 0.22, lx + 0.4, FLOOR + (i + 1) * 0.42, BRIT - 1 + (5 - i) * 0.22, 'timber', { surf: 'wood' });
       MW.ladders.push({ x: lx, z: BRIT - 1.6 });
     }
     // the German MG nests on the parapet: a ring of sandbags round a pit, and the concrete pillbox on the left
@@ -408,7 +435,7 @@
     task('towerUp', MW.tower.door.x - 2.4, MW.tower.door.y, MW.tower.door.z, 1.2, 'Climb the tower ladder', 1.8);
     task('towerDown', MW.belfry.x - 2.6, MW.belfry.y, MW.belfry.z + 2.6, 1.0, 'Climb down', 1.5);
     CF.Map.kit.ammoCache('cacheBrit', 3, FLOOR, 103, 'z-');
-    CF.Map.kit.ammoCache('cacheGer', 5, FLOOR, -11.2, 'z+');
+    CF.Map.kit.ammoCache('cacheGer', 27, FLOOR, -10.4, 'z+'); // in the back of the second German dugout
     CF.Map.kit.ammoCache('cacheVillage', 44, height(44, -108), -108, 'x-');
 
     // ------------------------------------------------------------ points
