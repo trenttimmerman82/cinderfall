@@ -378,10 +378,10 @@
 
   // ------------------------------------------------------------ the parking lot, the pylon, the crossroads
   function lot(rnd) {
-    deco(-42, 0.02, MZF, 37.6, 0.06, -14, 'concrete'); // sidewalk in front of the shops
-    deco(-46, 0.02, NZ0, -42, 0.06, 12, 'concrete');     // and in front of Noms
-    deco(-42, 0.02, -14, 37.6, 0.04, 13, 'asphalt');
-    const line = (x0, z0, x1, z1) => deco(x0, 0.04, z0, x1, 0.05, z1, 'lineWhite');
+    deco(-42, 0.02, MZF, 37.6, 0.12, -14, 'concrete'); // sidewalk in front of the shops
+    deco(-46, 0.02, NZ0, -42, 0.12, 12, 'concrete');     // and in front of Noms
+    deco(-42, 0.02, -14, 37.6, 0.08, 13, 'asphalt');
+    const line = (x0, z0, x1, z1) => deco(x0, 0.08, z0, x1, 0.12, z1, 'lineWhite');
     for (const [z0, z1] of [[-13.5, -8.5], [-3.5, 1.5], [7.5, 12.5]]) for (let x = -40; x <= 34; x += 2.8) line(x - 0.06, z0, x + 0.06, z1);
     // planter islands with trees, light poles
     for (const x of [-30, -6, 18]) { L.box(x - 3, 0, -3.5 - 3.5, x + 3, 0.25, -3.5 - 2.3, 'concrete', { top: 'grass' }); L.box(x - 3, 0, 1.5 + 0.3, x + 3, 0.25, 1.5 + 1.5, 'concrete', { top: 'grass' }); }
@@ -403,19 +403,19 @@
   }
   function roads() {
     // Main Street (east-west) and Market Road (north-south); Maple Lane runs behind the first row of houses
-    deco(-EDGE - 20, 0.02, 14, EDGE + 20, 0.04, 22, 'asphalt');
-    for (const [z0, z1] of [[-EDGE - 20, 14], [22, EDGE + 20]]) deco(38, 0.02, z0, 46, 0.04, z1, 'asphalt');
-    deco(-112, 0.02, 46, 38, 0.04, 52, 'asphalt'); deco(46, 0.02, 46, 112, 0.04, 52, 'asphalt');
-    const y = (x0, z0, x1, z1) => deco(x0, 0.041, z0, x1, 0.05, z1, 'paintYellow');
+    deco(-EDGE - 20, 0.02, 14, EDGE + 20, 0.08, 22, 'asphalt');
+    for (const [z0, z1] of [[-EDGE - 20, 14], [22, EDGE + 20]]) deco(38, 0.02, z0, 46, 0.08, z1, 'asphalt');
+    deco(-112, 0.02, 46, 38, 0.08, 52, 'asphalt'); deco(46, 0.02, 46, 112, 0.08, 52, 'asphalt');
+    const y = (x0, z0, x1, z1) => deco(x0, 0.08, z0, x1, 0.12, z1, 'paintYellow');
     for (let x = -EDGE - 14; x < EDGE + 14; x += 6) if (x < 34 || x > 48) y(x, 17.9, x + 3, 18.1);
     for (let z = -EDGE - 14; z < EDGE + 14; z += 6) if (z < 10 || z > 24) y(41.9, z, 42.1, z + 3);
     // crosswalks
-    for (let i = 0; i < 8; i++) { deco(34.2 + 0, 0.042, 14.4 + i * 0.95, 37.6, 0.05, 14.4 + i * 0.95 + 0.5, 'lineWhite'); deco(38.4 + i * 0.95, 0.042, 10.6, 38.4 + i * 0.95 + 0.5, 0.05, 13.6, 'lineWhite'); }
+    for (let i = 0; i < 8; i++) { deco(34.2 + 0, 0.08, 14.4 + i * 0.95, 37.6, 0.12, 14.4 + i * 0.95 + 0.5, 'lineWhite'); deco(38.4 + i * 0.95, 0.08, 10.6, 38.4 + i * 0.95 + 0.5, 0.12, 13.6, 'lineWhite'); }
     // sidewalks
-    deco(-EDGE - 20, 0.02, 22, 37.6, 0.07, 24, 'concrete'); deco(46.4, 0.02, 22, EDGE + 20, 0.07, 24, 'concrete'); deco(46.4, 0.02, 12, EDGE + 20, 0.07, 14, 'concrete');
-    deco(-112, 0.02, 52, 37.6, 0.07, 54, 'concrete'); deco(46.4, 0.02, 52, 112, 0.07, 54, 'concrete');
-    deco(46.4, 0.02, -EDGE - 20, 48.4, 0.07, 12, 'concrete');
-    for (const [z0, z1] of [[24, 46], [54, EDGE + 20]]) { deco(46.4, 0.02, z0, 48.4, 0.07, z1, 'concrete'); deco(36, 0.02, z0, 37.6, 0.07, z1, 'concrete'); }
+    deco(-EDGE - 20, 0.02, 22, 37.6, 0.12, 24, 'concrete'); deco(46.4, 0.02, 22, EDGE + 20, 0.12, 24, 'concrete'); deco(46.4, 0.02, 12, EDGE + 20, 0.12, 14, 'concrete');
+    deco(-112, 0.02, 52, 37.6, 0.12, 54, 'concrete'); deco(46.4, 0.02, 52, 112, 0.12, 54, 'concrete');
+    deco(46.4, 0.02, -EDGE - 20, 48.4, 0.12, 12, 'concrete');
+    for (const [z0, z1] of [[24, 46], [54, EDGE + 20]]) { deco(46.4, 0.02, z0, 48.4, 0.12, z1, 'concrete'); deco(36, 0.02, z0, 37.6, 0.12, z1, 'concrete'); }
     for (const [x, z] of [[36.8, -13], [36.8, 26], [47.6, -12], [47.6, 26], [-20, 23.4], [60, 23.4], [-80, 23.4], [0, 53.4], [76, 53.4]]) K.streetLamp(x, z);
     K.hydrant(36.9, 7); K.hydrant(47.5, 30); K.hydrant(-40, 23.4);
   }
@@ -458,7 +458,7 @@
 
   // ------------------------------------------------------------ Gas-N-Go
   function gasStation(rnd) {
-    deco(48.4, 0.02, -10, 86, 0.05, 12, 'concrete');
+    deco(48.4, 0.02, -10, 86, 0.08, 12, 'concrete');
     // canopy over the pumps (its roof is flat and walkable)
     for (const [x, z] of [[54, -5], [64, -5], [54, 3], [64, 3]]) { L.box(x - 0.3, 0, z - 0.3, x + 0.3, 5.0, z + 0.3, 'planeWhite'); }
     L.box(51, 5.0, -8, 67, 5.7, 6, 'planeWhite', { top: 'rrRoof', bottom: true });
@@ -523,8 +523,8 @@
     deco(gx0 + 0.6, 2.6, z0 + 0.15, gx1 - 0.6, 2.95, z0 + 0.6, 'garageDoor');
     // porch, path, driveway, mailbox
     deco(cx - 4.4, 0, z0 - 1.6, cx - 1.2, 0.14, z0, 'concrete'); K.sph('lampWarm', cx - 1.6, 2.5, z0 - 0.18, 0.1);
-    deco(cx - 3.3, 0.02, side, cx - 2.3, 0.06, z0 - 1.6, 'concrete');
-    deco(gx0 + 0.6, 0.02, side, gx1 - 0.6, 0.06, z0, 'concrete');
+    deco(cx - 3.3, 0.02, side, cx - 2.3, 0.08, z0 - 1.6, 'concrete');
+    deco(gx0 + 0.6, 0.02, side, gx1 - 0.6, 0.08, z0, 'concrete');
     K.mailbox(cx - 4.6, side + 0.8);
     // inside: sofa, rug and TV; kitchen counters and table; beds upstairs
     K.couch(x0 + 0.4, z0 + 1.2, x0 + 1.4, z0 + 3.8, 'x-'); deco(x0 + 1.8, G, z0 + 1.0, cx - 1.6, G + 0.02, z0 + 4.2, 'rug');
@@ -545,7 +545,7 @@
 
   // ------------------------------------------------------------ park, storage yard, countryside
   function park(rnd) {
-    deco(-34, 0.02, 24, 34, 0.035, 46, 'grass');
+    deco(-34, 0.02, 24, 34, 0.08, 46, 'grass');
     // basketball court and hoops
     flat(art().court, 14, 22, -16, 0.045, 35);
     for (const z of [24.8, 45.2]) { const s = z < 35 ? 1 : -1; L.cyl('paintGrey', -16, 1.6, z, 0.08, 3.2, 0, 0, true); deco(-16.8, 3.0, z + s * 0.2, -15.2, 4.0, z + s * 0.26, 'planeWhite'); L.addGeo('paintCherry', L.geo('torus'), L.mat4(-16, 3.1, z + s * 0.6, Math.PI / 2, 0, 0, 0.23, 0.23, 0.23)); solid(-16.1, 0, z - 0.1, -15.9, 3.2, z + 0.1, 'metal'); }
@@ -570,8 +570,8 @@
   }
   function storage(rnd) {
     const x0 = -30, x1 = 20, z0 = -94, z1 = -60;
-    deco(x0, 0.02, z0, x1, 0.04, z1, 'gravel');
-    deco(-6, 0.02, z1, 2, 0.04, -44, 'gravel');
+    deco(x0, 0.02, z0, x1, 0.08, z1, 'gravel');
+    deco(-6, 0.02, z1, 2, 0.08, -44, 'gravel');
     // two rows of storage units (closed boxes with roll-up doors), containers between them
     for (const [zz, face] of [[-92, 1], [-66, -1]]) {
       L.box(x0 + 2, 0, zz, x1 - 2, 3.2, zz + 4, 'metalSiding', { top: 'roofTin' });

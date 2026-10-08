@@ -313,6 +313,7 @@
     const adsMul = WPN.cur ? U.lerp(1, WPN.adsFov(dt), WPN.adsE) : 1;
     const fov = base * adsMul;
     if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
+    if (cam.near !== 0.05) { cam.near = 0.05; cam.updateProjectionMatrix(); } // the Battle Royale drop pushes it out
     cam.updateMatrixWorld();
   };
 })(window.CF);

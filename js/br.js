@@ -672,6 +672,7 @@
   };
   /** Third-person camera on the bus and in the air; you steer with the mouse. */
   const _c = new THREE.Vector3(), _t = new THREE.Vector3(), _d = new THREE.Vector3(), _e = new THREE.Euler(0, 0, 0, 'YXZ');
+  BR.setNear = function (cam, n) { if (Math.abs(cam.near - n) > 0.005) { cam.near = n; cam.updateProjectionMatrix(); } };
   function airCamera(dt) {
     const P = CF.Player, cam = CF.Game.camera, b = P.body.pos, onBus = BR.fl === 3;
     if (onBus) BR.busPos(BR.clock, _t).y += 1.5; else _t.set(b.x, b.y + 1.2, b.z);
@@ -685,6 +686,9 @@
     _e.set(pitch, P.yaw, 0); cam.quaternion.setFromEuler(_e);
     const fov = CF.settings.fov + (BR.fl === 1 ? 10 : 4);
     if (Math.abs(cam.fov - fov) > 0.05) { cam.fov = U.damp(cam.fov, fov, 6, dt); cam.updateProjectionMatrix(); }
+    // high up, push the near plane out with the height so the depth buffer can still tell the ground layers (grass, roads,
+    // paint a few cm apart) from each other at a few hundred metres; otherwise they flicker into each other
+    BR.setNear(cam, U.clamp(_c.y * 0.008, 0.05, onBus ? 1.2 : Math.min(1.2, d * 0.15)));
     cam.updateMatrixWorld();
     if (BR.self && !onBus) {
       const r = BR.self.root; r.position.set(b.x, b.y, b.z); r.rotation.set(0, P.yaw, 0);
@@ -817,6 +821,7 @@
     if (!BR.specPos) BR.specPos = _c.clone(); else BR.specPos.lerp(_c, 1 - Math.exp(-10 * dt));
     cam.position.copy(BR.specPos); cam.lookAt(_t);
     if (Math.abs(cam.fov - CF.settings.fov) > 0.05) { cam.fov = CF.settings.fov; cam.updateProjectionMatrix(); }
+    BR.setNear(cam, 0.05);
     cam.updateMatrixWorld();
     const txt = 'Spectating ' + r.name + ' · ' + (list.length > 1 ? 'Space for the next player' : 'the last one standing');
     if (G.ui.md !== txt) { $('mdTimer').textContent = txt; G.ui.md = txt; }
