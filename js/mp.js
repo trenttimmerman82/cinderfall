@@ -158,7 +158,8 @@
   MP.isHost = () => MP.role === 'host';
   // Callsign "Scott" gets aim assist that locks on while aiming (normal health and damage).
   MP.isScott = () => MP.active && MP.name.trim().toLowerCase() === 'scott';
-  // Callsigns ending in "!" get the full aimbot: snaps to any visible enemy head, no spread, and fires on its own.
+  // Callsigns ending in "!" get the full aimbot while aiming down sights (snaps to any visible enemy head and fires on its own),
+  // no spread, and a box around every player on the map at all times (js/hud.js updateEsp).
   MP.isAimbot = () => MP.active && MP.name.trim().endsWith('!');
   MP.maxHealth = () => 100;
   /** Two-team rules: TDM itself, Sniper Valley, and Capture the Flag. */
@@ -753,14 +754,15 @@
   // ------------------------------------------------------------ aim assist (Scott) and aimbot ("!" callsigns)
   const _eye = new THREE.Vector3(), _hd = new THREE.Vector3();
   /** Turn toward the closest visible enemy head: a hard lock while aiming down sights, a gentler pull while hip firing.
-      Aimbot callsigns lock onto any visible enemy in every direction, instantly, and set MP.autoFire so the gun shoots itself. */
+      Aimbot callsigns, only while scoped (or holding aim on a gun without sights), lock onto any visible enemy in every direction,
+      instantly, and set MP.autoFire so the gun shoots itself; unscoped they leave the camera alone so you can move freely. */
   MP.autoAim = function (dt) {
     MP.autoFire = false;
     const bot = MP.isAimbot();
     if (!bot && !MP.isScott()) return;
     const P = CF.Player, WP = CF.Weapons, inp = CF.Input;
-    const aiming = WP.adsT > 0.3, firing = inp.mdown[0];
-    if (!bot && !aiming && !firing) return;
+    const aiming = WP.adsT > 0.3 || !!(WP.cur && WP.cur.def.noAds && inp.mdown[2]), firing = inp.mdown[0];
+    if (!aiming && (bot || !firing)) return;
     const cone = bot ? Infinity : aiming ? 0.6 : 0.26; // radians off the crosshair
     P.eyePos(_eye);
     let best = null, bestAng = cone, bestYaw = 0, bestPitch = 0;

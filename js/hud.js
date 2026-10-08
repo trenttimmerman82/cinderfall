@@ -7,7 +7,7 @@
 
   H.init = function () {
     const ids = ['hud', 'compassStrip', 'compassObj', 'compassHeading', 'objPanel', 'objPhase', 'objText', 'objMeter', 'objFill', 'objCount', 'scoreNum',
-      'worldMarker', 'wmLabel', 'wmDist', 'crosshair', 'hitmarker', 'dmgRing', 'popups', 'dmgNumbers', 'killfeed', 'armorFill', 'armorNum', 'healthFill',
+      'worldMarker', 'wmLabel', 'wmDist', 'crosshair', 'hitmarker', 'dmgRing', 'popups', 'dmgNumbers', 'espBoxes', 'killfeed', 'armorFill', 'armorNum', 'healthFill',
       'healthGhost', 'healthNum', 'ammoMag', 'ammoRes', 'weaponName', 'weaponSlots', 'grenades', 'streak', 'interact', 'interactFill', 'interactText', 'hint', 'radio',
       'radioWho', 'radioLine', 'bossBar', 'bossFill', 'bossStage', 'scope', 'scopeRead', 'phaseCard', 'pcNum', 'pcTitle', 'pcSub', 'fps', 'flash', 'warmthRow', 'warmthFill', 'warmthNum', 'countdown', 'cdLabel', 'cdTime', 'frostEdge', 'bossName'];
     for (const id of ids) this.el[id] = $(id);
@@ -309,9 +309,40 @@
     this.setWarmth(null); this.frost(0); this.countdown(null, null);
   };
 
+  // ------------------------------------------------------------ "!" callsigns: a box around everyone on the map, through walls
+  const _top = new THREE.Vector3();
+  H.updateEsp = function (cam) {
+    const c = this.el.espBoxes; if (!c) return;
+    const on = !!(CF.MP && CF.MP.isAimbot() && CF.Game.mode === 'mp' && CF.Player.alive);
+    if (!on) { if (this.espOn) { c.getContext('2d').clearRect(0, 0, c.width, c.height); this.espOn = false; } return; }
+    this.espOn = true;
+    const W = window.innerWidth, Hh = window.innerHeight;
+    if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
+    const x = c.getContext('2d'); x.clearRect(0, 0, W, Hh);
+    x.lineWidth = 2; x.font = 'bold 12px "Barlow Semi Condensed", Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'bottom';
+    const me = CF.Player.body.pos;
+    for (const e of CF.Enemies.list) {
+      if (!e.alive || !e.body || e.body.pos.y < -40) continue;
+      const b = e.body.pos, h = ((e.T && e.T.height) || 1.85) * (1 - (e.crouch || 0) * 0.3);
+      _p.set(b.x, b.y, b.z).project(cam); _top.set(b.x, b.y + h, b.z).project(cam);
+      if (_p.z > 1 || _top.z > 1) continue; // behind the camera
+      const y0 = (-_top.y * 0.5 + 0.5) * Hh, y1 = (-_p.y * 0.5 + 0.5) * Hh, cx = (_p.x * 0.5 + 0.5) * W;
+      const bh = Math.max(6, y1 - y0), bw = bh * 0.45;
+      if (cx + bw < 0 || cx - bw > W || y1 < 0 || y0 > Hh) continue;
+      const col = e.net && e.css ? e.css : '#ff4a3d';
+      const enemy = !e.net || !e.id || CF.MP.enemyOf(e.id);
+      x.strokeStyle = 'rgba(0,0,0,0.6)'; x.strokeRect(cx - bw / 2 - 1, y0 - 1, bw + 2, bh + 2);
+      x.strokeStyle = enemy ? col : 'rgba(140,200,255,0.8)'; x.strokeRect(cx - bw / 2, y0, bw, bh);
+      x.fillStyle = x.strokeStyle;
+      const d = Math.round(Math.hypot(b.x - me.x, b.y - me.y, b.z - me.z));
+      x.fillText(((e.name || (e.T && e.T.name) || '') + ' ' + d + ' m').trim(), cx, y0 - 3);
+    }
+  };
+
   H.update = function (dt, cam, P) {
     this.updateCompass(P);
     this.updateMarker(cam, P);
+    this.updateEsp(cam);
     this.updateArcs(dt, P);
     this.updateNumbers(dt, cam);
     this.updateRadio(dt);
